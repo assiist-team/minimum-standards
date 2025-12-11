@@ -1,0 +1,23 @@
+{
+  "name": "@minimum-standards/firestore-rules-tests",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore,auth --project minimum-standards-test \"jest --runInBand\""
+  },
+  "dependencies": {
+    "@minimum-standards/firestore-model": "0.0.0",
+    "@minimum-standards/shared-model": "0.0.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.17.12",
+    "firebase-tools": "^13.24.1",
+    "firebase": "^10.14.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "typescript": "^5.7.2"
+  }
+}

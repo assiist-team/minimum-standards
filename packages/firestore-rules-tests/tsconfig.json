@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@minimum-standards/shared-model": ["../shared-model/src/index.ts"],
+      "@minimum-standards/shared-model/*": ["../shared-model/src/*"],
+      "@minimum-standards/firestore-model": ["../firestore-model/src/index.ts"],
+      "@minimum-standards/firestore-model/*": ["../firestore-model/src/*"]
+    },
+    "types": ["node", "jest"]
+  },
+  "include": ["**/*.ts"]
+}

@@ -1,0 +1,15 @@
+/.npm-cache/
+/node_modules/
+/apps/**/node_modules/
+/packages/**/node_modules/
+/firebase-debug.log
+/coverage/
+/dist/
+/build/
+.DS_Store
+.env
+.env.local
+.env.*.local
+/.cursor/
+.vscode/
+.idea/

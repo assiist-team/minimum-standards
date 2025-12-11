@@ -1,0 +1,13 @@
+{
+  "name": "minimum-standards",
+  "private": true,
+  "packageManager": "npm@10.2.3",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm -ws run test",
+    "test:unit": "npm -ws run test:unit",
+    "test:rules": "npm -w @minimum-standards/firestore-rules-tests run test"
+  }
+}

@@ -1,0 +1,144 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    function isTimestamp(value) {
+      return value is timestamp;
+    }
+
+    function isOptionalTimestampField(fieldName) {
+      return !(fieldName in request.resource.data) ||
+        request.resource.data[fieldName] == null ||
+        isTimestamp(request.resource.data[fieldName]);
+    }
+
+    function isOptionalStringField(fieldName) {
+      return !(fieldName in request.resource.data) ||
+        request.resource.data[fieldName] == null ||
+        request.resource.data[fieldName] is string;
+    }
+
+    function isCreateWithServerTimestamps() {
+      // Enforces client use of serverTimestamp(); in rules it resolves to request.time.
+      return request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+    }
+
+    function isUpdateWithServerTimestampAndStableCreatedAt() {
+      return request.resource.data.updatedAt == request.time &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function validActivity() {
+      return hasOnlyKeys([
+        'name',
+        'unit',
+        'inputType',
+        'createdAt',
+        'updatedAt',
+        'deletedAt'
+      ])
+      && ('deletedAt' in request.resource.data)
+      && request.resource.data.name is string
+      && request.resource.data.name.size() >= 1
+      && request.resource.data.name.size() <= 120
+      && request.resource.data.unit is string
+      && request.resource.data.unit.size() >= 1
+      && request.resource.data.unit.size() <= 40
+      && request.resource.data.inputType in ['number', 'yes_no']
+      && isTimestamp(request.resource.data.createdAt)
+      && isTimestamp(request.resource.data.updatedAt)
+      && isOptionalTimestampField('deletedAt');
+    }
+
+    function validStandard() {
+      return hasOnlyKeys([
+        'activityId',
+        'minimum',
+        'unit',
+        'cadence',
+        'state',
+        'createdAt',
+        'updatedAt',
+        'deletedAt'
+      ])
+      && ('deletedAt' in request.resource.data)
+      && request.resource.data.activityId is string
+      && request.resource.data.activityId.size() >= 1
+      && request.resource.data.minimum is number
+      && request.resource.data.minimum >= 0
+      && request.resource.data.unit is string
+      && request.resource.data.unit.size() >= 1
+      && request.resource.data.unit.size() <= 40
+      && request.resource.data.cadence in ['daily', 'weekly', 'monthly']
+      && request.resource.data.state in ['active', 'archived']
+      && isTimestamp(request.resource.data.createdAt)
+      && isTimestamp(request.resource.data.updatedAt)
+      && isOptionalTimestampField('deletedAt');
+    }
+
+    function validActivityLog() {
+      return hasOnlyKeys([
+        'standardId',
+        'value',
+        'occurredAt',
+        'note',
+        'createdAt',
+        'updatedAt',
+        'editedAt',
+        'deletedAt'
+      ])
+      && ('deletedAt' in request.resource.data)
+      && ('note' in request.resource.data)
+      && ('editedAt' in request.resource.data)
+      && request.resource.data.standardId is string
+      && request.resource.data.standardId.size() >= 1
+      && request.resource.data.value is number
+      && request.resource.data.value >= 0
+      && isTimestamp(request.resource.data.occurredAt)
+      && isOptionalStringField('note')
+      && isTimestamp(request.resource.data.createdAt)
+      && isTimestamp(request.resource.data.updatedAt)
+      && isOptionalTimestampField('editedAt')
+      && isOptionalTimestampField('deletedAt');
+    }
+
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // Prevent client from directly writing the user root doc in MVP.
+      allow create, update, delete: if false;
+
+      match /activities/{activityId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validActivity() && isCreateWithServerTimestamps();
+        allow update: if isOwner(uid) && validActivity() && isUpdateWithServerTimestampAndStableCreatedAt();
+        allow delete: if false; // soft-delete via deletedAt
+      }
+
+      match /standards/{standardId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validStandard() && isCreateWithServerTimestamps();
+        allow update: if isOwner(uid) && validStandard() && isUpdateWithServerTimestampAndStableCreatedAt();
+        allow delete: if false; // soft-delete via deletedAt
+      }
+
+      match /activityLogs/{logId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && validActivityLog() && isCreateWithServerTimestamps();
+        allow update: if isOwner(uid) && validActivityLog() && isUpdateWithServerTimestampAndStableCreatedAt();
+        allow delete: if false; // soft-delete via deletedAt
+      }
+    }
+  }
+}
