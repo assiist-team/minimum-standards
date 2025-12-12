@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeUnitToPlural } from './unit-normalization';
 
 const timestampMsSchema = z
   .number()
@@ -17,7 +18,24 @@ export const standardStateSchema = z.union([z.literal('active'), z.literal('arch
 export const activitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(120),
-  unit: z.string().min(1).max(40),
+  unit: z
+    .string()
+    .min(1)
+    .max(40)
+    .transform((val) => {
+      try {
+        return normalizeUnitToPlural(val);
+      } catch (error) {
+        // If normalization fails, throw a Zod error
+        throw new z.ZodError([
+          {
+            code: z.ZodIssueCode.custom,
+            path: ['unit'],
+            message: error instanceof Error ? error.message : 'Invalid unit'
+          }
+        ]);
+      }
+    }),
   inputType: activityInputTypeSchema,
   createdAtMs: timestampMsSchema,
   updatedAtMs: timestampMsSchema,

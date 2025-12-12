@@ -1,8 +1,8 @@
 # Product Roadmap
 
 1. [x] Core data model + user scoping — Define Firestore collections and shared Zod schemas/converters for `Activity`, `Standard`, and `ActivityLog`, scoped per user via Firebase Auth and security rules, so all reads/writes are validated and isolated. `[L]` (completed 2025-12-11)
-2. [ ] Period + status engine — Implement a shared “period calculator” that computes daily/weekly (Monday-start)/monthly windows and labels in the device timezone and derives status (Met / In Progress / Missed) from period totals, with unit tests for boundary cases (end-of-period, timezone changes). `[M]`
-3. [ ] Activity Library (create + reuse) — Build the Activity Library UI with search, create, and “recently used” Activities so users can reuse consistent Activities across Standards. `[M]`
+2. [x] Period + status engine — Implement a shared “period calculator” that computes daily/weekly (Monday-start)/monthly windows and labels in the device timezone and derives status (Met / In Progress / Missed) from period totals, with unit tests for boundary cases (end-of-period, timezone changes). `[M]` (completed 2025-12-12)
+3. [x] Activity Library (create + reuse) — Build the Activity Library UI with search, create, and “recently used” Activities so users can reuse consistent Activities across Standards. `[M]` (completed 2025-12-11)
 4. [ ] Standards builder (create/edit + archive) — Implement the two-step Standard builder (pick/create Activity → set cadence + minimum + unit) and allow archiving/unarchiving, producing a clear display rule like “1000 calls / week.” `[M]`
 5. [ ] Active Standards Dashboard — Create the dashboard that lists active Standards with the current Period label, current period progress (e.g., “38 / 1000”), and status, with a one-tap Log action per Standard. `[M]`
 6. [ ] Fast logging (per-standard + global) — Implement the Log screen supporting both entry points (from a Standard and global), with a big numeric input, explicit save, optional collapsed note, “When?” backdating control, and immediate UI updates after save. `[M]`

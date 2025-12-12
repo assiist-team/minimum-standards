@@ -13,6 +13,21 @@ describe('shared Zod schemas', () => {
     });
 
     expect(parsed.name).toBe('Sales Calls');
+    expect(parsed.unit).toBe('calls');
+  });
+
+  test('Activity normalizes singular unit to plural', () => {
+    const parsed = activitySchema.parse({
+      id: 'a1',
+      name: 'Sales Calls',
+      unit: 'call',
+      inputType: 'number',
+      createdAtMs: 1,
+      updatedAtMs: 2,
+      deletedAtMs: null
+    });
+
+    expect(parsed.unit).toBe('calls');
   });
 
   test('Activity rejects empty name', () => {

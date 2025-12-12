@@ -47,9 +47,10 @@ function parseWith<T>(schema: z.ZodType<T>, value: unknown): T {
 export const activityConverter: FirestoreDataConverter<Activity> = {
   toFirestore(model: Activity) {
     // Note: createdAt/updatedAt should be server-controlled; on write we use serverTimestamp().
+    // Note: unit should already be normalized to plural form via activitySchema transform.
     return {
       name: model.name,
-      unit: model.unit,
+      unit: model.unit, // Already normalized via schema transform
       inputType: model.inputType,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
