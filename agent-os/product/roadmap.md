@@ -1,6 +1,6 @@
 # Product Roadmap
 
-1. [ ] Core data model + user scoping — Define Firestore collections and shared Zod schemas/converters for `Activity`, `Standard`, and `ActivityLog`, scoped per user via Firebase Auth and security rules, so all reads/writes are validated and isolated. `[L]`
+1. [x] Core data model + user scoping — Define Firestore collections and shared Zod schemas/converters for `Activity`, `Standard`, and `ActivityLog`, scoped per user via Firebase Auth and security rules, so all reads/writes are validated and isolated. `[L]` (completed 2025-12-11)
 2. [ ] Period + status engine — Implement a shared “period calculator” that computes daily/weekly (Monday-start)/monthly windows and labels in the device timezone and derives status (Met / In Progress / Missed) from period totals, with unit tests for boundary cases (end-of-period, timezone changes). `[M]`
 3. [ ] Activity Library (create + reuse) — Build the Activity Library UI with search, create, and “recently used” Activities so users can reuse consistent Activities across Standards. `[M]`
 4. [ ] Standards builder (create/edit + archive) — Implement the two-step Standard builder (pick/create Activity → set cadence + minimum + unit) and allow archiving/unarchiving, producing a clear display rule like “1000 calls / week.” `[M]`
