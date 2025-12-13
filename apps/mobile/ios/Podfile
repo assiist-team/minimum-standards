@@ -32,11 +32,36 @@ target 'MinimumStandardsMobile' do
       # :ccache_enabled => true
     )
     
-    # Fix gRPC-C++ modulemap path - the podspec references a path that doesn't exist
-    # Update both Xcode project settings and xcconfig files
+    # Fix module build issues and build settings for all targets
     installer.pods_project.targets.each do |target|
-      if target.name == 'gRPC-C++'
-        target.build_configurations.each do |build_config|
+      target.build_configurations.each do |build_config|
+        # Fix module build issues
+        build_config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
+        build_config.build_settings['DEFINES_MODULE'] = 'YES'
+        
+        # Fix for "Could not build module" errors
+        build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+        build_config.build_settings['CLANG_ENABLE_MODULE_DEBUGGING'] = 'NO'
+        
+        # Ensure proper deployment target
+        if build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.0
+          build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+        end
+        
+        # Fix for module map issues
+        build_config.build_settings['SWIFT_VERSION'] = '5.0'
+        
+        # Remove problematic module map flags that might cause conflicts
+        if build_config.build_settings['OTHER_CFLAGS']
+          if build_config.build_settings['OTHER_CFLAGS'].is_a?(String)
+            build_config.build_settings['OTHER_CFLAGS'] = build_config.build_settings['OTHER_CFLAGS'].gsub(/-fmodule-map-file=[^\s]+/, '')
+          elsif build_config.build_settings['OTHER_CFLAGS'].is_a?(Array)
+            build_config.build_settings['OTHER_CFLAGS'] = build_config.build_settings['OTHER_CFLAGS'].reject { |flag| flag.to_s.include?('-fmodule-map-file=') && flag.to_s.include?('react_runtime') }
+          end
+        end
+        
+        # Fix gRPC-C++ modulemap path
+        if target.name == 'gRPC-C++'
           other_cflags = build_config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
           if other_cflags.is_a?(String)
             fixed_flags = other_cflags.gsub(
@@ -54,6 +79,14 @@ target 'MinimumStandardsMobile' do
           end
         end
       end
+    end
+    
+    # Fix react_runtime module map redefinition issue
+    # Remove duplicate module maps from Headers/Public
+    react_runtime_modulemap = File.join(installer.sandbox.root, 'Headers/Public/react_runtime/React-jsitooling.modulemap')
+    if File.exist?(react_runtime_modulemap)
+      # Check if there's a conflict and remove the duplicate
+      File.delete(react_runtime_modulemap) rescue nil
     end
     
     # Also fix the xcconfig files directly
