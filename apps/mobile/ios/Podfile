@@ -5,6 +5,11 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
+require 'fileutils'
+
+ruby_compat_dir = File.expand_path('../ruby_compat', __dir__)
+$LOAD_PATH.unshift(ruby_compat_dir) unless $LOAD_PATH.include?(ruby_compat_dir)
+
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
@@ -51,15 +56,6 @@ target 'MinimumStandardsMobile' do
         # Fix for module map issues
         build_config.build_settings['SWIFT_VERSION'] = '5.0'
         
-        # Remove problematic module map flags that might cause conflicts
-        if build_config.build_settings['OTHER_CFLAGS']
-          if build_config.build_settings['OTHER_CFLAGS'].is_a?(String)
-            build_config.build_settings['OTHER_CFLAGS'] = build_config.build_settings['OTHER_CFLAGS'].gsub(/-fmodule-map-file=[^\s]+/, '')
-          elsif build_config.build_settings['OTHER_CFLAGS'].is_a?(Array)
-            build_config.build_settings['OTHER_CFLAGS'] = build_config.build_settings['OTHER_CFLAGS'].reject { |flag| flag.to_s.include?('-fmodule-map-file=') && flag.to_s.include?('react_runtime') }
-          end
-        end
-        
         # Fix gRPC-C++ modulemap path
         if target.name == 'gRPC-C++'
           other_cflags = build_config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
@@ -82,11 +78,21 @@ target 'MinimumStandardsMobile' do
     end
     
     # Fix react_runtime module map redefinition issue
-    # Remove duplicate module maps from Headers/Public
+    # Only React-RuntimeCore module map should live under react_runtime headers
     react_runtime_modulemap = File.join(installer.sandbox.root, 'Headers/Public/react_runtime/React-jsitooling.modulemap')
-    if File.exist?(react_runtime_modulemap)
-      # Check if there's a conflict and remove the duplicate
-      File.delete(react_runtime_modulemap) rescue nil
+    File.delete(react_runtime_modulemap) if File.exist?(react_runtime_modulemap)
+
+    # Remove stale references to the deleted module map from xcconfig files
+    Dir.glob(File.join(installer.sandbox.root, 'Target Support Files', '**', '*.xcconfig')).each do |xcconfig_path|
+      text = File.read(xcconfig_path)
+      updated = text.gsub(/ ?-fmodule-map-file="\$\{PODS_ROOT\}\/Headers\/Public\/react_runtime\/React-jsitooling\.modulemap"/, '')
+      updated = updated.gsub(/ ?-Xcc -fmodule-map-file="\$\{PODS_ROOT\}\/Headers\/Public\/react_runtime\/React-jsitooling\.modulemap"/, '')
+
+      if updated != text
+        # Collapse duplicate spaces that may be left behind
+        updated = updated.gsub(/  +/, ' ')
+        File.write(xcconfig_path, updated)
+      end
     end
     
     # Also fix the xcconfig files directly
@@ -108,6 +114,14 @@ target 'MinimumStandardsMobile' do
         '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
       )
       File.write(xcconfig_path, text)
+    end
+
+    # Ensure legacy gRPC module map path exists for targets that still reference it
+    grpc_modulemap_src = File.join(installer.sandbox.root, 'gRPC-Core/include/grpc/module.modulemap')
+    grpc_modulemap_dst = File.join(installer.sandbox.root, 'Headers/Private/grpc/gRPC-Core.modulemap')
+    if File.exist?(grpc_modulemap_src)
+      FileUtils.mkdir_p(File.dirname(grpc_modulemap_dst))
+      FileUtils.cp(grpc_modulemap_src, grpc_modulemap_dst)
     end
   end
 end
