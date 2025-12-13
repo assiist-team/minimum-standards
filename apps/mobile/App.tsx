@@ -11,11 +11,14 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ActiveStandardsDashboardScreen } from './src/screens/ActiveStandardsDashboardScreen';
 import { ActivityLibraryScreen } from './src/screens/ActivityLibraryScreen';
 import { StandardsBuilderScreen } from './src/screens/StandardsBuilderScreen';
+import { StandardsLibraryScreen } from './src/screens/StandardsLibraryScreen';
 import { ArchivedStandardsScreen } from './src/screens/ArchivedStandardsScreen';
 import { LogEntryModal } from './src/components/LogEntryModal';
 import { useStandards } from './src/hooks/useStandards';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { SyncStatusBanner } from './src/components/SyncStatusBanner';
 
-type RootView = 'home' | 'library' | 'builder' | 'archived' | 'dashboard';
+type RootView = 'home' | 'library' | 'builder' | 'archived' | 'dashboard' | 'standardsLibrary';
 
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
@@ -40,6 +43,8 @@ function App() {
             onLaunchBuilder={() => setView('builder')}
           />
         );
+      case 'standardsLibrary':
+        return <StandardsLibraryScreen onBack={() => setView('home')} />;
       default:
         return <HomeScreen onNavigate={setView} />;
     }
@@ -48,7 +53,12 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <SafeAreaView style={styles.safeArea}>{content}</SafeAreaView>
+      <SafeAreaView style={styles.safeArea}>
+        <ErrorBoundary>
+          <SyncStatusBanner />
+          {content}
+        </ErrorBoundary>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
@@ -101,6 +111,15 @@ function HomeScreen({ onNavigate }: { onNavigate: (next: RootView) => void }) {
         <Text style={styles.homeButtonText}>Standards Builder</Text>
         <Text style={styles.homeButtonHint}>
           Select activities from the builder flow.
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.homeButton}
+        onPress={() => onNavigate('standardsLibrary')}
+      >
+        <Text style={styles.homeButtonText}>Standards Library</Text>
+        <Text style={styles.homeButtonHint}>
+          View, search, and manage all your standards.
         </Text>
       </TouchableOpacity>
       <TouchableOpacity

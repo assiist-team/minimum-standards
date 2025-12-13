@@ -31,5 +31,50 @@ target 'MinimumStandardsMobile' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Fix gRPC-C++ modulemap path - the podspec references a path that doesn't exist
+    # Update both Xcode project settings and xcconfig files
+    installer.pods_project.targets.each do |target|
+      if target.name == 'gRPC-C++'
+        target.build_configurations.each do |build_config|
+          other_cflags = build_config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
+          if other_cflags.is_a?(String)
+            fixed_flags = other_cflags.gsub(
+              '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap',
+              '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
+            )
+            build_config.build_settings['OTHER_CFLAGS'] = fixed_flags
+          elsif other_cflags.is_a?(Array)
+            build_config.build_settings['OTHER_CFLAGS'] = other_cflags.map do |flag|
+              flag.gsub(
+                '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap',
+                '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
+              )
+            end
+          end
+        end
+      end
+    end
+    
+    # Also fix the xcconfig files directly
+    xcconfig_path = File.join(installer.sandbox.root, 'Target Support Files/gRPC-C++/gRPC-C++.debug.xcconfig')
+    if File.exist?(xcconfig_path)
+      text = File.read(xcconfig_path)
+      text.gsub!(
+        '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap',
+        '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
+      )
+      File.write(xcconfig_path, text)
+    end
+    
+    xcconfig_path = File.join(installer.sandbox.root, 'Target Support Files/gRPC-C++/gRPC-C++.release.xcconfig')
+    if File.exist?(xcconfig_path)
+      text = File.read(xcconfig_path)
+      text.gsub!(
+        '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap',
+        '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
+      )
+      File.write(xcconfig_path, text)
+    end
   end
 end

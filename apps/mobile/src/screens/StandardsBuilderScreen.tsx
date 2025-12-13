@@ -17,6 +17,7 @@ import {
   Platform,
 } from 'react-native';
 import { ActivityLibraryModal } from '../components/ActivityLibraryModal';
+import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
 import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
 import {
   CADENCE_PRESETS,
@@ -25,7 +26,10 @@ import {
   validateCadence,
 } from '../utils/cadenceUtils';
 import { useStandards } from '../hooks/useStandards';
+import { useActivities } from '../hooks/useActivities';
+import { findMatchingStandard } from '../utils/standardsFilter';
 import { trackStandardEvent } from '../utils/analytics';
+import { Standard } from '@minimum-standards/shared-model';
 
 export interface StandardsBuilderScreenProps {
   onBack: () => void;
@@ -50,8 +54,10 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     reset,
   } = useStandardsBuilderStore();
 
-  const { createStandard } = useStandards();
+  const { createStandard, standards, unarchiveStandard } = useStandards();
+  const { activities } = useActivities();
   const [libraryVisible, setLibraryVisible] = useState(false);
+  const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
   const [activePreset, setActivePreset] = useState<CadencePreset | null>('weekly');
   const [customIntervalInput, setCustomIntervalInput] = useState('1');
   const [customUnit, setCustomUnit] = useState<CadenceUnit>('week');
@@ -65,6 +71,18 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   const handleActivitySelect = (activity: Activity) => {
     setSelectedActivity(activity);
     setLibraryVisible(false);
+  };
+
+  const handleStandardSelect = (standard: Standard) => {
+    // Find the activity by activityId
+    const activity = activities.find((a) => a.id === standard.activityId);
+    if (activity) {
+      setSelectedActivity(activity);
+    }
+    setCadence(standard.cadence);
+    setMinimum(standard.minimum);
+    setUnitOverride(standard.unit);
+    setStandardsLibraryVisible(false);
   };
 
   const handlePresetPress = useCallback(
@@ -164,23 +182,52 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       return;
     }
 
+    // Check for duplicate Standard
+    const matchingStandard = findMatchingStandard(
+      standards,
+      payload.activityId,
+      payload.cadence,
+      payload.minimum,
+      payload.unit
+    );
+
     setSaving(true);
     try {
-      await createStandard({
-        ...payload,
-        isArchived,
-      });
-      trackStandardEvent('standard_create', {
-        activityId: payload.activityId,
-        archived: isArchived,
-        cadence: payload.cadence,
-      });
-      if (isArchived) {
-        trackStandardEvent('standard_archive', {
-          activityId: payload.activityId,
+      if (matchingStandard) {
+        // If duplicate found and archived: unarchive it
+        if (
+          matchingStandard.state === 'archived' ||
+          matchingStandard.archivedAtMs !== null
+        ) {
+          await unarchiveStandard(matchingStandard.id);
+          Alert.alert(
+            'Standard activated',
+            'An existing archived Standard has been activated.'
+          );
+        } else {
+          // If duplicate found and active: show error
+          setSaveError('A Standard with these values already exists');
+          setSaving(false);
+          return;
+        }
+      } else {
+        // No duplicate found: create new Standard
+        await createStandard({
+          ...payload,
+          isArchived,
         });
+        trackStandardEvent('standard_create', {
+          activityId: payload.activityId,
+          archived: isArchived,
+          cadence: payload.cadence,
+        });
+        if (isArchived) {
+          trackStandardEvent('standard_archive', {
+            activityId: payload.activityId,
+          });
+        }
+        Alert.alert('Standard saved', 'Your Standard has been saved successfully.');
       }
-      Alert.alert('Standard saved', 'Your Standard has been saved successfully.');
       resetForm();
     } catch (err) {
       setSaveError(
@@ -251,14 +298,24 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
             </Text>
           )}
 
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => setLibraryVisible(true)}
-          >
-            <Text style={styles.primaryButtonText}>
-              {selectedActivity ? 'Change Activity' : 'Open Activity Library'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => setLibraryVisible(true)}
+            >
+              <Text style={styles.primaryButtonText}>
+                {selectedActivity ? 'Change Activity' : 'Open Activity Library'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => setStandardsLibraryVisible(true)}
+            >
+              <Text style={styles.secondaryButtonText}>
+                Select from Existing Standard
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -386,6 +443,11 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         visible={libraryVisible}
         onClose={() => setLibraryVisible(false)}
         onSelectActivity={handleActivitySelect}
+      />
+      <StandardsLibraryModal
+        visible={standardsLibraryVisible}
+        onClose={() => setStandardsLibraryVisible(false)}
+        onSelectStandard={handleStandardSelect}
       />
     </KeyboardAvoidingView>
   );
@@ -577,6 +639,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6b7280',
     marginTop: 4,
+  },
+  buttonRow: {
+    flexDirection: 'column',
+    gap: 12,
   },
   actionsRow: {
     flexDirection: 'row',

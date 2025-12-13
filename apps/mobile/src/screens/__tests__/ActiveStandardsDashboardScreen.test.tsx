@@ -144,6 +144,40 @@ describe('ActiveStandardsDashboardScreen', () => {
     expect(refreshStandards).toHaveBeenCalled();
   });
 
+  test('displays computed period labels instead of generic fallback', () => {
+    const standardWithoutProgress: DashboardStandard = {
+      standard: {
+        id: 'std-2',
+        activityId: 'Test Activity',
+        minimum: 50,
+        unit: 'units',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '50 units / week',
+        archivedAtMs: null,
+        createdAtMs: 1,
+        updatedAtMs: 1,
+        deletedAtMs: null,
+      },
+      pinned: false,
+      progress: null, // No progress data
+    };
+
+    setupHook({ dashboardStandards: [standardWithoutProgress] });
+    const { getByText } = render(
+      <ActiveStandardsDashboardScreen
+        onBack={jest.fn()}
+        onLaunchBuilder={jest.fn()}
+      />
+    );
+
+    // Should show computed period label (date range), not "Current period"
+    const periodText = getByText(/December|January|February|March|April|May|June|July|August|September|October|November/i);
+    expect(periodText).toBeTruthy();
+    // Should NOT contain generic "Current period" text
+    expect(() => getByText('Current period')).toThrow();
+  });
+
   test('renders standards in provided order with pinned indicator', () => {
     setupHook({
       dashboardStandards: [

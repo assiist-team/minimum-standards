@@ -10,10 +10,12 @@ import {
   useColorScheme,
 } from 'react-native';
 import type { Standard } from '@minimum-standards/shared-model';
+import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboard';
 import type { DashboardStandard } from '../hooks/useActiveStandardsDashboard';
 import { trackStandardEvent } from '../utils/analytics';
 import { LogEntryModal } from '../components/LogEntryModal';
+import { ErrorBanner } from '../components/ErrorBanner';
 
 export interface ActiveStandardsDashboardScreenProps {
   onBack: () => void;
@@ -263,16 +265,7 @@ export function ActiveStandardsDashboardScreen({
         <View style={styles.headerSpacer} />
       </View>
 
-      {error && (
-        <View style={[styles.errorBanner, isDark && styles.errorBannerDark]}>
-          <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
-            {error.message || 'Something went wrong'}
-          </Text>
-          <TouchableOpacity onPress={handleRetry}>
-            <Text style={[styles.retryText, isDark && styles.retryTextDark]}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <ErrorBanner error={error} onRetry={handleRetry} />
 
       {content}
 
@@ -304,7 +297,15 @@ function StandardCard({
   const status = progress?.status ?? 'In Progress';
   const colors = getStatusColors(isDark)[status] ?? getStatusColors(isDark)['In Progress'];
   const percent = progress?.progressPercent ?? 0;
-  const periodLabel = progress?.periodLabel ?? 'Current period';
+  
+  // Compute period label if not available in progress
+  const periodLabel = progress?.periodLabel ?? (() => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+    const nowMs = Date.now();
+    const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+    return window.label;
+  })();
+  
   const targetSummary = progress?.targetSummary ?? standard.summary;
   const currentFormatted = progress?.currentTotalFormatted ?? '—';
   const detailLine = `${periodLabel} · ${currentFormatted} / ${targetSummary}`;
@@ -401,33 +402,6 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 64,
-  },
-  errorBanner: {
-    backgroundColor: '#FDECEA',
-    padding: 12,
-    margin: CARD_SPACING,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  errorBannerDark: {
-    backgroundColor: '#3E1E1E',
-  },
-  errorText: {
-    color: '#9B1C1C',
-    flex: 1,
-    marginRight: 12,
-  },
-  errorTextDark: {
-    color: '#EF5350',
-  },
-  retryText: {
-    color: '#0F62FE',
-    fontWeight: '600',
-  },
-  retryTextDark: {
-    color: '#64B5F6',
   },
   skeletonContainer: {
     padding: CARD_SPACING,

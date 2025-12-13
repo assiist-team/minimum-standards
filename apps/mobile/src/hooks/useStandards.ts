@@ -19,6 +19,8 @@ import {
   sanitizePinOrder,
   togglePin,
 } from '../utils/dashboardPins';
+import { FirestoreError, normalizeFirebaseError } from '../utils/errors';
+import { retryFirestoreWrite } from '../utils/retry';
 
 export interface CreateStandardInput {
   activityId: string;
@@ -183,7 +185,8 @@ export function useStandards(): UseStandardsResult {
         }
       },
       (err) => {
-        setStandardsError(err);
+        const normalizedError = normalizeFirebaseError(err);
+        setStandardsError(normalizedError);
         setStandardsLoading(false);
       }
     );
@@ -210,7 +213,8 @@ export function useStandards(): UseStandardsResult {
               updatedAt: firestore.FieldValue.serverTimestamp(),
             })
             .catch((err) => {
-              setPinsError(err);
+              const normalizedError = normalizeFirebaseError(err);
+              setPinsError(normalizedError);
             })
             .finally(() => setPinsLoading(false));
           return;
@@ -228,7 +232,8 @@ export function useStandards(): UseStandardsResult {
         setPinsLoading(false);
       },
       (err) => {
-        setPinsError(err);
+        const normalizedError = normalizeFirebaseError(err);
+        setPinsError(normalizedError);
         setPinsLoading(false);
       }
     );
@@ -276,7 +281,10 @@ export function useStandards(): UseStandardsResult {
         },
         { merge: true }
       )
-      .catch((err) => setPinsError(err));
+      .catch((err) => {
+        const normalizedError = normalizeFirebaseError(err);
+        setPinsError(normalizedError);
+      });
   }, [dashboardPinsRef, pinState.pinnedStandardIds, activeStandards]);
 
   const createStandard = useCallback(
@@ -315,8 +323,12 @@ export function useStandards(): UseStandardsResult {
         deletedAt: null,
       };
 
-      await docRef.set(payload);
-      const snapshot = await docRef.get();
+      await retryFirestoreWrite(async () => {
+        await docRef.set(payload);
+      });
+      const snapshot = await retryFirestoreWrite(async () => {
+        return await docRef.get();
+      });
       const created = fromFirestoreStandard(
         snapshot.id,
         snapshot.data() as FirestoreStandardData
@@ -338,12 +350,14 @@ export function useStandards(): UseStandardsResult {
         .collection('standards')
         .doc(standardId);
 
-      await standardRef.update({
-        state: shouldArchive ? 'archived' : 'active',
-        archivedAt: shouldArchive
-          ? firestore.FieldValue.serverTimestamp()
-          : null,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+      await retryFirestoreWrite(async () => {
+        await standardRef.update({
+          state: shouldArchive ? 'archived' : 'active',
+          archivedAt: shouldArchive
+            ? firestore.FieldValue.serverTimestamp()
+            : null,
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+        });
       });
     },
     [userId]
@@ -392,15 +406,17 @@ export function useStandards(): UseStandardsResult {
         .collection('activityLogs')
         .doc();
 
-      await logsRef.set({
-        standardId,
-        value,
-        occurredAt: firestore.Timestamp.fromMillis(occurredAtMs),
-        note,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
-        editedAt: null,
-        deletedAt: null,
+      await retryFirestoreWrite(async () => {
+        await logsRef.set({
+          standardId,
+          value,
+          occurredAt: firestore.Timestamp.fromMillis(occurredAtMs),
+          note,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+          editedAt: null,
+          deletedAt: null,
+        });
       });
     },
     [userId, standards, canLogStandard]
@@ -424,12 +440,14 @@ export function useStandards(): UseStandardsResult {
         .collection('activityLogs')
         .doc(logEntryId);
 
-      await logRef.update({
-        value,
-        occurredAt: firestore.Timestamp.fromMillis(occurredAtMs),
-        note,
-        editedAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+      await retryFirestoreWrite(async () => {
+        await logRef.update({
+          value,
+          occurredAt: firestore.Timestamp.fromMillis(occurredAtMs),
+          note,
+          editedAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+        });
       });
     },
     [userId, canLogStandard]
@@ -453,9 +471,11 @@ export function useStandards(): UseStandardsResult {
         .collection('activityLogs')
         .doc(logEntryId);
 
-      await logRef.update({
-        deletedAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+      await retryFirestoreWrite(async () => {
+        await logRef.update({
+          deletedAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+        });
       });
     },
     [userId, canLogStandard]
@@ -479,9 +499,11 @@ export function useStandards(): UseStandardsResult {
         .collection('activityLogs')
         .doc(logEntryId);
 
-      await logRef.update({
-        deletedAt: null,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+      await retryFirestoreWrite(async () => {
+        await logRef.update({
+          deletedAt: null,
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+        });
       });
     },
     [userId, canLogStandard]
@@ -492,13 +514,15 @@ export function useStandards(): UseStandardsResult {
       if (!dashboardPinsRef) {
         throw new Error('User not authenticated');
       }
-      await dashboardPinsRef.set(
-        {
-          pinnedStandardIds: nextOrder,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+      await retryFirestoreWrite(async () => {
+        await dashboardPinsRef.set(
+          {
+            pinnedStandardIds: nextOrder,
+            updatedAt: firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      });
     },
     [dashboardPinsRef]
   );
@@ -518,8 +542,9 @@ export function useStandards(): UseStandardsResult {
       try {
         await persistPins(nextOrder);
       } catch (err) {
-        setPinsError(err instanceof Error ? err : new Error('Pin failed'));
-        throw err;
+        const normalizedError = normalizeFirebaseError(err);
+        setPinsError(normalizedError);
+        throw normalizedError;
       }
     },
     [dashboardPinsRef, persistPins]
@@ -540,8 +565,9 @@ export function useStandards(): UseStandardsResult {
       try {
         await persistPins(nextOrder);
       } catch (err) {
-        setPinsError(err instanceof Error ? err : new Error('Unpin failed'));
-        throw err;
+        const normalizedError = normalizeFirebaseError(err);
+        setPinsError(normalizedError);
+        throw normalizedError;
       }
     },
     [dashboardPinsRef, persistPins]
@@ -562,8 +588,9 @@ export function useStandards(): UseStandardsResult {
       try {
         await persistPins(nextOrder);
       } catch (err) {
-        setPinsError(err instanceof Error ? err : new Error('Reorder failed'));
-        throw err;
+        const normalizedError = normalizeFirebaseError(err);
+        setPinsError(normalizedError);
+        throw normalizedError;
       }
     },
     [dashboardPinsRef, persistPins]

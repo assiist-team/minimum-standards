@@ -3,6 +3,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { StandardsBuilderScreen } from '../StandardsBuilderScreen';
 import { useStandardsBuilderStore } from '../../stores/standardsBuilderStore';
 import { useStandards } from '../../hooks/useStandards';
+import { useActivities } from '../../hooks/useActivities';
+import { findMatchingStandard } from '../../utils/standardsFilter';
 import type { Activity, Standard } from '@minimum-standards/shared-model';
 import { Alert } from 'react-native';
 
@@ -14,8 +16,26 @@ jest.mock('../../components/ActivityLibraryModal', () => ({
   ActivityLibraryModal: jest.fn(() => null),
 }));
 
+jest.mock('../../components/StandardsLibraryModal', () => ({
+  StandardsLibraryModal: jest.fn(() => null),
+}));
+
+jest.mock('../../hooks/useActivities', () => ({
+  useActivities: jest.fn(),
+}));
+
+jest.mock('../../utils/standardsFilter', () => ({
+  findMatchingStandard: jest.fn(),
+}));
+
 const mockUseStandards = useStandards as jest.MockedFunction<
   typeof useStandards
+>;
+const mockUseActivities = useActivities as jest.MockedFunction<
+  typeof useActivities
+>;
+const mockFindMatchingStandard = findMatchingStandard as jest.MockedFunction<
+  typeof findMatchingStandard
 >;
 
 const mockActivity: Activity = {
@@ -57,6 +77,9 @@ function setupHook(
     archiveStandard: jest.fn(),
     unarchiveStandard: jest.fn(),
     createLogEntry: jest.fn(),
+    updateLogEntry: jest.fn(),
+    deleteLogEntry: jest.fn(),
+    restoreLogEntry: jest.fn(),
     canLogStandard: jest.fn().mockReturnValue(true),
     pinStandard: jest.fn(),
     unpinStandard: jest.fn(),
@@ -68,12 +91,35 @@ function setupHook(
   return hookValue;
 }
 
+function setupActivitiesHook(
+  overrides: Partial<ReturnType<typeof useActivities>> = {}
+) {
+  const hookValue: ReturnType<typeof useActivities> = {
+    activities: [mockActivity],
+    recentActivities: [],
+    loading: false,
+    error: null,
+    searchQuery: '',
+    setSearchQuery: jest.fn(),
+    createActivity: jest.fn(),
+    updateActivity: jest.fn(),
+    deleteActivity: jest.fn(),
+    restoreActivity: jest.fn(),
+    ...overrides,
+  };
+
+  mockUseActivities.mockReturnValue(hookValue);
+  return hookValue;
+}
+
 describe('StandardsBuilderScreen', () => {
   let alertSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.clearAllMocks();
     setupHook();
+    setupActivitiesHook();
+    mockFindMatchingStandard.mockReturnValue(undefined);
     useStandardsBuilderStore.getState().reset();
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => 0);
   });
@@ -124,5 +170,91 @@ describe('StandardsBuilderScreen', () => {
         cadence: { interval: 1, unit: 'week' },
       })
     );
+  });
+
+  // Task Group 4: Pre-fill and duplicate prevention tests
+  test('renders "Select from Existing Standard" button', () => {
+    const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
+    expect(getByText('Select from Existing Standard')).toBeTruthy();
+  });
+
+  test('pre-fills form when standard is selected', () => {
+    const { StandardsLibraryModal } = require('../../components/StandardsLibraryModal');
+    const mockOnSelectStandard = jest.fn();
+    StandardsLibraryModal.mockImplementation(({ onSelectStandard }: any) => {
+      // Simulate selecting a standard
+      React.useEffect(() => {
+        onSelectStandard(mockStandard);
+      }, []);
+      return null;
+    });
+
+    render(<StandardsBuilderScreen onBack={jest.fn()} />);
+
+    const store = useStandardsBuilderStore.getState();
+    expect(store.selectedActivity).toEqual(mockActivity);
+    expect(store.cadence).toEqual(mockStandard.cadence);
+    expect(store.minimum).toEqual(mockStandard.minimum);
+    expect(store.unitOverride).toEqual(mockStandard.unit);
+  });
+
+  test('unarchives existing standard when duplicate found and archived', async () => {
+    const archivedStandard: Standard = {
+      ...mockStandard,
+      state: 'archived',
+      archivedAtMs: 2000,
+    };
+    const hookValue = setupHook({ standards: [archivedStandard] });
+    mockFindMatchingStandard.mockReturnValue(archivedStandard);
+
+    useStandardsBuilderStore.getState().setSelectedActivity(mockActivity);
+    useStandardsBuilderStore.getState().setCadence(mockStandard.cadence);
+    useStandardsBuilderStore.getState().setMinimum(mockStandard.minimum);
+    useStandardsBuilderStore.getState().setUnitOverride(mockStandard.unit);
+
+    const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
+    fireEvent.press(getByText('Save Standard'));
+
+    await waitFor(() => {
+      expect(hookValue.unarchiveStandard).toHaveBeenCalledWith(archivedStandard.id);
+      expect(hookValue.createStandard).not.toHaveBeenCalled();
+    });
+  });
+
+  test('shows error when duplicate active standard found', async () => {
+    const hookValue = setupHook({ standards: [mockStandard] });
+    mockFindMatchingStandard.mockReturnValue(mockStandard);
+
+    useStandardsBuilderStore.getState().setSelectedActivity(mockActivity);
+    useStandardsBuilderStore.getState().setCadence(mockStandard.cadence);
+    useStandardsBuilderStore.getState().setMinimum(mockStandard.minimum);
+    useStandardsBuilderStore.getState().setUnitOverride(mockStandard.unit);
+
+    const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
+    fireEvent.press(getByText('Save Standard'));
+
+    await waitFor(() => {
+      expect(getByText('A Standard with these values already exists')).toBeTruthy();
+      expect(hookValue.createStandard).not.toHaveBeenCalled();
+      expect(hookValue.unarchiveStandard).not.toHaveBeenCalled();
+    });
+  });
+
+  test('creates new standard when no duplicate found', async () => {
+    const hookValue = setupHook();
+    mockFindMatchingStandard.mockReturnValue(undefined);
+
+    useStandardsBuilderStore.getState().setSelectedActivity(mockActivity);
+    useStandardsBuilderStore.getState().setCadence(mockStandard.cadence);
+    useStandardsBuilderStore.getState().setMinimum(mockStandard.minimum);
+    useStandardsBuilderStore.getState().setUnitOverride(mockStandard.unit);
+
+    const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
+    fireEvent.press(getByText('Save Standard'));
+
+    await waitFor(() => {
+      expect(hookValue.createStandard).toHaveBeenCalled();
+      expect(hookValue.unarchiveStandard).not.toHaveBeenCalled();
+    });
   });
 });

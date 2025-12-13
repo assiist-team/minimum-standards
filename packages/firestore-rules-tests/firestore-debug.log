@@ -2,7 +2,7 @@ WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
 WARNING: sun.misc.Unsafe::objectFieldOffset has been called by io.netty.util.internal.PlatformDependent0$4 (file:/Users/benjaminmackenzie/.cache/firebase/emulators/cloud-firestore-emulator-v1.19.8.jar)
 WARNING: Please consider reporting this to the maintainers of class io.netty.util.internal.PlatformDependent0$4
 WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release
-Dec 12, 2025 2:08:56 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
+Dec 12, 2025 2:48:39 PM com.google.cloud.datastore.emulator.firestore.websocket.WebSocketServer start
 INFO: Started WebSocket server on ws://127.0.0.1:9151
 API endpoint: http://127.0.0.1:8081
 If you are using a library that supports the FIRESTORE_EMULATOR_HOST environment variable, run:
@@ -16,13 +16,13 @@ If you are running a Firestore in Datastore Mode project, run:
 Note: Support for Datastore Mode is in preview. If you encounter any bugs please file at https://github.com/firebase/firebase-tools/issues.
 Dev App Server is now running.
 
-Dec 12, 2025 2:09:00 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Dec 12, 2025 2:48:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected non-HTTP/2 connection.
-Dec 12, 2025 2:09:00 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Dec 12, 2025 2:48:43 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Dec 12, 2025 2:09:01 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Dec 12, 2025 2:48:44 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Dec 12, 2025 2:09:02 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Dec 12, 2025 2:48:44 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 evaluation error at L184:26 for 'create' @ L184, evaluation error at L185:26 for 'update' @ L185, false for 'create' @ L184
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -53,7 +53,7 @@ evaluation error at L184:26 for 'create' @ L184, evaluation error at L185:26 for
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
 	at java.base/java.lang.Thread.run(Thread.java:1474)
 
-Dec 12, 2025 2:09:02 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Dec 12, 2025 2:48:44 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 evaluation error at L198:26 for 'create' @ L198, evaluation error at L199:26 for 'update' @ L199, false for 'create' @ L198
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -84,7 +84,7 @@ evaluation error at L198:26 for 'create' @ L198, evaluation error at L199:26 for
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
 	at java.base/java.lang.Thread.run(Thread.java:1474)
 
-Dec 12, 2025 2:09:02 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Dec 12, 2025 2:48:44 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 evaluation error at L191:26 for 'create' @ L191, evaluation error at L192:26 for 'update' @ L192, false for 'update' @ L192
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -115,9 +115,9 @@ evaluation error at L191:26 for 'create' @ L191, evaluation error at L192:26 for
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
 	at java.base/java.lang.Thread.run(Thread.java:1474)
 
-Dec 12, 2025 2:09:02 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Dec 12, 2025 2:48:44 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
-Dec 12, 2025 2:09:02 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Dec 12, 2025 2:48:45 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 evaluation error at L199:26 for 'update' @ L199, false for 'update' @ L199
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -148,7 +148,7 @@ evaluation error at L199:26 for 'update' @ L199, false for 'update' @ L199
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
 	at java.base/java.lang.Thread.run(Thread.java:1474)
 
-Dec 12, 2025 2:09:02 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
+Dec 12, 2025 2:48:45 PM com.google.cloud.datastore.emulator.impl.util.WrappedStreamObserver onError
 WARNING: Operation failed: 
 evaluation error at L199:26 for 'update' @ L199, false for 'update' @ L199
 com.google.cloud.datastore.core.exception.DatastoreException: 
@@ -179,7 +179,7 @@ evaluation error at L199:26 for 'update' @ L199, false for 'update' @ L199
 	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
 	at java.base/java.lang.Thread.run(Thread.java:1474)
 
-Dec 12, 2025 2:09:03 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
+Dec 12, 2025 2:48:45 PM io.gapi.emulators.netty.HttpVersionRoutingHandler channelRead
 INFO: Detected HTTP/2 connection.
 *** shutting down gRPC server since JVM is shutting down
 *** server shut down

@@ -115,6 +115,25 @@ describe('PeriodLogsModal', () => {
     expect(getByText('Week of Dec 8')).toBeTruthy();
   });
 
+  test('displays computed period label prominently in header', () => {
+    setupHook({ logs: mockLogs });
+    const computedLabel = 'December 9, 2024 - December 15, 2024';
+    const { getByText } = render(
+      <PeriodLogsModal
+        visible={true}
+        standardId="std-1"
+        periodStartMs={1702008000000}
+        periodEndMs={1702612800000}
+        periodLabel={computedLabel}
+        onClose={jest.fn()}
+      />
+    );
+    // Period label should be displayed prominently in the modal header
+    expect(getByText(computedLabel)).toBeTruthy();
+    // Should NOT contain generic "Current period" text
+    expect(() => getByText('Current period')).toThrow();
+  });
+
   test('modal displays logs list with value, occurred date/time, note', () => {
     setupHook({ logs: mockLogs });
     const { getByText, getAllByText } = render(

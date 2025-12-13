@@ -83,4 +83,34 @@ describe('buildDashboardProgressMap', () => {
 
     expect(progress['std-1'].status).toBe('Missed');
   });
+
+  test('zero values display correctly in period totals', () => {
+    const now = new Date('2025-12-10T12:00:00Z').getTime();
+    const logs = [
+      {
+        id: 'log-1',
+        standardId: 'std-1',
+        value: 0,
+        occurredAtMs: new Date('2025-12-09T00:00:00Z').getTime(),
+      },
+      {
+        id: 'log-2',
+        standardId: 'std-1',
+        value: 0,
+        occurredAtMs: new Date('2025-12-09T12:00:00Z').getTime(),
+      },
+    ];
+
+    const progress = buildDashboardProgressMap({
+      standards: [standard({ minimum: 1000 })],
+      logs,
+      timezone: 'UTC',
+      nowMs: now,
+    });
+
+    expect(progress['std-1'].currentTotal).toBe(0);
+    expect(progress['std-1'].currentTotalFormatted).toBe('0');
+    expect(progress['std-1'].progressPercent).toBe(0);
+    expect(progress['std-1'].status).toBe('In Progress'); // Current period, not ended yet
+  });
 });

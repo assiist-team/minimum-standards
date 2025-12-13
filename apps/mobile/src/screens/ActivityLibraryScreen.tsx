@@ -12,6 +12,7 @@ import {
 import { useActivities } from '../hooks/useActivities';
 import { ActivityModal } from '../components/ActivityModal';
 import { Activity } from '@minimum-standards/shared-model';
+import { ErrorBanner } from '../components/ErrorBanner';
 
 /**
  * Standalone Activity Library screen.
@@ -184,16 +185,9 @@ export function ActivityLibraryScreen({
     </View>
   );
 
-  if (error) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Error: {error.message}</Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
+      <ErrorBanner error={error} />
       {onClose && (
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Activity Library</Text>
@@ -484,12 +478,6 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#d32f2f',
-  },
-  errorText: {
-    color: '#ff4444',
-    fontSize: 16,
-    padding: 16,
-    textAlign: 'center',
   },
   snackbar: {
     position: 'absolute',

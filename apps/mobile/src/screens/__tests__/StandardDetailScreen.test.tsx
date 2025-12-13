@@ -501,5 +501,54 @@ describe('StandardDetailScreen', () => {
       const logButton = getByText('Log');
       expect(() => fireEvent.press(logButton)).not.toThrow();
     });
+
+    test('displays computed period label in summary instead of generic fallback', () => {
+      const { useStandardHistory } = require('../../hooks/useStandardHistory');
+      const { useStandards } = require('../../hooks/useStandards');
+
+      useStandardHistory.mockReturnValue({
+        history: [], // No history, so currentPeriodProgress will be null
+        loading: false,
+        error: null,
+        refresh: jest.fn(),
+      });
+
+      useStandards.mockReturnValue({
+        standards: [
+          {
+            id: 'std-1',
+            activityId: 'Test Activity',
+            minimum: 50,
+            unit: 'units',
+            cadence: { interval: 1, unit: 'week' },
+            state: 'active',
+            summary: '50 units / week',
+            archivedAtMs: null,
+            createdAtMs: 1,
+            updatedAtMs: 1,
+            deletedAtMs: null,
+          },
+        ],
+        createLogEntry: jest.fn(),
+        updateLogEntry: jest.fn(),
+        archiveStandard: jest.fn(),
+        unarchiveStandard: jest.fn(),
+      });
+
+      const { getByText, queryByText } = render(
+        <StandardDetailScreen
+          standardId="std-1"
+          onBack={jest.fn()}
+          onEdit={jest.fn()}
+          onArchive={jest.fn()}
+        />
+      );
+
+      // Should show computed period label (date range), not "Current period"
+      const periodLabel = getByText(/December|January|February|March|April|May|June|July|August|September|October|November/i);
+      expect(periodLabel).toBeTruthy();
+      // Should NOT contain generic "Current period" text
+      expect(queryByText('Current period')).toBeNull();
+    });
   });
 });

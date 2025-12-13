@@ -8,6 +8,7 @@ import {
   useColorScheme,
 } from 'react-native';
 import type { Standard } from '@minimum-standards/shared-model';
+import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useStandardHistory } from '../hooks/useStandardHistory';
 import { useStandards } from '../hooks/useStandards';
 import { LogEntryModal } from '../components/LogEntryModal';
@@ -15,6 +16,7 @@ import { PeriodLogsModal } from '../components/PeriodLogsModal';
 import { PeriodHistoryList } from '../components/PeriodHistoryList';
 import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { trackStandardEvent } from '../utils/analytics';
+import { ErrorBanner } from '../components/ErrorBanner';
 
 const STATUS_COLORS_LIGHT: Record<string, { background: string; text: string; bar: string }> = {
   Met: { background: '#E6F4EA', text: '#1E8E3E', bar: '#1E8E3E' },
@@ -231,7 +233,15 @@ export function StandardDetailScreen({
   const status = currentPeriodProgress?.status ?? 'In Progress';
   const colors = getStatusColors(isDark)[status] ?? getStatusColors(isDark)['In Progress'];
   const percent = currentPeriodProgress?.progressPercent ?? 0;
-  const periodLabel = currentPeriodProgress?.periodLabel ?? 'Current period';
+  
+  // Compute period label if not available in currentPeriodProgress
+  const periodLabel = currentPeriodProgress?.periodLabel ?? (() => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+    const nowMs = Date.now();
+    const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+    return window.label;
+  })();
+  
   const targetSummary = currentPeriodProgress?.targetSummary ?? standard.summary;
   const currentFormatted = currentPeriodProgress
     ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(
@@ -251,16 +261,7 @@ export function StandardDetailScreen({
         <View style={styles.headerSpacer} />
       </View>
 
-      {error && (
-        <View style={[styles.errorBanner, isDark && styles.errorBannerDark]}>
-          <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
-            {error.message || 'Something went wrong'}
-          </Text>
-          <TouchableOpacity onPress={handleRetry}>
-            <Text style={[styles.retryText, isDark && styles.retryTextDark]}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+      <ErrorBanner error={error} onRetry={handleRetry} />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Current Period Summary */}
@@ -391,33 +392,6 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 64,
-  },
-  errorBanner: {
-    backgroundColor: '#FDECEA',
-    padding: 12,
-    margin: 16,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  errorBannerDark: {
-    backgroundColor: '#3E1E1E',
-  },
-  errorText: {
-    color: '#9B1C1C',
-    flex: 1,
-    marginRight: 12,
-  },
-  errorTextDark: {
-    color: '#EF5350',
-  },
-  retryText: {
-    color: '#0F62FE',
-    fontWeight: '600',
-  },
-  retryTextDark: {
-    color: '#64B5F6',
   },
   skeletonContainer: {
     padding: 16,

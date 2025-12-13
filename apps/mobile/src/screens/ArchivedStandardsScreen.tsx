@@ -9,6 +9,7 @@ import {
 import { Standard } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
 import { trackStandardEvent } from '../utils/analytics';
+import { ErrorBanner } from '../components/ErrorBanner';
 
 export interface ArchivedStandardsScreenProps {
   onBack: () => void;
@@ -36,7 +37,7 @@ function CadenceLine({ standard }: { standard: Standard }) {
 export function ArchivedStandardsScreen({
   onBack,
 }: ArchivedStandardsScreenProps) {
-  const { archivedStandards, unarchiveStandard } = useStandards();
+  const { archivedStandards, unarchiveStandard, error } = useStandards();
 
   const handleUnarchive = async (standard: Standard) => {
     await unarchiveStandard(standard.id);
@@ -96,6 +97,8 @@ export function ArchivedStandardsScreen({
         <Text style={styles.headerTitle}>Archived Standards</Text>
         <View style={styles.headerSpacer} />
       </View>
+
+      <ErrorBanner error={error} />
 
       {archivedStandards.length === 0 ? (
         <View style={styles.emptyState}>

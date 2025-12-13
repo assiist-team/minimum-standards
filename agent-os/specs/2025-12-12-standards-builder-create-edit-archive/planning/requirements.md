@@ -69,3 +69,4 @@ No visual assets provided.
 - Store and regenerate a normalized summary string whenever relevant Standard attributes change to ensure consistent display across the app.
 - Archived Standards must be flagged to disable logging attempts while still surfacing historical data.
 - Activity selection UI should integrate with existing Activity Library search and the reusable creation modal to prevent duplicate logic.
+
