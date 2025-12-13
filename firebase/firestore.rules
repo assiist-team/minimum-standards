@@ -44,7 +44,6 @@ service cloud.firestore {
       return hasOnlyKeys([
         'name',
         'unit',
-        'inputType',
         'createdAt',
         'updatedAt',
         'deletedAt'
@@ -56,7 +55,6 @@ service cloud.firestore {
       && request.resource.data.unit is string
       && request.resource.data.unit.size() >= 1
       && request.resource.data.unit.size() <= 40
-      && request.resource.data.inputType in ['number', 'yes_no']
       && isTimestamp(request.resource.data.createdAt)
       && isTimestamp(request.resource.data.updatedAt)
       && isOptionalTimestampField('deletedAt');
@@ -69,6 +67,9 @@ service cloud.firestore {
         'unit',
         'cadence',
         'state',
+        'summary',
+        'quickAddValues',
+        'archivedAt',
         'createdAt',
         'updatedAt',
         'deletedAt'
@@ -81,11 +82,36 @@ service cloud.firestore {
       && request.resource.data.unit is string
       && request.resource.data.unit.size() >= 1
       && request.resource.data.unit.size() <= 40
-      && request.resource.data.cadence in ['daily', 'weekly', 'monthly']
+      && (
+        !('quickAddValues' in request.resource.data)
+        || (
+          request.resource.data.quickAddValues is list
+          && request.resource.data.quickAddValues.size() <= 5
+        )
+      )
+      && request.resource.data.cadence is map
+      && request.resource.data.cadence.keys().hasOnly(['interval', 'unit'])
+      && request.resource.data.cadence.interval is int
+      && request.resource.data.cadence.interval > 0
+      && request.resource.data.cadence.unit in ['day', 'week', 'month']
       && request.resource.data.state in ['active', 'archived']
+      && request.resource.data.summary is string
+      && request.resource.data.summary.size() >= 1
+      && request.resource.data.summary.size() <= 200
       && isTimestamp(request.resource.data.createdAt)
       && isTimestamp(request.resource.data.updatedAt)
-      && isOptionalTimestampField('deletedAt');
+      && isOptionalTimestampField('deletedAt')
+      && isOptionalTimestampField('archivedAt');
+    }
+
+    // Block writes to Standards that remain archived, while allowing archive + unarchive transitions.
+    function canWriteStandard() {
+      let wasArchived = resource.data.archivedAt != null;
+      let willBeArchived = request.resource.data.archivedAt != null;
+
+      // Writes are always allowed while the standard is active (wasArchived == false).
+      // Once archived, the only permitted write is to clear archivedAt (unarchive).
+      return !wasArchived || !willBeArchived;
     }
 
     function validActivityLog() {
@@ -114,6 +140,40 @@ service cloud.firestore {
       && isOptionalTimestampField('deletedAt');
     }
 
+    // Validation for partial updates (allows updating only editedAt/deletedAt/updatedAt and other fields)
+    function validActivityLogUpdate() {
+      return hasOnlyKeys([
+        'standardId',
+        'value',
+        'occurredAt',
+        'note',
+        'createdAt',
+        'updatedAt',
+        'editedAt',
+        'deletedAt'
+      ])
+      && (!('standardId' in request.resource.data) || (
+        request.resource.data.standardId is string
+        && request.resource.data.standardId.size() >= 1
+        && request.resource.data.standardId == resource.data.standardId
+      ))
+      && (!('value' in request.resource.data) || (
+        request.resource.data.value is number
+        && request.resource.data.value >= 0
+      ))
+      && (!('occurredAt' in request.resource.data) || isTimestamp(request.resource.data.occurredAt))
+      && (!('note' in request.resource.data) || isOptionalStringField('note'))
+      && (!('createdAt' in request.resource.data) || request.resource.data.createdAt == resource.data.createdAt)
+      && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+      && (!('editedAt' in request.resource.data) || isOptionalTimestampField('editedAt'))
+      && (!('deletedAt' in request.resource.data) || isOptionalTimestampField('deletedAt'));
+    }
+
+    function canCreateLogForStandard(uid, standardId) {
+      let standardDoc = get(/databases/$(database)/documents/users/$(uid)/standards/$(standardId));
+      return standardDoc.data != null && standardDoc.data.archivedAt == null;
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
       // Prevent client from directly writing the user root doc in MVP.
@@ -129,14 +189,14 @@ service cloud.firestore {
       match /standards/{standardId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid) && validStandard() && isCreateWithServerTimestamps();
-        allow update: if isOwner(uid) && validStandard() && isUpdateWithServerTimestampAndStableCreatedAt();
+        allow update: if isOwner(uid) && validStandard() && isUpdateWithServerTimestampAndStableCreatedAt() && canWriteStandard();
         allow delete: if false; // soft-delete via deletedAt
       }
 
       match /activityLogs/{logId} {
         allow read: if isOwner(uid);
-        allow create: if isOwner(uid) && validActivityLog() && isCreateWithServerTimestamps();
-        allow update: if isOwner(uid) && validActivityLog() && isUpdateWithServerTimestampAndStableCreatedAt();
+        allow create: if isOwner(uid) && validActivityLog() && isCreateWithServerTimestamps() && canCreateLogForStandard(uid, request.resource.data.standardId);
+        allow update: if isOwner(uid) && validActivityLogUpdate() && isUpdateWithServerTimestampAndStableCreatedAt();
         allow delete: if false; // soft-delete via deletedAt
       }
     }

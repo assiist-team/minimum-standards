@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activityLogConverter = exports.standardConverter = exports.activityConverter = void 0;
+exports.dashboardPinsConverter = exports.activityLogConverter = exports.standardConverter = exports.activityConverter = void 0;
 const firestore_1 = require("firebase/firestore");
 const shared_model_1 = require("@minimum-standards/shared-model");
 const timestamps_1 = require("./timestamps");
@@ -14,7 +14,6 @@ exports.activityConverter = {
         return {
             name: model.name,
             unit: model.unit, // Already normalized via schema transform
-            inputType: model.inputType,
             createdAt: (0, firestore_1.serverTimestamp)(),
             updatedAt: (0, firestore_1.serverTimestamp)(),
             deletedAt: model.deletedAtMs == null ? null : (0, timestamps_1.msToTimestamp)(model.deletedAtMs)
@@ -26,7 +25,6 @@ exports.activityConverter = {
             id: snapshot.id,
             name: data.name,
             unit: data.unit,
-            inputType: data.inputType,
             createdAtMs: (0, timestamps_1.timestampToMs)(data.createdAt),
             updatedAtMs: (0, timestamps_1.timestampToMs)(data.updatedAt),
             deletedAtMs: data.deletedAt == null ? null : (0, timestamps_1.timestampToMs)(data.deletedAt)
@@ -36,12 +34,19 @@ exports.activityConverter = {
 };
 exports.standardConverter = {
     toFirestore(model) {
+        // Ensure summary is regenerated if cadence/minimum/unit changed
+        const summary = (0, shared_model_1.formatStandardSummary)(model.minimum, model.unit, model.cadence);
         return {
             activityId: model.activityId,
             minimum: model.minimum,
             unit: model.unit,
             cadence: model.cadence,
             state: model.state,
+            summary: summary,
+            ...(Array.isArray(model.quickAddValues) && model.quickAddValues.length > 0
+                ? { quickAddValues: model.quickAddValues }
+                : {}),
+            archivedAt: model.archivedAtMs == null ? null : (0, timestamps_1.msToTimestamp)(model.archivedAtMs),
             createdAt: (0, firestore_1.serverTimestamp)(),
             updatedAt: (0, firestore_1.serverTimestamp)(),
             deletedAt: model.deletedAtMs == null ? null : (0, timestamps_1.msToTimestamp)(model.deletedAtMs)
@@ -56,6 +61,11 @@ exports.standardConverter = {
             unit: data.unit,
             cadence: data.cadence,
             state: data.state,
+            summary: data.summary,
+            quickAddValues: Array.isArray(data.quickAddValues)
+                ? data.quickAddValues.filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0)
+                : undefined,
+            archivedAtMs: data.archivedAt == null ? null : (0, timestamps_1.timestampToMs)(data.archivedAt),
             createdAtMs: (0, timestamps_1.timestampToMs)(data.createdAt),
             updatedAtMs: (0, timestamps_1.timestampToMs)(data.updatedAt),
             deletedAtMs: data.deletedAt == null ? null : (0, timestamps_1.timestampToMs)(data.deletedAt)
@@ -87,6 +97,24 @@ exports.activityLogConverter = {
             createdAtMs: (0, timestamps_1.timestampToMs)(data.createdAt),
             updatedAtMs: (0, timestamps_1.timestampToMs)(data.updatedAt),
             deletedAtMs: data.deletedAt == null ? null : (0, timestamps_1.timestampToMs)(data.deletedAt)
+        });
+    }
+};
+exports.dashboardPinsConverter = {
+    toFirestore(model) {
+        return {
+            pinnedStandardIds: model.pinnedStandardIds,
+            updatedAt: (0, firestore_1.serverTimestamp)()
+        };
+    },
+    fromFirestore(snapshot, options) {
+        const data = snapshot.data(options);
+        return parseWith(shared_model_1.dashboardPinsSchema, {
+            id: snapshot.id,
+            pinnedStandardIds: Array.isArray(data.pinnedStandardIds)
+                ? data.pinnedStandardIds
+                : [],
+            updatedAtMs: data.updatedAt == null ? Date.now() : (0, timestamps_1.timestampToMs)(data.updatedAt)
         });
     }
 };

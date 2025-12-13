@@ -1,6 +1,9 @@
 export type TimestampMs = number;
-export type ActivityInputType = 'number' | 'yes_no';
-export type StandardCadence = 'daily' | 'weekly' | 'monthly';
+export type CadenceUnit = 'day' | 'week' | 'month';
+export type StandardCadence = {
+    interval: number;
+    unit: CadenceUnit;
+};
 export type StandardState = 'active' | 'archived';
 export type SoftDelete = {
     deletedAtMs: TimestampMs | null;
@@ -13,7 +16,6 @@ export type Activity = SoftDelete & AuditTimestamps & {
     id: string;
     name: string;
     unit: string;
-    inputType: ActivityInputType;
 };
 export type Standard = SoftDelete & AuditTimestamps & {
     id: string;
@@ -22,6 +24,9 @@ export type Standard = SoftDelete & AuditTimestamps & {
     unit: string;
     cadence: StandardCadence;
     state: StandardState;
+    summary: string;
+    archivedAtMs: TimestampMs | null;
+    quickAddValues?: number[];
 };
 export type ActivityLog = SoftDelete & AuditTimestamps & {
     id: string;
@@ -30,4 +35,9 @@ export type ActivityLog = SoftDelete & AuditTimestamps & {
     occurredAtMs: TimestampMs;
     note: string | null;
     editedAtMs: TimestampMs | null;
+};
+export type DashboardPins = {
+    id: string;
+    pinnedStandardIds: string[];
+    updatedAtMs: TimestampMs;
 };

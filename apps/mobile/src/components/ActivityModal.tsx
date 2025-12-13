@@ -7,9 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-import { Activity, ActivityInputType, activitySchema } from '@minimum-standards/shared-model';
+import { Activity, activitySchema } from '@minimum-standards/shared-model';
 
 export interface ActivityModalProps {
   visible: boolean;
@@ -22,7 +21,6 @@ export interface ActivityModalProps {
 interface FormErrors {
   name?: string;
   unit?: string;
-  inputType?: string;
 }
 
 export function ActivityModal({
@@ -34,7 +32,6 @@ export function ActivityModal({
 }: ActivityModalProps) {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
-  const [inputType, setInputType] = useState<ActivityInputType>('number');
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -46,12 +43,10 @@ export function ActivityModal({
     if (activity) {
       setName(activity.name);
       setUnit(activity.unit);
-      setInputType(activity.inputType);
     } else {
       // Reset form for create mode
       setName('');
       setUnit('');
-      setInputType('number');
     }
     setErrors({});
     setSaveError(null);
@@ -92,7 +87,6 @@ export function ActivityModal({
         id: activity?.id || 'temp',
         name: name.trim(),
         unit: unit.trim(),
-        inputType,
         createdAtMs: activity?.createdAtMs || Date.now(),
         updatedAtMs: Date.now(),
         deletedAtMs: activity?.deletedAtMs || null,
@@ -101,7 +95,6 @@ export function ActivityModal({
       const savePayload: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'> = {
         name: activityData.name,
         unit: activityData.unit, // Already normalized by schema
-        inputType: activityData.inputType,
       };
 
       const createdActivity = await onSave(savePayload);
@@ -114,7 +107,6 @@ export function ActivityModal({
       // Reset form and close
       setName('');
       setUnit('');
-      setInputType('number');
       setErrors({});
       onClose();
     } catch (error) {
@@ -134,7 +126,6 @@ export function ActivityModal({
     }
     setName('');
     setUnit('');
-    setInputType('number');
     setErrors({});
     setSaveError(null);
     onClose();
@@ -196,47 +187,6 @@ export function ActivityModal({
                 editable={!saving}
               />
               {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
-            </View>
-
-            {/* Input type picker */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Input Type</Text>
-              <View style={styles.inputTypeContainer}>
-                <TouchableOpacity
-                  style={[
-                    styles.inputTypeButton,
-                    inputType === 'number' && styles.inputTypeButtonActive,
-                  ]}
-                  onPress={() => setInputType('number')}
-                  disabled={saving}
-                >
-                  <Text
-                    style={[
-                      styles.inputTypeButtonText,
-                      inputType === 'number' && styles.inputTypeButtonTextActive,
-                    ]}
-                  >
-                    Number
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.inputTypeButton,
-                    inputType === 'yes_no' && styles.inputTypeButtonActive,
-                  ]}
-                  onPress={() => setInputType('yes_no')}
-                  disabled={saving}
-                >
-                  <Text
-                    style={[
-                      styles.inputTypeButtonText,
-                      inputType === 'yes_no' && styles.inputTypeButtonTextActive,
-                    ]}
-                  >
-                    Yes/No
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
             {/* Save error */}
@@ -315,31 +265,6 @@ const styles = StyleSheet.create({
     color: '#ff4444',
     fontSize: 14,
     marginTop: 4,
-  },
-  inputTypeContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  inputTypeButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  inputTypeButtonActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#E3F2FD',
-  },
-  inputTypeButtonText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  inputTypeButtonTextActive: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
   saveButton: {
     backgroundColor: '#007AFF',

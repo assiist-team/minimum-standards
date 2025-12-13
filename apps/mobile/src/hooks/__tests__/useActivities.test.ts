@@ -6,7 +6,6 @@ type MockActivity = {
   id: string;
   name: string;
   unit: string;
-  inputType: 'number' | 'yes_no';
   createdAtMs: number;
   updatedAtMs: number;
   deletedAtMs: number | null;
@@ -14,11 +13,18 @@ type MockActivity = {
 
 const mockUnsubscribe = jest.fn();
 
-let mockFirestoreModuleInstance: {
+type MockFirestoreModuleInstance = {
   collection: jest.Mock;
   FieldValue: { serverTimestamp: jest.Mock };
   Timestamp: { now: jest.Mock; fromMillis: jest.Mock };
 };
+
+type MockFirestoreDefaultExport = jest.Mock & {
+  FieldValue: MockFirestoreModuleInstance['FieldValue'];
+  Timestamp: MockFirestoreModuleInstance['Timestamp'];
+};
+
+let mockFirestoreModuleInstance: MockFirestoreModuleInstance;
 
 jest.mock('@react-native-firebase/firestore', () => {
   mockFirestoreModuleInstance = {
@@ -35,9 +41,10 @@ jest.mock('@react-native-firebase/firestore', () => {
       })),
     },
   };
-  const defaultExport = jest.fn(() => mockFirestoreModuleInstance);
-  defaultExport.FieldValue = mockFirestoreModuleInstance.FieldValue;
-  defaultExport.Timestamp = mockFirestoreModuleInstance.Timestamp;
+  const defaultExport = Object.assign(jest.fn(() => mockFirestoreModuleInstance), {
+    FieldValue: mockFirestoreModuleInstance.FieldValue,
+    Timestamp: mockFirestoreModuleInstance.Timestamp,
+  }) as MockFirestoreDefaultExport;
   return {
     __esModule: true,
     default: defaultExport,
@@ -82,7 +89,6 @@ describe('useActivities', () => {
           data: () => ({
             name: activity.name,
             unit: activity.unit,
-            inputType: activity.inputType,
             createdAt: { toMillis: () => activity.createdAtMs },
             updatedAt: { toMillis: () => activity.updatedAtMs },
             deletedAt: activity.deletedAtMs
@@ -111,7 +117,6 @@ describe('useActivities', () => {
         data: () => ({
           name: lastSavedPayload?.name ?? 'Workouts',
           unit: lastSavedPayload?.unit ?? 'workouts',
-          inputType: lastSavedPayload?.inputType ?? 'number',
           createdAt: { toMillis: () => 1111 },
           updatedAt: { toMillis: () => 1111 },
           deletedAt: null,
@@ -136,7 +141,6 @@ describe('useActivities', () => {
         id: 'a1',
         name: 'Sales Calls',
         unit: 'calls',
-        inputType: 'number',
         createdAtMs: 1_000,
         updatedAtMs: 2_000,
         deletedAtMs: null,
@@ -145,7 +149,6 @@ describe('useActivities', () => {
         id: 'a2',
         name: 'Workouts',
         unit: 'workouts',
-        inputType: 'number',
         createdAtMs: 1_000,
         updatedAtMs: 2_000,
         deletedAtMs: null,
@@ -154,7 +157,6 @@ describe('useActivities', () => {
         id: 'a3',
         name: 'Archived',
         unit: 'hours',
-        inputType: 'number',
         createdAtMs: 1_000,
         updatedAtMs: 2_000,
         deletedAtMs: 3_000,
@@ -224,7 +226,6 @@ describe('useActivities', () => {
         result.current.createActivity({
           name: 'Daily Journals',
           unit: 'journal',
-          inputType: 'number',
         })
       ).rejects.toThrow('Network failure');
     });

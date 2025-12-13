@@ -7,12 +7,22 @@ const timestampMsSchema = z
   .nonnegative()
   .refine((v) => Number.isFinite(v), 'timestampMs must be finite');
 
-export const activityInputTypeSchema = z.union([z.literal('number'), z.literal('yes_no')]);
-export const standardCadenceSchema = z.union([
+// Cadence unit types - supports day, week, month, and future extensions
+export const cadenceUnitSchema = z.enum(['day', 'week', 'month']);
+
+// Cadence structure: {interval: number, unit: 'day' | 'week' | 'month'}
+export const standardCadenceSchema = z.object({
+  interval: z.number().int().positive(),
+  unit: cadenceUnitSchema,
+});
+
+// Legacy cadence schema for backward compatibility (deprecated)
+export const legacyStandardCadenceSchema = z.union([
   z.literal('daily'),
   z.literal('weekly'),
   z.literal('monthly')
 ]);
+
 export const standardStateSchema = z.union([z.literal('active'), z.literal('archived')]);
 
 export const activitySchema = z.object({
@@ -36,7 +46,6 @@ export const activitySchema = z.object({
         ]);
       }
     }),
-  inputType: activityInputTypeSchema,
   createdAtMs: timestampMsSchema,
   updatedAtMs: timestampMsSchema,
   deletedAtMs: timestampMsSchema.nullable()
@@ -49,6 +58,9 @@ export const standardSchema = z.object({
   unit: z.string().min(1).max(40),
   cadence: standardCadenceSchema,
   state: standardStateSchema,
+  summary: z.string().min(1).max(200), // Normalized summary string like "1000 calls / week"
+  archivedAtMs: timestampMsSchema.nullable(), // Timestamp when archived, null if active
+  quickAddValues: z.array(z.number().positive()).max(5).optional(),
   createdAtMs: timestampMsSchema,
   updatedAtMs: timestampMsSchema,
   deletedAtMs: timestampMsSchema.nullable()
@@ -69,3 +81,10 @@ export const activityLogSchema = z.object({
 export type ActivitySchema = z.infer<typeof activitySchema>;
 export type StandardSchema = z.infer<typeof standardSchema>;
 export type ActivityLogSchema = z.infer<typeof activityLogSchema>;
+export type DashboardPinsSchema = z.infer<typeof dashboardPinsSchema>;
+
+export const dashboardPinsSchema = z.object({
+  id: z.string().min(1),
+  pinnedStandardIds: z.array(z.string().min(1)),
+  updatedAtMs: timestampMsSchema
+});

@@ -9,7 +9,8 @@ function getUserScopedCollections(params) {
     return {
         activities: (0, firestore_1.collection)(userDoc, 'activities'),
         standards: (0, firestore_1.collection)(userDoc, 'standards'),
-        activityLogs: (0, firestore_1.collection)(userDoc, 'activityLogs')
+        activityLogs: (0, firestore_1.collection)(userDoc, 'activityLogs'),
+        dashboardPins: (0, firestore_1.doc)(userDoc, 'preferences', 'dashboardPins')
     };
 }
 //# sourceMappingURL=collection-layout.js.map

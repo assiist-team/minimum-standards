@@ -24,7 +24,7 @@ Activity Library (create + reuse) — Build the Activity Library UI with search,
 
 **Answer:** I imagine that clicking add activity opens a modal that can be used across screens, whether someone is in the actual activity library screen, or if they're in the view that is associated with creating a new standard (the first step of which is to select or create an activity). Wherever it is, we can use that same modal. If the context is the user is creating a new standard, then a newly created activity in that context should automatically be selected.
 
-**Q5:** Activity Fields - Based on the data model, creating an Activity requires: name (max 120 chars), unit (max 40 chars), and inputType (number/yes_no). For the unit field, should we provide suggestions/autocomplete based on existing Activities, or is free text sufficient for MVP? The conceptual design mentions "free text, later: suggestions"—should MVP be free text only?
+**Q5:** Activity Fields - Based on the data model, creating an Activity requires: name (max 120 chars) and unit (max 40 chars). For the unit field, should we provide suggestions/autocomplete based on existing Activities, or is free text sufficient for MVP? The conceptual design mentions "free text, later: suggestions"—should MVP be free text only?
 
 **Answer:** For the unit field, free text is fine. But we should think about the singular versus plural situation there. Maybe it doesn't matter. Like if the user types in "call" as the unit, it'll be weird to say "I logged 20 call." We should say "I log 20 calls." I don't know how to problem solve for that to make sure we're not in that weird situation.
 
@@ -55,6 +55,10 @@ No similar existing features identified for reference.
 
 **Answer:** Store plural form and display with auto pluralization. Normalize user input (singular or plural) to plural form on save. Use pluralize library to automatically display correct form based on count (e.g., "1 call" for count of 1, "20 calls" for count of 20).
 
+**Follow-up 2:** Should we keep Activity `inputType` (number vs yes/no), or simplify Activities to always be numeric inputs?
+
+**Answer:** Remove binary activities and remove `inputType` altogether; it doesn’t seem needed.
+
 ## Visual Assets
 
 ### Files Provided:
@@ -78,7 +82,6 @@ No visual assets provided.
 - **Activity Fields**: 
   - Name (max 120 chars)
   - Unit (max 40 chars, free text)
-  - InputType (number/yes_no)
   - **Unit normalization**: Accept singular or plural input, normalize to plural form on save
   - **Unit display**: Use pluralize library to auto-pluralize based on count (e.g., "1 call" vs "20 calls")
 - **Selection Behavior**: When selecting an existing Activity, immediately return to Standards Builder with that Activity selected
@@ -109,7 +112,7 @@ No visual assets provided.
 - **UI Components**: Reusable modal for creating activities across different contexts
 - **Navigation**: Activity Library accessible as both standalone screen and integrated into Standards Builder flow
 - **Search Implementation**: Real-time search (likely debounced) filtering by Activity name
-- **Data Model**: Activities have name, unit, inputType fields (already defined in shared-model)
+- **Data Model**: Activities have name and unit fields (already defined in shared-model)
 - **Singular/Plural Handling**: 
   - Store units in plural form (normalize on save: accept "call" or "calls", store as "calls")
   - Use `pluralize` npm library (~2KB) for display logic

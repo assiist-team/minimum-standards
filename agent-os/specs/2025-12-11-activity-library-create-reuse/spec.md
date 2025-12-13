@@ -27,7 +27,7 @@ Enable users to create, edit, and reuse Activities through a shared Activity Lib
 
 **Reusable Add / Edit Activity modal**
 - Tapping “Add Activity” opens a modal form that can be launched from either context.
-- Fields: name (string, max 120), unit (string, max 40), input type picker (`number` / `yes_no`); enforce the shared-model constraints with inline validation messaging.
+- Fields: name (string, max 120), unit (string, max 40); enforce the shared-model constraints with inline validation messaging.
 - Submit disables while pending and surfaces backend errors inline.
 - From the Standards Builder context, close the modal upon success, auto-select the new Activity, and return focus to the builder.
 - The same modal supports editing when invoked with an existing Activity; prefill fields and persist updates using the shared converter.

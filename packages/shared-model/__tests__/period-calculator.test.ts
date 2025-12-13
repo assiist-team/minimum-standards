@@ -9,7 +9,7 @@ describe('period-calculator', () => {
     test('calculates daily period for a mid-day timestamp', () => {
       // December 11, 2025, 14:30:00 UTC
       const timestampMs = new Date('2025-12-11T14:30:00Z').getTime();
-      const result = calculatePeriodWindow(timestampMs, 'daily', 'UTC');
+      const result = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'day' }, 'UTC');
       
       expect(result.startMs).toBe(new Date('2025-12-11T00:00:00Z').getTime());
       expect(result.endMs).toBe(new Date('2025-12-12T00:00:00Z').getTime());
@@ -20,11 +20,11 @@ describe('period-calculator', () => {
     test('daily boundary behavior at end-of-day transition', () => {
       // Just before midnight
       const justBeforeMidnight = new Date('2025-12-11T23:59:59Z').getTime();
-      const beforeResult = calculatePeriodWindow(justBeforeMidnight, 'daily', 'UTC');
+      const beforeResult = calculatePeriodWindow(justBeforeMidnight, { interval: 1, unit: 'day' }, 'UTC');
       
       // Just after midnight (next day)
       const justAfterMidnight = new Date('2025-12-12T00:00:00Z').getTime();
-      const afterResult = calculatePeriodWindow(justAfterMidnight, 'daily', 'UTC');
+      const afterResult = calculatePeriodWindow(justAfterMidnight, { interval: 1, unit: 'day' }, 'UTC');
       
       // Before midnight should be in Dec 11 period
       expect(beforeResult.periodKey).toBe('2025-12-11');
@@ -43,7 +43,7 @@ describe('period-calculator', () => {
     test('daily period in different timezone', () => {
       // December 11, 2025, 14:30:00 UTC = December 11, 2025, 09:30:00 EST
       const timestampMs = new Date('2025-12-11T14:30:00Z').getTime();
-      const result = calculatePeriodWindow(timestampMs, 'daily', 'America/New_York');
+      const result = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'day' }, 'America/New_York');
       
       // In EST, this should still be December 11
       expect(result.periodKey).toBe('2025-12-11');
@@ -55,7 +55,7 @@ describe('period-calculator', () => {
     test('calculates weekly period with Monday start', () => {
       // Wednesday, December 10, 2025 (assuming it's in a week starting Monday Dec 8)
       const timestampMs = new Date('2025-12-10T14:30:00Z').getTime();
-      const result = calculatePeriodWindow(timestampMs, 'weekly', 'UTC');
+      const result = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'week' }, 'UTC');
       
       // Should start on Monday of that week
       const monday = new Date('2025-12-08T00:00:00Z').getTime();
@@ -70,11 +70,11 @@ describe('period-calculator', () => {
     test('weekly boundary behavior - Sunday to Monday transition', () => {
       // Sunday, December 7, 2025, 23:59:59 UTC
       const sundayLate = new Date('2025-12-07T23:59:59Z').getTime();
-      const sundayResult = calculatePeriodWindow(sundayLate, 'weekly', 'UTC');
+      const sundayResult = calculatePeriodWindow(sundayLate, { interval: 1, unit: 'week' }, 'UTC');
       
       // Monday, December 8, 2025, 00:00:00 UTC
       const mondayEarly = new Date('2025-12-08T00:00:00Z').getTime();
-      const mondayResult = calculatePeriodWindow(mondayEarly, 'weekly', 'UTC');
+      const mondayResult = calculatePeriodWindow(mondayEarly, { interval: 1, unit: 'week' }, 'UTC');
       
       // Sunday should be in the previous week (Nov 30 - Dec 7)
       // Monday should start a new week (Dec 8 - Dec 14)
@@ -85,11 +85,11 @@ describe('period-calculator', () => {
     test('weekly period uses Monday as start day', () => {
       // Monday, December 8, 2025
       const monday = new Date('2025-12-08T12:00:00Z').getTime();
-      const mondayResult = calculatePeriodWindow(monday, 'weekly', 'UTC');
+      const mondayResult = calculatePeriodWindow(monday, { interval: 1, unit: 'week' }, 'UTC');
       
       // Tuesday, December 9, 2025 (same week)
       const tuesday = new Date('2025-12-09T12:00:00Z').getTime();
-      const tuesdayResult = calculatePeriodWindow(tuesday, 'weekly', 'UTC');
+      const tuesdayResult = calculatePeriodWindow(tuesday, { interval: 1, unit: 'week' }, 'UTC');
       
       // Both should be in the same period
       expect(mondayResult.periodKey).toBe(tuesdayResult.periodKey);
@@ -102,7 +102,7 @@ describe('period-calculator', () => {
     test('calculates monthly period', () => {
       // December 15, 2025
       const timestampMs = new Date('2025-12-15T14:30:00Z').getTime();
-      const result = calculatePeriodWindow(timestampMs, 'monthly', 'UTC');
+      const result = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'month' }, 'UTC');
       
       expect(result.startMs).toBe(new Date('2025-12-01T00:00:00Z').getTime());
       expect(result.endMs).toBe(new Date('2026-01-01T00:00:00Z').getTime());
@@ -113,11 +113,11 @@ describe('period-calculator', () => {
     test('monthly boundary behavior - end of month to start of next', () => {
       // December 31, 2025, 23:59:59 UTC
       const endOfMonth = new Date('2025-12-31T23:59:59Z').getTime();
-      const decemberResult = calculatePeriodWindow(endOfMonth, 'monthly', 'UTC');
+      const decemberResult = calculatePeriodWindow(endOfMonth, { interval: 1, unit: 'month' }, 'UTC');
       
       // January 1, 2026, 00:00:00 UTC
       const startOfNextMonth = new Date('2026-01-01T00:00:00Z').getTime();
-      const januaryResult = calculatePeriodWindow(startOfNextMonth, 'monthly', 'UTC');
+      const januaryResult = calculatePeriodWindow(startOfNextMonth, { interval: 1, unit: 'month' }, 'UTC');
       
       expect(decemberResult.periodKey).toBe('2025-12');
       expect(januaryResult.periodKey).toBe('2026-01');
@@ -127,11 +127,11 @@ describe('period-calculator', () => {
     test('monthly period handles year boundary', () => {
       // December 31, 2025
       const dec31 = new Date('2025-12-31T12:00:00Z').getTime();
-      const decResult = calculatePeriodWindow(dec31, 'monthly', 'UTC');
+      const decResult = calculatePeriodWindow(dec31, { interval: 1, unit: 'month' }, 'UTC');
       
       // January 1, 2026
       const jan1 = new Date('2026-01-01T12:00:00Z').getTime();
-      const janResult = calculatePeriodWindow(jan1, 'monthly', 'UTC');
+      const janResult = calculatePeriodWindow(jan1, { interval: 1, unit: 'month' }, 'UTC');
       
       expect(decResult.periodKey).toBe('2025-12');
       expect(janResult.periodKey).toBe('2026-01');
@@ -145,8 +145,8 @@ describe('period-calculator', () => {
       const beforeDST = new Date('2025-03-09T06:59:59Z').getTime(); // 1:59 AM EST
       const afterDST = new Date('2025-03-09T07:00:01Z').getTime(); // 3:00 AM EDT
       
-      const beforeResult = calculatePeriodWindow(beforeDST, 'daily', 'America/New_York');
-      const afterResult = calculatePeriodWindow(afterDST, 'daily', 'America/New_York');
+      const beforeResult = calculatePeriodWindow(beforeDST, { interval: 1, unit: 'day' }, 'America/New_York');
+      const afterResult = calculatePeriodWindow(afterDST, { interval: 1, unit: 'day' }, 'America/New_York');
       
       // Both should still be in the same day period (March 9)
       expect(beforeResult.periodKey).toBe(afterResult.periodKey);
@@ -156,7 +156,7 @@ describe('period-calculator', () => {
     test('weekly period across DST transition', () => {
       // Week containing DST transition
       const duringDST = new Date('2025-03-12T14:30:00Z').getTime(); // Wednesday during DST week
-      const result = calculatePeriodWindow(duringDST, 'weekly', 'America/New_York');
+      const result = calculatePeriodWindow(duringDST, { interval: 1, unit: 'week' }, 'America/New_York');
       
       // Should still calculate a valid 7-day period
       const periodDuration = result.endMs - result.startMs;
@@ -174,8 +174,8 @@ describe('period-calculator', () => {
       // In America/Los_Angeles (UTC-8): December 10 (6 PM Dec 10)
       const timestampMs = new Date('2025-12-11T02:00:00Z').getTime();
       
-      const utcResult = calculatePeriodWindow(timestampMs, 'daily', 'UTC');
-      const laResult = calculatePeriodWindow(timestampMs, 'daily', 'America/Los_Angeles');
+      const utcResult = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'day' }, 'UTC');
+      const laResult = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'day' }, 'America/Los_Angeles');
       
       // In UTC, it's December 11
       expect(utcResult.periodKey).toBe('2025-12-11');
@@ -191,8 +191,8 @@ describe('period-calculator', () => {
       // In Pacific: Sunday (previous week, because 01:00 UTC = 17:00 PST previous day)
       const timestampMs = new Date('2025-12-08T01:00:00Z').getTime();
       
-      const utcResult = calculatePeriodWindow(timestampMs, 'weekly', 'UTC');
-      const pacificResult = calculatePeriodWindow(timestampMs, 'weekly', 'America/Los_Angeles');
+      const utcResult = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'week' }, 'UTC');
+      const pacificResult = calculatePeriodWindow(timestampMs, { interval: 1, unit: 'week' }, 'America/Los_Angeles');
       
       // Should potentially be in different weeks
       // This depends on the exact timing, but demonstrates timezone sensitivity

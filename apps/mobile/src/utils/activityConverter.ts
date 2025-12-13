@@ -4,7 +4,6 @@ import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
 type FirestoreActivityData = {
   name: string;
   unit: string;
-  inputType: 'number' | 'yes_no';
   createdAt: FirebaseFirestoreTypes.Timestamp | null;
   updatedAt: FirebaseFirestoreTypes.Timestamp | null;
   deletedAt: FirebaseFirestoreTypes.Timestamp | null;
@@ -21,7 +20,6 @@ export function fromFirestoreActivity(
     id: docId,
     name: data.name,
     unit: data.unit,
-    inputType: data.inputType,
     createdAtMs: data.createdAt?.toMillis() ?? Date.now(),
     updatedAtMs: data.updatedAt?.toMillis() ?? Date.now(),
     deletedAtMs: data.deletedAt?.toMillis() ?? null,
@@ -39,13 +37,11 @@ export function toFirestoreActivity(
   updatedAt: FirebaseFirestoreTypes.FieldValue;
   deletedAt: FirebaseFirestoreTypes.Timestamp | null;
 } {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const firestore = require('@react-native-firebase/firestore').default();
   
   return {
     name: activity.name,
     unit: activity.unit, // Already normalized via schema transform
-    inputType: activity.inputType,
     createdAt: firestore.FieldValue.serverTimestamp(),
     updatedAt: firestore.FieldValue.serverTimestamp(),
     deletedAt: null,
@@ -60,7 +56,6 @@ export function toFirestoreActivityUpdate(
 ): Partial<FirestoreActivityData> & {
   updatedAt: FirebaseFirestoreTypes.FieldValue;
 } {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const firestore = require('@react-native-firebase/firestore').default();
   
   const result: any = {
@@ -73,9 +68,6 @@ export function toFirestoreActivityUpdate(
   if (updates.unit !== undefined) {
     result.unit = updates.unit;
   }
-  if (updates.inputType !== undefined) {
-    result.inputType = updates.inputType;
-  }
 
   return result;
 }
@@ -87,7 +79,6 @@ export function toFirestoreActivityDelete(): {
   deletedAt: FirebaseFirestoreTypes.Timestamp;
   updatedAt: FirebaseFirestoreTypes.FieldValue;
 } {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const firestore = require('@react-native-firebase/firestore').default();
   
   return {

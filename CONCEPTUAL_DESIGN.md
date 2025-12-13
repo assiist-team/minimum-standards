@@ -50,9 +50,6 @@ Reusable building block.
 Fields (conceptual):
 - **name**: short label (“Sales Calls”)
 - **unit**: “calls”, “minutes”, “pages”, “dollars” (free text, later: suggestions)
-- **inputType**:
-  - number (most common)
-  - yes/no (binary)
 - optional: **category**, **notes**, **aliases**
 
 Notes:

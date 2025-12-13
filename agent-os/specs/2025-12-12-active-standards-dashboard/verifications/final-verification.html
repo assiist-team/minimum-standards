@@ -1,0 +1,120 @@
+# Tech stack reference
+- Follow `agent-os/standards/global/tech-stack.md` for the authoritative list of tools (tests, emulators, devices). Update that document first if the stack changes.
+
+# Verification Report: Active Standards Dashboard
+
+**Spec:** `agent-os/specs/2025-12-12-active-standards-dashboard`
+**Date:** 2025-12-12
+**Verifier:** implementation-verifier
+**Status:** ✅ Passed
+
+---
+
+## Executive Summary
+
+The Active Standards Dashboard implementation is functionally complete with all core features implemented: pin persistence, period progress calculation, dashboard UI, analytics, and comprehensive test coverage. All tests pass including Firestore rules tests (9 tests passed). All linting issues have been resolved.
+
+---
+
+## 1. Tasks Verification
+
+**Status:** ✅ All Complete
+
+### Completed Tasks
+- [x] Task Group 1: Pin persistence and data shaping
+  - [x] 1.1 Write 4 focused unit tests for pin reducer ordering (pins first, then fallback sort) and cleanup when standards disappear.
+  - [x] 1.2 Define `DashboardPins` schema (`users/{uid}/preferences/dashboardPins`) plus TypeScript interfaces and Firestore converter.
+  - [x] 1.3 Add repository helpers to read/write pin order with optimistic updates and server reconciliation.
+  - [x] 1.4 Integrate pin metadata into `useStandards` (or a companion hook) so the hook outputs `pinnedStandards` + `orderedActiveStandards`.
+  - [x] 1.5 Run only the tests written in 1.1 and verify optimistic pin updates sync correctly.
+- [x] Task Group 2: Period context & aggregation utilities
+  - [x] 2.1 Write 3 focused tests covering period label formatting, capped progress %, and status derivation using mock cadences.
+  - [x] 2.2 Implement a selector/utility that combines `calculatePeriodWindow`, log sums, and `derivePeriodStatus`, parameterized by timezone.
+  - [x] 2.3 Ensure numeric formatting uses `Intl.NumberFormat` and unit-aware strings from `formatStandardSummary`.
+  - [x] 2.4 Expose memoized progress data to the dashboard screen (React Query/Zustand selector) with loading/error states.
+  - [x] 2.5 Run only the tests from 2.1.
+- [x] Task Group 3: Dashboard screen + card layout
+  - [x] 3.1 Write 4 React Native Testing Library cases (loading skeleton, empty state, pinned ordering, log tap navigation).
+  - [x] 3.2 Implement screen shell with header, `FlatList`/FlashList virtualization, and safe-area padding.
+  - [x] 3.3 Create the two-line card component with status pill, progress numbers, and 4px progress bar; enforce line clamps.
+  - [x] 3.4 Add `Log` CTA wired to the existing logging modal navigation (pass `standardId`, track success callback).
+  - [x] 3.5 Provide pin affordance (long-press drag handle or context menu) updating the persistence helpers.
+  - [x] 3.6 Run only the tests from 3.1.
+- [x] Task Group 4: States, accessibility, and theming
+  - [x] 4.1 Write 2 focused tests for empty-state CTA routing and error retry callback.
+  - [x] 4.2 Implement shimmer/skeleton placeholders for loading (minimum three card placeholders).
+  - [x] 4.3 Add empty-state messaging ("No active standards yet") with a button to launch Standards Builder.
+  - [x] 4.4 Surface inline error banner with retry when the hook reports an error; ensure retry re-subscribes.
+  - [x] 4.5 Audit accessibility: `accessibilityLabel` strings for cards/log buttons/pin handles, WCAG-compliant colors, dark-mode styling via theme tokens.
+  - [x] 4.6 Emit confirmation toast/snackbar after successful logging events.
+  - [x] 4.7 Run only the tests from 4.1.
+- [x] Task Group 5: Instrumentation and event wiring
+  - [x] 5.1 Write 2 focused tests (or mocked assertions) ensuring analytics helpers are invoked on Log tap and pin reorder.
+  - [x] 5.2 Extend `apps/mobile/src/utils/analytics.ts` with `dashboard_log_tap`, `dashboard_pin_standard`, and `dashboard_unpin_standard` events.
+  - [x] 5.3 Fire analytics within the screen (include `standardId`, `activityId`, `pinned` boolean) and ensure failures fail silently.
+  - [x] 5.4 Document the new events for the analytics team (e.g., inline comments or README note).
+  - [x] 5.5 Run only the tests from 5.1.
+- [x] Task Group 6: Integrated workflow validation
+  - [x] 6.1 Review tests from groups 1-5 and list remaining gaps (pin persistence, progress calc, logging flow, error state).
+  - [x] 6.2 Add up to 6 additional integration tests (Detox/Jest) covering: logging from pinned/unpinned standards, pin reorder persistence, and status color regressions.
+  - [x] 6.3 Run only the feature-specific suites (tests from 1.1, 2.1, 3.1, 4.1, 5.1, 6.2) and record results.
+  - [x] 6.4 File/flag any blocking defects before handing off for review.
+
+### Incomplete or Issues
+None - all tasks are complete and all linting issues have been resolved.
+
+---
+
+## 2. Documentation Verification
+
+**Status:** ⚠️ Issues Found
+
+### Implementation Documentation
+- No implementation reports found in `agent-os/specs/2025-12-12-active-standards-dashboard/implementation/` directory. The verification document suggests checking for these, but they are not required for completion.
+
+### Verification Documentation
+- Test results documented in `test-results.md` showing all 24 feature-specific tests passing.
+
+### Missing Documentation
+- Implementation reports per task group are not present, but this is not blocking as the code is well-structured and tests are comprehensive.
+
+---
+
+## 3. Roadmap Updates
+
+**Status:** ✅ Updated
+
+### Updated Roadmap Items
+- [x] Item 5 ("Active Standards Dashboard") has been marked as completed in `agent-os/product/roadmap.md` with completion date 2025-12-12.
+
+### Notes
+- Roadmap updated successfully to reflect completion of the Active Standards Dashboard feature.
+
+---
+
+## 4. Test Suite Results
+
+**Status:** ✅ All Passing
+
+### Test Summary
+- **Lint:** ✅ `npm --prefix apps/mobile run lint` — All issues resolved
+  - Removed unused imports: `Platform`, `ToastAndroid` from `ActiveStandardsDashboardScreen.tsx`
+  - Removed unused import: `buildDashboardProgressMap` from integration test
+  - Removed unused variable: `queryByText` from unit test
+  - Fixed inline style warning: moved `{ width: '60%' }` to StyleSheet as `skeletonLineShort`
+- **Typecheck:** ✅ `npx tsc --noEmit -p apps/mobile/tsconfig.json` — No errors
+- **Jest (app):** ✅ `npm --prefix apps/mobile test` — 92 tests passed, 13 suites passed
+- **Jest (packages):** ✅ `npm --prefix packages/shared-model test` — 49 tests passed, 4 suites passed
+- **Jest (firestore-model):** ✅ `npm --prefix packages/firestore-model test` — 7 tests passed, 2 suites passed
+- **Jest (firestore-rules-tests):** ✅ `npm --prefix packages/firestore-rules-tests test` — 9 tests passed, 2 suites passed (run on port 8081 due to port 8080 being in use)
+- **Detox / Device Tests:** Not run. Detox is not configured for the repo yet.
+
+### Failed Tests
+None - all tests pass. All 9 Firestore rules tests pass successfully.
+
+### Notes
+- All feature-specific tests pass (24 tests covering pin persistence, progress calculation, UI components, analytics, and integration scenarios).
+- All linting issues have been resolved: removed unused imports/variables and moved inline styles to StyleSheet.
+- Firestore rules tests passed successfully when run on port 8081 (port 8080 was in use by another process).
+- Detox smoke tests require simulator/device setup and are not currently configured.
+- Test coverage is comprehensive: pin ordering (5 tests), progress calculation (3 tests), dashboard UI (7 tests), integration scenarios (9 tests), Firestore rules (9 tests).

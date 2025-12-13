@@ -19,7 +19,6 @@ describe('ActivityModal', () => {
     id: 'a1',
     name: 'Sales Calls',
     unit: 'calls',
-    inputType: 'number',
     createdAtMs: 1000,
     updatedAtMs: 2000,
     deletedAtMs: null,
@@ -59,7 +58,7 @@ describe('ActivityModal', () => {
     const onClose = jest.fn();
     const onSave = jest.fn();
 
-    const { getByText, getByPlaceholderText } = render(
+    const { getByText } = render(
       <ActivityModal visible={true} onClose={onClose} onSave={onSave} />
     );
 
@@ -94,7 +93,6 @@ describe('ActivityModal', () => {
       expect(onSave).toHaveBeenCalledWith({
         name: 'Workouts',
         unit: expect.any(String),
-        inputType: 'number',
       });
     });
 

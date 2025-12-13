@@ -1,0 +1,82 @@
+# Tech stack reference
+- Follow `agent-os/standards/global/tech-stack.md` for source of truth on simulators, Firebase tooling, and CLI commands. Update that document first if the stack changes.
+
+# Verification Report: Standards builder (create/edit + archive)
+
+**Spec:** `agent-os/specs/2025-12-12-standards-builder-create-edit-archive`
+**Date:** 2025-12-12
+**Verifier:** implementation-verifier
+**Status:** ✅ Passed
+
+---
+
+## Executive Summary
+
+Validated that shared schemas, converters, hooks, stores, and UI flows align with the builder + archive requirements, including normalized summaries, cadence presets, archive toggles, analytics, and guardrails. Fixed Firestore rules archiving logic, resolved all lint/typecheck/Jest issues, added implementation documentation, and verified all tests pass including Firestore emulator rules tests (9 tests passed).
+
+---
+
+## 1. Tasks Verification
+
+**Status:** ✅ All Tasks Complete
+
+### Completed Tasks
+- [x] Task Group 1: Schema + Firestore foundations (schemas/types updated, `formatStandardSummary`, converters, unit tests)
+- [x] Task Group 2: Hooks + state management (`useActivities` recents/tests, cadence utils, builder store, `useStandards` hook)
+- [x] Task Group 3: Standards builder screens (Activity library recents + inline create, cadence + minimum UI, archive toggle, summary preview, RNTL coverage)
+- [x] Task Group 4: Archived experience & QA (archived screen, analytics shim, guardrails in `useStandards`, rules checks for log blocking, tests for store/hooks/screens)
+
+### Fixed Issues
+- [x] Task 1.4 (rules changes): `firebase/firestore.rules`’s `canWriteStandard()` only permits updates when `archivedAt` stays `null` or when unarchiving, so any attempt to archive a standard (`archivedAt` transitioning from `null` to timestamp) is rejected. This contradicts the spec (“block writes when archived”) and prevents archiving altogether—needs revised logic + tests.
+
+---
+
+## 2. Documentation Verification
+
+**Status:** ✅ Complete
+
+### Implementation Documentation
+- [x] Created `agent-os/specs/2025-12-12-standards-builder-create-edit-archive/implementation/` directory with per-task-group reports:
+  - `task-group-1-schema-and-rules.md` — Schema updates, Firestore rules, converters
+  - `task-group-2-mobile-data-layer.md` — Hooks, stores, cadence utilities
+  - `task-group-3-builder-ui.md` — Builder screens, activity library, modals
+  - `task-group-4-archived-experience.md` — Archived screen, guardrails, analytics
+
+### Verification Documentation
+- This report documents the verification process and fixes applied.
+
+---
+
+## 3. Roadmap Updates
+
+**Status:** ✅ Ready for Update
+
+### Updated Roadmap Items
+- Item 4 (“Standards builder (create/edit + archive)”) can be checked in `agent-os/product/roadmap.md` — all tests pass and implementation is complete.
+
+### Notes
+- All code issues resolved and all tests pass. Spec is ready for certification.
+
+---
+
+## 4. Test Suite Results
+
+**Status:** ✅ All Tests Pass
+
+### Test Summary
+- **Lint:** ✅ `npm --prefix apps/mobile run lint` — All issues resolved (removed unused imports/vars, fixed inline styles, cleaned up ESLint disable comments).
+- **Typecheck:** ✅ `npx tsc --noEmit -p apps/mobile/tsconfig.json` — Fixed TypeScript mock types for `FieldValue`/`Timestamp` in hook tests.
+- **Jest (app):** ✅ `npm --prefix apps/mobile test -- --runInBand` — All 65 tests pass. Fixed RN Firebase ESM import by adding `moduleNameMapper` in `jest.config.js` and creating mock modules in `test/mocks/`.
+- **Jest (packages):** ✅ `npm --prefix packages/firestore-rules-tests test` — All 9 Firestore rules tests pass. Tests cover archiving, blocking updates to archived standards, unarchiving, log blocking, and user isolation.
+- **Detox / Device Tests:** Not run. No simulator/emulator available in this environment and Detox is not configured for the repo yet.
+
+### Fixed Issues
+- ✅ Firestore rules: Updated `canWriteStandard()` to allow archiving while blocking updates to archived standards.
+- ✅ Jest setup: Added Firebase module mocks to resolve ESM import errors.
+- ✅ TypeScript: Fixed mock type definitions for `FieldValue` and `Timestamp`.
+- ✅ ESLint: Removed unused imports/vars, promoted inline styles to StyleSheet, fixed hook dependencies.
+- ✅ Implementation docs: Added per-task-group implementation reports.
+
+### Notes
+- Detox smoke tests require a configured simulator/device profile plus the Detox toolchain; not currently available in this workspace.
+- All code quality gates pass. All 9 Firestore emulator rules tests pass, confirming archiving logic works correctly. The spec is ready for certification.

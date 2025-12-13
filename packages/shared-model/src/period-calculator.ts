@@ -20,7 +20,7 @@ function formatLabel(dt: DateTime, format: string): string {
  * Calculates the period window for a given timestamp, cadence, and timezone.
  * 
  * @param timestampMs - The timestamp in milliseconds
- * @param cadence - The cadence type (daily, weekly, monthly)
+ * @param cadence - The cadence object with interval and unit
  * @param timezone - IANA timezone identifier (e.g., 'America/New_York')
  * @returns Period window with start (inclusive), end (exclusive), period key, and label
  */
@@ -35,40 +35,54 @@ export function calculatePeriodWindow(
     throw new Error(`Invalid timestamp or timezone provided: ${zoned.invalidReason}`);
   }
 
-  if (cadence === 'daily') {
+  const { interval, unit } = cadence;
+
+  if (unit === 'day') {
+    // For daily cadence, align to day start
     const start = zoned.startOf('day');
-    const end = start.plus({ days: 1 });
+    const end = start.plus({ days: interval });
     return {
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
-      label: formatLabel(start, 'MMMM d, yyyy')
+      label: interval === 1 
+        ? formatLabel(start, 'MMMM d, yyyy')
+        : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
     };
   }
 
-  if (cadence === 'weekly') {
+  if (unit === 'week') {
+    // For weekly cadence, align to Monday start
     // Luxon weekday: Monday = 1, Sunday = 7
     const weekday = zoned.weekday;
     const daysToMonday = weekday === 1 ? 0 : weekday === 7 ? 6 : weekday - 1;
     const start = zoned.minus({ days: daysToMonday }).startOf('day');
-    const end = start.plus({ weeks: 1 });
+    const end = start.plus({ weeks: interval });
     return {
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
-      label: `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
+      label: interval === 1
+        ? `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
+        : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
     };
   }
 
   // Monthly cadence
-  const monthStart = zoned.startOf('month');
-  const monthEnd = monthStart.plus({ months: 1 });
-  return {
-    startMs: monthStart.toMillis(),
-    endMs: monthEnd.toMillis(),
-    periodKey: monthStart.toFormat('yyyy-LL'),
-    label: formatLabel(monthStart, 'MMMM yyyy')
-  };
+  if (unit === 'month') {
+    const monthStart = zoned.startOf('month');
+    const monthEnd = monthStart.plus({ months: interval });
+    return {
+      startMs: monthStart.toMillis(),
+      endMs: monthEnd.toMillis(),
+      periodKey: monthStart.toFormat('yyyy-LL'),
+      label: interval === 1
+        ? formatLabel(monthStart, 'MMMM yyyy')
+        : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(monthEnd.minus({ days: 1 }), 'MMMM yyyy')}`
+    };
+  }
+
+  throw new Error(`Unsupported cadence unit: ${unit}`);
 }
 
 /**

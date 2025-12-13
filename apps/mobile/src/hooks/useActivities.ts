@@ -12,6 +12,7 @@ import debounce from 'lodash.debounce';
 
 export interface UseActivitiesResult {
   activities: Activity[];
+  recentActivities: Activity[]; // Five most recent activities by updatedAtMs
   loading: boolean;
   error: Error | null;
   searchQuery: string;
@@ -313,8 +314,16 @@ export function useActivities(): UseActivitiesResult {
     return sortActivitiesByName(filtered);
   }, [activities, searchQuery]);
 
+  // Get five most recent activities ordered by updatedAtMs descending
+  const recentActivities = useMemo(() => {
+    return [...activities]
+      .sort((a, b) => b.updatedAtMs - a.updatedAtMs)
+      .slice(0, 5);
+  }, [activities]);
+
   return {
     activities: filteredAndSortedActivities,
+    recentActivities,
     loading,
     error,
     searchQuery: searchQueryInput, // Return the input value for UI display

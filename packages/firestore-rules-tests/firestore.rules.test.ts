@@ -8,7 +8,7 @@ import {
   RulesTestEnvironment
 } from '@firebase/rules-unit-testing';
 
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
 const PROJECT_ID = 'minimum-standards-test';
 
@@ -53,7 +53,6 @@ describe('Firestore security rules: user isolation', () => {
       setDoc(doc(db1, 'users/u1/activities/a1'), {
         name: 'Sales Calls',
         unit: 'calls',
-        inputType: 'number',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         deletedAt: null
@@ -72,8 +71,10 @@ describe('Firestore security rules: user isolation', () => {
         activityId: 'a1',
         minimum: 100,
         unit: 'calls',
-        cadence: 'weekly',
+        cadence: { interval: 1, unit: 'week' },
         state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         deletedAt: null
@@ -89,11 +90,402 @@ describe('Firestore security rules: user isolation', () => {
       setDoc(doc(db1, 'users/u1/activities/a1'), {
         name: 'Sales Calls',
         unit: 'calls',
-        inputType: 'number',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         deletedAt: null,
         ownerId: 'u1'
+      })
+    );
+  });
+
+  test('prevents log creation for archived standards', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+
+    await assertSucceeds(
+      setDoc(doc(db1, 'users/u1/standards/s1'), {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'archived',
+        summary: '100 calls / week',
+        archivedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    await assertFails(
+      setDoc(doc(db1, 'users/u1/activityLogs/log-1'), {
+        standardId: 's1',
+        value: 10,
+        occurredAt: serverTimestamp(),
+        note: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        editedAt: null,
+        deletedAt: null
+      })
+    );
+  });
+
+  test('allows archiving an active standard', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    const existingDoc = await getDoc(standardRef);
+    const existingData = existingDoc.data();
+
+    await assertSucceeds(
+      setDoc(standardRef, {
+        ...existingData,
+        state: 'archived',
+        archivedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+
+  test('blocks updates while a standard remains archived', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'archived',
+        summary: '100 calls / week',
+        archivedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    const archivedDoc = await getDoc(standardRef);
+    const archivedData = archivedDoc.data();
+
+    await assertFails(
+      setDoc(standardRef, {
+        ...archivedData,
+        minimum: 250,
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+
+  test('allows unarchiving a standard', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'archived',
+        summary: '100 calls / week',
+        archivedAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    const archivedDoc = await getDoc(standardRef);
+    const archivedData = archivedDoc.data();
+
+    await assertSucceeds(
+      setDoc(standardRef, {
+        ...archivedData,
+        state: 'active',
+        archivedAt: null,
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+});
+
+describe('Firestore security rules: activity log updates', () => {
+  let testEnv: RulesTestEnvironment;
+
+  beforeAll(async () => {
+    testEnv = await initializeTestEnvironment({
+      projectId: PROJECT_ID,
+      firestore: { rules: readRules() }
+    });
+  });
+
+  beforeEach(async () => {
+    await testEnv.clearFirestore();
+  });
+
+  afterAll(async () => {
+    await testEnv.cleanup();
+  });
+
+  test('allows updating editedAt field on log entry', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+    const logRef = doc(db1, 'users/u1/activityLogs/log-1');
+
+    // Create an active standard
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    // Create a log entry
+    await assertSucceeds(
+      setDoc(logRef, {
+        standardId: 's1',
+        value: 10,
+        occurredAt: serverTimestamp(),
+        note: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        editedAt: null,
+        deletedAt: null
+      })
+    );
+
+    const logDoc = await getDoc(logRef);
+    const logData = logDoc.data();
+
+    // Update editedAt field
+    await assertSucceeds(
+      updateDoc(logRef, {
+        editedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+
+  test('allows updating deletedAt field on log entry', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+    const logRef = doc(db1, 'users/u1/activityLogs/log-1');
+
+    // Create an active standard
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    // Create a log entry
+    await assertSucceeds(
+      setDoc(logRef, {
+        standardId: 's1',
+        value: 10,
+        occurredAt: serverTimestamp(),
+        note: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        editedAt: null,
+        deletedAt: null
+      })
+    );
+
+    // Soft-delete by setting deletedAt
+    await assertSucceeds(
+      updateDoc(logRef, {
+        deletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+
+    // Restore by clearing deletedAt
+    await assertSucceeds(
+      updateDoc(logRef, {
+        deletedAt: null,
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+
+  test('allows updating value, note, and occurredAt fields', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+    const logRef = doc(db1, 'users/u1/activityLogs/log-1');
+
+    // Create an active standard
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    // Create a log entry
+    await assertSucceeds(
+      setDoc(logRef, {
+        standardId: 's1',
+        value: 10,
+        occurredAt: serverTimestamp(),
+        note: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        editedAt: null,
+        deletedAt: null
+      })
+    );
+
+    // Update value, note, and occurredAt
+    await assertSucceeds(
+      updateDoc(logRef, {
+        value: 20,
+        note: 'Updated note',
+        occurredAt: serverTimestamp(),
+        editedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+
+  test('prevents updating createdAt field', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+    const logRef = doc(db1, 'users/u1/activityLogs/log-1');
+
+    // Create an active standard
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    // Create a log entry
+    await assertSucceeds(
+      setDoc(logRef, {
+        standardId: 's1',
+        value: 10,
+        occurredAt: serverTimestamp(),
+        note: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        editedAt: null,
+        deletedAt: null
+      })
+    );
+
+    const logDoc = await getDoc(logRef);
+    const logData = logDoc.data();
+
+    // Attempt to change createdAt should fail
+    await assertFails(
+      updateDoc(logRef, {
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      })
+    );
+  });
+
+  test('prevents updating standardId field', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+    const standardRef = doc(db1, 'users/u1/standards/s1');
+    const logRef = doc(db1, 'users/u1/activityLogs/log-1');
+
+    // Create an active standard
+    await assertSucceeds(
+      setDoc(standardRef, {
+        activityId: 'a1',
+        minimum: 100,
+        unit: 'calls',
+        cadence: { interval: 1, unit: 'week' },
+        state: 'active',
+        summary: '100 calls / week',
+        archivedAt: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        deletedAt: null
+      })
+    );
+
+    // Create a log entry
+    await assertSucceeds(
+      setDoc(logRef, {
+        standardId: 's1',
+        value: 10,
+        occurredAt: serverTimestamp(),
+        note: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        editedAt: null,
+        deletedAt: null
+      })
+    );
+
+    // Attempt to change standardId should fail
+    await assertFails(
+      updateDoc(logRef, {
+        standardId: 's2',
+        updatedAt: serverTimestamp()
       })
     );
   });

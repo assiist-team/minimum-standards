@@ -1,8 +1,10 @@
 export type TimestampMs = number;
 
-export type ActivityInputType = 'number' | 'yes_no';
-
-export type StandardCadence = 'daily' | 'weekly' | 'monthly';
+export type CadenceUnit = 'day' | 'week' | 'month';
+export type StandardCadence = {
+  interval: number;
+  unit: CadenceUnit;
+};
 export type StandardState = 'active' | 'archived';
 
 export type SoftDelete = {
@@ -19,7 +21,6 @@ export type Activity = SoftDelete &
     id: string;
     name: string;
     unit: string;
-    inputType: ActivityInputType;
   };
 
 export type Standard = SoftDelete &
@@ -30,6 +31,9 @@ export type Standard = SoftDelete &
     unit: string;
     cadence: StandardCadence;
     state: StandardState;
+    summary: string; // Normalized summary string like "1000 calls / week"
+    archivedAtMs: TimestampMs | null; // Timestamp when archived, null if active
+    quickAddValues?: number[]; // Optional preset chips for fast logging (e.g., [1])
   };
 
 export type ActivityLog = SoftDelete &
@@ -41,3 +45,9 @@ export type ActivityLog = SoftDelete &
     note: string | null;
     editedAtMs: TimestampMs | null;
   };
+
+export type DashboardPins = {
+  id: string;
+  pinnedStandardIds: string[];
+  updatedAtMs: TimestampMs;
+};

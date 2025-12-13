@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -31,6 +31,7 @@ export function ActivityLibraryScreen({
 }: ActivityLibraryScreenProps) {
   const {
     activities,
+    recentActivities,
     loading,
     error,
     searchQuery,
@@ -38,13 +39,27 @@ export function ActivityLibraryScreen({
     createActivity,
     updateActivity,
     deleteActivity,
-  restoreActivity,
+    restoreActivity,
   } = useActivities();
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [undoActivity, setUndoActivity] = useState<Activity | null>(null);
+  const [hasFocusedSearch, setHasFocusedSearch] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const trimmedQuery = searchQuery.trim();
+  const showRecents = hasFocusedSearch && trimmedQuery.length === 0;
+  const showResults = hasFocusedSearch && trimmedQuery.length > 0;
+  const showPrefocusState = !hasFocusedSearch;
+
+  const recentsEmptyCopy = useMemo(() => {
+    if (recentActivities.length === 0) {
+      return 'No recents yet — search or create an activity to get started.';
+    }
+    return null;
+  }, [recentActivities.length]);
 
   useEffect(() => {
     return () => {
@@ -88,7 +103,7 @@ export function ActivityLibraryScreen({
               await deleteActivity(activity.id);
               setUndoActivity(activity);
               scheduleUndoClear();
-            } catch (err) {
+            } catch {
               Alert.alert('Error', 'Failed to delete activity');
             }
           },
@@ -109,7 +124,7 @@ export function ActivityLibraryScreen({
         undoTimerRef.current = null;
       }
       setUndoActivity(null);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to restore activity');
     }
   };
@@ -147,9 +162,6 @@ export function ActivityLibraryScreen({
           <Text style={styles.activityName}>{item.name}</Text>
           <Text style={styles.activityUnit}>{item.unit}</Text>
         </View>
-        <Text style={styles.activityInputType}>
-          {item.inputType === 'number' ? 'Number' : 'Yes/No'}
-        </Text>
       </TouchableOpacity>
       {!hideDestructiveControls && (
         <View style={styles.activityActions}>
@@ -182,7 +194,6 @@ export function ActivityLibraryScreen({
 
   return (
     <View style={styles.container}>
-      {/* Header with close button if in modal context */}
       {onClose && (
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Activity Library</Text>
@@ -192,43 +203,97 @@ export function ActivityLibraryScreen({
         </View>
       )}
 
-      {/* Search bar */}
       <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search activities..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
+        <View style={styles.searchRow}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search activities..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            onFocus={() => {
+              setHasFocusedSearch(true);
+              setIsSearchFocused(true);
+            }}
+            onBlur={() => setIsSearchFocused(false)}
+            accessibilityLabel="Activity search input"
+          />
+          <TouchableOpacity
+            style={styles.inlineCreateButton}
+            onPress={handleAddPress}
+            accessibilityRole="button"
+          >
+            <Text style={styles.inlineCreateButtonText}>+ Create</Text>
+          </TouchableOpacity>
+        </View>
+        {hasFocusedSearch && (
+          <Text style={styles.searchHint}>
+            Showing {showRecents ? 'recent picks' : 'search results'}
+          </Text>
+        )}
       </View>
 
-      {/* Add button */}
-      <TouchableOpacity style={styles.addButton} onPress={handleAddPress}>
-        <Text style={styles.addButtonText}>+ Add Activity</Text>
-      </TouchableOpacity>
+      <View style={styles.listArea}>
+        {showPrefocusState && (
+          <View style={styles.prefocusContainer}>
+            <Text style={styles.prefocusTitle}>Start with search</Text>
+            <Text style={styles.prefocusSubtitle}>
+              Tap the search field to reveal your five most recent activities.
+            </Text>
+          </View>
+        )}
 
-      {/* Activity list */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      ) : activities.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            {searchQuery ? 'No activities found' : 'No activities yet'}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={activities}
-          renderItem={renderActivityItem}
-          keyExtractor={(item) => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
+        {showRecents && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent activities</Text>
+              {isSearchFocused && (
+                <Text style={styles.sectionHint}>Recents refresh on focus</Text>
+              )}
+            </View>
+            {recentsEmptyCopy ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>{recentsEmptyCopy}</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={recentActivities}
+                renderItem={renderActivityItem}
+                keyExtractor={(item) => item.id}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+              />
+            )}
+          </View>
+        )}
+
+        {showResults && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Search results</Text>
+              {loading && <ActivityIndicator size="small" color="#007AFF" />}
+            </View>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#007AFF" />
+              </View>
+            ) : activities.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No activities found</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={activities}
+                renderItem={renderActivityItem}
+                keyExtractor={(item) => item.id}
+                style={styles.list}
+                contentContainerStyle={styles.listContent}
+              />
+            )}
+          </View>
+        )}
+      </View>
 
       {/* Modal */}
       <ActivityModal
@@ -282,26 +347,75 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    backgroundColor: '#fafafa',
+  },
+  searchRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
   },
   searchInput: {
+    flex: 1,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fff',
   },
-  addButton: {
-    backgroundColor: '#007AFF',
-    margin: 16,
-    padding: 16,
+  inlineCreateButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 8,
-    alignItems: 'center',
+    backgroundColor: '#0F62FE',
   },
-  addButtonText: {
+  inlineCreateButtonText: {
     color: '#fff',
+    fontWeight: '600',
+  },
+  searchHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#596174',
+  },
+  listArea: {
+    flex: 1,
+  },
+  prefocusContainer: {
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+    gap: 8,
+  },
+  prefocusTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#0E1116',
+  },
+  prefocusSubtitle: {
+    fontSize: 14,
+    color: '#5f6368',
+    textAlign: 'center',
+  },
+  section: {
+    flex: 1,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
+    color: '#202124',
+  },
+  sectionHint: {
+    fontSize: 12,
+    color: '#80868b',
   },
   loadingContainer: {
     flex: 1,
@@ -349,11 +463,6 @@ const styles = StyleSheet.create({
   activityUnit: {
     fontSize: 14,
     color: '#666',
-  },
-  activityInputType: {
-    fontSize: 14,
-    color: '#999',
-    marginLeft: 16,
   },
   activityActions: {
     flexDirection: 'row',

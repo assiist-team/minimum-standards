@@ -1,9 +1,16 @@
-import { collection, CollectionReference, doc, Firestore } from 'firebase/firestore';
+import {
+  collection,
+  CollectionReference,
+  doc,
+  DocumentReference,
+  Firestore
+} from 'firebase/firestore';
 
 export type UserScopedCollections = {
   activities: CollectionReference;
   standards: CollectionReference;
   activityLogs: CollectionReference;
+  dashboardPins: DocumentReference;
 };
 
 export function getUserScopedCollections(params: {
@@ -21,6 +28,7 @@ export function getUserScopedCollections(params: {
   return {
     activities: collection(userDoc, 'activities'),
     standards: collection(userDoc, 'standards'),
-    activityLogs: collection(userDoc, 'activityLogs')
+    activityLogs: collection(userDoc, 'activityLogs'),
+    dashboardPins: doc(userDoc, 'preferences', 'dashboardPins')
   };
 }

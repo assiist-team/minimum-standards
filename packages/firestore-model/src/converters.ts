@@ -12,7 +12,10 @@ import {
   Standard,
   activityLogSchema,
   activitySchema,
-  standardSchema
+  standardSchema,
+  formatStandardSummary,
+  DashboardPins,
+  dashboardPinsSchema
 } from '@minimum-standards/shared-model';
 import { msToTimestamp, timestampToMs } from './timestamps';
 
@@ -22,10 +25,11 @@ type FirestoreActivity = Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | '
   deletedAt: Timestamp | null;
 };
 
-type FirestoreStandard = Omit<Standard, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'> & {
+type FirestoreStandard = Omit<Standard, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs' | 'archivedAtMs'> & {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;
+  archivedAt: Timestamp | null;
 };
 
 type FirestoreActivityLog = Omit<
@@ -40,6 +44,11 @@ type FirestoreActivityLog = Omit<
   deletedAt: Timestamp | null;
 };
 
+type FirestoreDashboardPins = {
+  pinnedStandardIds: string[];
+  updatedAt: Timestamp | null;
+};
+
 function parseWith<T>(schema: z.ZodType<T>, value: unknown): T {
   return schema.parse(value);
 }
@@ -51,7 +60,6 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
     return {
       name: model.name,
       unit: model.unit, // Already normalized via schema transform
-      inputType: model.inputType,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       deletedAt: model.deletedAtMs == null ? null : msToTimestamp(model.deletedAtMs)
@@ -64,7 +72,6 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
       id: snapshot.id,
       name: data.name,
       unit: data.unit,
-      inputType: data.inputType,
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
@@ -76,12 +83,20 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
 
 export const standardConverter: FirestoreDataConverter<Standard> = {
   toFirestore(model: Standard) {
+    // Ensure summary is regenerated if cadence/minimum/unit changed
+    const summary = formatStandardSummary(model.minimum, model.unit, model.cadence);
+    
     return {
       activityId: model.activityId,
       minimum: model.minimum,
       unit: model.unit,
       cadence: model.cadence,
       state: model.state,
+      summary: summary,
+      ...(Array.isArray(model.quickAddValues) && model.quickAddValues.length > 0
+        ? { quickAddValues: model.quickAddValues }
+        : {}),
+      archivedAt: model.archivedAtMs == null ? null : msToTimestamp(model.archivedAtMs),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       deletedAt: model.deletedAtMs == null ? null : msToTimestamp(model.deletedAtMs)
@@ -97,6 +112,13 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       unit: data.unit,
       cadence: data.cadence,
       state: data.state,
+      summary: data.summary,
+      quickAddValues: Array.isArray((data as any).quickAddValues)
+        ? ((data as any).quickAddValues as unknown[]).filter(
+            (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
+          )
+        : undefined,
+      archivedAtMs: data.archivedAt == null ? null : timestampToMs(data.archivedAt),
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
@@ -130,6 +152,26 @@ export const activityLogConverter: FirestoreDataConverter<ActivityLog> = {
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
+    });
+  }
+};
+
+export const dashboardPinsConverter: FirestoreDataConverter<DashboardPins> = {
+  toFirestore(model: DashboardPins) {
+    return {
+      pinnedStandardIds: model.pinnedStandardIds,
+      updatedAt: serverTimestamp()
+    } as unknown as FirestoreDashboardPins;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): DashboardPins {
+    const data = snapshot.data(options) as FirestoreDashboardPins;
+    return parseWith(dashboardPinsSchema, {
+      id: snapshot.id,
+      pinnedStandardIds: Array.isArray(data.pinnedStandardIds)
+        ? data.pinnedStandardIds
+        : [],
+      updatedAtMs:
+        data.updatedAt == null ? Date.now() : timestampToMs(data.updatedAt)
     });
   }
 };

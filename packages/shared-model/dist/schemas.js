@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activityLogSchema = exports.standardSchema = exports.activitySchema = exports.standardStateSchema = exports.standardCadenceSchema = exports.activityInputTypeSchema = void 0;
+exports.dashboardPinsSchema = exports.activityLogSchema = exports.standardSchema = exports.activitySchema = exports.standardStateSchema = exports.legacyStandardCadenceSchema = exports.standardCadenceSchema = exports.cadenceUnitSchema = void 0;
 const zod_1 = require("zod");
 const unit_normalization_1 = require("./unit-normalization");
 const timestampMsSchema = zod_1.z
@@ -8,8 +8,15 @@ const timestampMsSchema = zod_1.z
     .int()
     .nonnegative()
     .refine((v) => Number.isFinite(v), 'timestampMs must be finite');
-exports.activityInputTypeSchema = zod_1.z.union([zod_1.z.literal('number'), zod_1.z.literal('yes_no')]);
-exports.standardCadenceSchema = zod_1.z.union([
+// Cadence unit types - supports day, week, month, and future extensions
+exports.cadenceUnitSchema = zod_1.z.enum(['day', 'week', 'month']);
+// Cadence structure: {interval: number, unit: 'day' | 'week' | 'month'}
+exports.standardCadenceSchema = zod_1.z.object({
+    interval: zod_1.z.number().int().positive(),
+    unit: exports.cadenceUnitSchema,
+});
+// Legacy cadence schema for backward compatibility (deprecated)
+exports.legacyStandardCadenceSchema = zod_1.z.union([
     zod_1.z.literal('daily'),
     zod_1.z.literal('weekly'),
     zod_1.z.literal('monthly')
@@ -37,7 +44,6 @@ exports.activitySchema = zod_1.z.object({
             ]);
         }
     }),
-    inputType: exports.activityInputTypeSchema,
     createdAtMs: timestampMsSchema,
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()
@@ -49,6 +55,9 @@ exports.standardSchema = zod_1.z.object({
     unit: zod_1.z.string().min(1).max(40),
     cadence: exports.standardCadenceSchema,
     state: exports.standardStateSchema,
+    summary: zod_1.z.string().min(1).max(200), // Normalized summary string like "1000 calls / week"
+    archivedAtMs: timestampMsSchema.nullable(), // Timestamp when archived, null if active
+    quickAddValues: zod_1.z.array(zod_1.z.number().positive()).max(5).optional(),
     createdAtMs: timestampMsSchema,
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()
@@ -63,5 +72,10 @@ exports.activityLogSchema = zod_1.z.object({
     createdAtMs: timestampMsSchema,
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()
+});
+exports.dashboardPinsSchema = zod_1.z.object({
+    id: zod_1.z.string().min(1),
+    pinnedStandardIds: zod_1.z.array(zod_1.z.string().min(1)),
+    updatedAtMs: timestampMsSchema
 });
 //# sourceMappingURL=schemas.js.map

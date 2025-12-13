@@ -12,6 +12,7 @@
   "dependencies": {
     "@minimum-standards/firestore-model": "file:../../packages/firestore-model",
     "@minimum-standards/shared-model": "file:../../packages/shared-model",
+    "@react-native-community/datetimepicker": "^8.5.1",
     "@react-native-firebase/app": "^23.7.0",
     "@react-native-firebase/auth": "^23.7.0",
     "@react-native-firebase/firestore": "^23.7.0",
@@ -21,7 +22,8 @@
     "lodash.debounce": "^4.0.8",
     "react": "19.2.0",
     "react-native": "0.83.0",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-safe-area-context": "^5.5.2",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

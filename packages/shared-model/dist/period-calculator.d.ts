@@ -10,7 +10,7 @@ export type PeriodWindow = {
  * Calculates the period window for a given timestamp, cadence, and timezone.
  *
  * @param timestampMs - The timestamp in milliseconds
- * @param cadence - The cadence type (daily, weekly, monthly)
+ * @param cadence - The cadence object with interval and unit
  * @param timezone - IANA timezone identifier (e.g., 'America/New_York')
  * @returns Period window with start (inclusive), end (exclusive), period key, and label
  */

@@ -68,7 +68,6 @@ describe('Integration: create/read with converters in user scope', () => {
       id: 'a1',
       name: 'Sales Calls',
       unit: 'calls',
-      inputType: 'number',
       createdAtMs: 1,
       updatedAtMs: 1,
       deletedAtMs: null
@@ -79,8 +78,10 @@ describe('Integration: create/read with converters in user scope', () => {
       activityId: 'a1',
       minimum: 100,
       unit: 'calls',
-      cadence: 'weekly',
+      cadence: { interval: 1, unit: 'week' },
       state: 'active',
+      summary: '100 calls / week',
+      archivedAtMs: null,
       createdAtMs: 1,
       updatedAtMs: 1,
       deletedAtMs: null

@@ -1,28 +1,35 @@
 import { z } from 'zod';
-export declare const activityInputTypeSchema: z.ZodUnion<[z.ZodLiteral<"number">, z.ZodLiteral<"yes_no">]>;
-export declare const standardCadenceSchema: z.ZodUnion<[z.ZodLiteral<"daily">, z.ZodLiteral<"weekly">, z.ZodLiteral<"monthly">]>;
+export declare const cadenceUnitSchema: z.ZodEnum<["day", "week", "month"]>;
+export declare const standardCadenceSchema: z.ZodObject<{
+    interval: z.ZodNumber;
+    unit: z.ZodEnum<["day", "week", "month"]>;
+}, "strip", z.ZodTypeAny, {
+    interval: number;
+    unit: "day" | "week" | "month";
+}, {
+    interval: number;
+    unit: "day" | "week" | "month";
+}>;
+export declare const legacyStandardCadenceSchema: z.ZodUnion<[z.ZodLiteral<"daily">, z.ZodLiteral<"weekly">, z.ZodLiteral<"monthly">]>;
 export declare const standardStateSchema: z.ZodUnion<[z.ZodLiteral<"active">, z.ZodLiteral<"archived">]>;
 export declare const activitySchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
     unit: z.ZodEffects<z.ZodString, string, string>;
-    inputType: z.ZodUnion<[z.ZodLiteral<"number">, z.ZodLiteral<"yes_no">]>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
 }, "strip", z.ZodTypeAny, {
+    unit: string;
     id: string;
     name: string;
-    unit: string;
-    inputType: "number" | "yes_no";
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
 }, {
+    unit: string;
     id: string;
     name: string;
-    unit: string;
-    inputType: "number" | "yes_no";
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
@@ -32,31 +39,55 @@ export declare const standardSchema: z.ZodObject<{
     activityId: z.ZodString;
     minimum: z.ZodNumber;
     unit: z.ZodString;
-    cadence: z.ZodUnion<[z.ZodLiteral<"daily">, z.ZodLiteral<"weekly">, z.ZodLiteral<"monthly">]>;
+    cadence: z.ZodObject<{
+        interval: z.ZodNumber;
+        unit: z.ZodEnum<["day", "week", "month"]>;
+    }, "strip", z.ZodTypeAny, {
+        interval: number;
+        unit: "day" | "week" | "month";
+    }, {
+        interval: number;
+        unit: "day" | "week" | "month";
+    }>;
     state: z.ZodUnion<[z.ZodLiteral<"active">, z.ZodLiteral<"archived">]>;
+    summary: z.ZodString;
+    archivedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
+    quickAddValues: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
 }, "strip", z.ZodTypeAny, {
+    unit: string;
     minimum: number;
     id: string;
-    unit: string;
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
     activityId: string;
-    cadence: "daily" | "weekly" | "monthly";
+    cadence: {
+        interval: number;
+        unit: "day" | "week" | "month";
+    };
     state: "active" | "archived";
+    summary: string;
+    archivedAtMs: number | null;
+    quickAddValues?: number[] | undefined;
 }, {
+    unit: string;
     minimum: number;
     id: string;
-    unit: string;
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
     activityId: string;
-    cadence: "daily" | "weekly" | "monthly";
+    cadence: {
+        interval: number;
+        unit: "day" | "week" | "month";
+    };
     state: "active" | "archived";
+    summary: string;
+    archivedAtMs: number | null;
+    quickAddValues?: number[] | undefined;
 }>;
 export declare const activityLogSchema: z.ZodObject<{
     id: z.ZodString;
@@ -92,3 +123,17 @@ export declare const activityLogSchema: z.ZodObject<{
 export type ActivitySchema = z.infer<typeof activitySchema>;
 export type StandardSchema = z.infer<typeof standardSchema>;
 export type ActivityLogSchema = z.infer<typeof activityLogSchema>;
+export type DashboardPinsSchema = z.infer<typeof dashboardPinsSchema>;
+export declare const dashboardPinsSchema: z.ZodObject<{
+    id: z.ZodString;
+    pinnedStandardIds: z.ZodArray<z.ZodString, "many">;
+    updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    updatedAtMs: number;
+    pinnedStandardIds: string[];
+}, {
+    id: string;
+    updatedAtMs: number;
+    pinnedStandardIds: string[];
+}>;
