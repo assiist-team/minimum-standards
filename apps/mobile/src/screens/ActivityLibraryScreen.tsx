@@ -13,6 +13,7 @@ import { useActivities } from '../hooks/useActivities';
 import { ActivityModal } from '../components/ActivityModal';
 import { Activity } from '@minimum-standards/shared-model';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { useTheme } from '../theme/useTheme';
 
 /**
  * Standalone Activity Library screen.
@@ -30,6 +31,7 @@ export function ActivityLibraryScreen({
   hideDestructiveControls = false,
   onClose,
 }: ActivityLibraryScreenProps) {
+  const theme = useTheme();
   const {
     activities,
     recentActivities,
@@ -153,30 +155,30 @@ export function ActivityLibraryScreen({
   };
 
   const renderActivityItem = ({ item }: { item: Activity }) => (
-    <View style={styles.activityItem}>
+    <View style={[styles.activityItem, { borderBottomColor: theme.border.secondary }]}>
       <TouchableOpacity
         style={styles.activityContent}
         onPress={() => handleSelect(item)}
         disabled={!onSelectActivity}
       >
         <View style={styles.activityInfo}>
-          <Text style={styles.activityName}>{item.name}</Text>
-          <Text style={styles.activityUnit}>{item.unit}</Text>
+          <Text style={[styles.activityName, { color: theme.text.primary }]}>{item.name}</Text>
+          <Text style={[styles.activityUnit, { color: theme.text.secondary }]}>{item.unit}</Text>
         </View>
       </TouchableOpacity>
       {!hideDestructiveControls && (
         <View style={styles.activityActions}>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
             onPress={() => handleEditPress(item)}
           >
-            <Text style={styles.actionButtonText}>Edit</Text>
+            <Text style={[styles.actionButtonText, { color: theme.link }]}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
+            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.archive.background }]}
             onPress={() => handleDeletePress(item)}
           >
-            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>
+            <Text style={[styles.actionButtonText, styles.deleteButtonText, { color: theme.archive.text }]}>
               Delete
             </Text>
           </TouchableOpacity>
@@ -186,22 +188,30 @@ export function ActivityLibraryScreen({
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       <ErrorBanner error={error} />
       {onClose && (
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: theme.border.secondary }]}>
           <Text style={styles.headerTitle}>Activity Library</Text>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.closeButton}>✕</Text>
+            <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
         <View style={styles.searchRow}>
           <TextInput
-            style={styles.searchInput}
+            style={[
+              styles.searchInput,
+              {
+                backgroundColor: theme.input.background,
+                borderColor: theme.input.border,
+                color: theme.input.text,
+              },
+            ]}
             placeholder="Search activities..."
+            placeholderTextColor={theme.input.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
             autoCapitalize="none"
@@ -214,15 +224,15 @@ export function ActivityLibraryScreen({
             accessibilityLabel="Activity search input"
           />
           <TouchableOpacity
-            style={styles.inlineCreateButton}
+            style={[styles.inlineCreateButton, { backgroundColor: theme.button.primary.background }]}
             onPress={handleAddPress}
             accessibilityRole="button"
           >
-            <Text style={styles.inlineCreateButtonText}>+ Create</Text>
+            <Text style={[styles.inlineCreateButtonText, { color: theme.button.primary.text }]}>+ Create</Text>
           </TouchableOpacity>
         </View>
         {hasFocusedSearch && (
-          <Text style={styles.searchHint}>
+          <Text style={[styles.searchHint, { color: theme.text.secondary }]}>
             Showing {showRecents ? 'recent picks' : 'search results'}
           </Text>
         )}
@@ -231,8 +241,8 @@ export function ActivityLibraryScreen({
       <View style={styles.listArea}>
         {showPrefocusState && (
           <View style={styles.prefocusContainer}>
-            <Text style={styles.prefocusTitle}>Start with search</Text>
-            <Text style={styles.prefocusSubtitle}>
+            <Text style={[styles.prefocusTitle, { color: theme.text.primary }]}>Start with search</Text>
+            <Text style={[styles.prefocusSubtitle, { color: theme.text.secondary }]}>
               Tap the search field to reveal your five most recent activities.
             </Text>
           </View>
@@ -241,14 +251,14 @@ export function ActivityLibraryScreen({
         {showRecents && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Recent activities</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Recent activities</Text>
               {isSearchFocused && (
-                <Text style={styles.sectionHint}>Recents refresh on focus</Text>
+                <Text style={[styles.sectionHint, { color: theme.text.tertiary }]}>Recents refresh on focus</Text>
               )}
             </View>
             {recentsEmptyCopy ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>{recentsEmptyCopy}</Text>
+                <Text style={[styles.emptyText, { color: theme.text.secondary }]}>{recentsEmptyCopy}</Text>
               </View>
             ) : (
               <FlatList
@@ -265,16 +275,16 @@ export function ActivityLibraryScreen({
         {showResults && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Search results</Text>
-              {loading && <ActivityIndicator size="small" color="#007AFF" />}
+              <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Search results</Text>
+              {loading && <ActivityIndicator size="small" color={theme.activityIndicator} />}
             </View>
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#007AFF" />
+                <ActivityIndicator size="large" color={theme.activityIndicator} />
               </View>
             ) : activities.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No activities found</Text>
+                <Text style={[styles.emptyText, { color: theme.text.secondary }]}>No activities found</Text>
               </View>
             ) : (
               <FlatList
@@ -303,12 +313,12 @@ export function ActivityLibraryScreen({
 
       {/* Undo snackbar */}
       {undoActivity && (
-        <View style={styles.snackbar}>
-          <Text style={styles.snackbarText}>
+        <View style={[styles.snackbar, { backgroundColor: theme.background.tertiary, shadowColor: theme.shadow }]}>
+          <Text style={[styles.snackbarText, { color: theme.text.inverse }]}>
             Activity deleted
           </Text>
           <TouchableOpacity onPress={handleUndoDelete}>
-            <Text style={styles.snackbarAction}>Undo</Text>
+            <Text style={[styles.snackbarAction, { color: theme.link }]}>Undo</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -319,7 +329,6 @@ export function ActivityLibraryScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -327,7 +336,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   headerTitle: {
     fontSize: 20,
@@ -335,13 +343,10 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 24,
-    color: '#666',
   },
   searchContainer: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fafafa',
   },
   searchRow: {
     flexDirection: 'row',
@@ -351,26 +356,21 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
   },
   inlineCreateButton: {
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#0F62FE',
   },
   inlineCreateButtonText: {
-    color: '#fff',
     fontWeight: '600',
   },
   searchHint: {
     marginTop: 8,
     fontSize: 12,
-    color: '#596174',
   },
   listArea: {
     flex: 1,
@@ -385,11 +385,9 @@ const styles = StyleSheet.create({
   prefocusTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0E1116',
   },
   prefocusSubtitle: {
     fontSize: 14,
-    color: '#5f6368',
     textAlign: 'center',
   },
   section: {
@@ -405,11 +403,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#202124',
   },
   sectionHint: {
     fontSize: 12,
-    color: '#80868b',
   },
   loadingContainer: {
     flex: 1,
@@ -424,7 +420,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
   },
   list: {
     flex: 1,
@@ -437,7 +432,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   activityContent: {
     flex: 1,
@@ -451,12 +445,10 @@ const styles = StyleSheet.create({
   activityName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 4,
   },
   activityUnit: {
     fontSize: 14,
-    color: '#666',
   },
   activityActions: {
     flexDirection: 'row',
@@ -467,41 +459,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#f0f0f0',
   },
-  deleteButton: {
-    backgroundColor: '#ffebee',
-  },
+  deleteButton: {},
   actionButtonText: {
     fontSize: 14,
-    color: '#007AFF',
   },
-  deleteButtonText: {
-    color: '#d32f2f',
-  },
+  deleteButtonText: {},
   snackbar: {
     position: 'absolute',
     left: 16,
     right: 16,
     bottom: 24,
-    backgroundColor: '#323232',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
   snackbarText: {
-    color: '#fff',
     fontSize: 14,
   },
   snackbarAction: {
-    color: '#4DBAF7',
     fontWeight: '600',
     fontSize: 14,
   },

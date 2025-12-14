@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTheme } from '../theme/useTheme';
 
 export function LoadingScreen() {
+  const theme = useTheme();
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <View style={styles.content}>
-        <ActivityIndicator size="large" color="#0F62FE" />
-        <Text style={styles.text}>Loading...</Text>
+        <ActivityIndicator size="large" color={theme.activityIndicator} />
+        <Text style={[styles.text, { color: theme.text.secondary }]}>Loading...</Text>
       </View>
     </SafeAreaView>
   );
@@ -16,7 +18,6 @@ export function LoadingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   content: {
     flex: 1,
@@ -26,6 +27,5 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    color: '#666',
   },
 });

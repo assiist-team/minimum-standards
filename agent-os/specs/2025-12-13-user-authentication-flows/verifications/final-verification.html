@@ -1,5 +1,5 @@
 # Tech stack reference
-- Follow `agent-os/standards/global/tech-stack.md` for canonical tooling (React Native CLI + Firebase, Yarn-based scripts, emulator expectations). Update that reference first if the stack changes.
+- Follow `agent-os/standards/global/tech-stack.md` for canonical tooling (React Native CLI + Firebase, npm-based scripts, emulator expectations). Update that reference first if the stack changes.
 
 # Verification Report: User authentication flows
 
@@ -72,11 +72,11 @@ The navigation/authentication scaffolding exists, but several critical deliverab
 **Status:** ❌ Critical Failures
 
 ### Test Summary
-- **Lint:** ❌ `npm run lint` (fallback because `yarn` is unavailable) failed with 30 errors, including unused Google auth imports in `SignInScreen.tsx` and missing `jest` globals in the new Firebase auth mock.
+- **Lint:** ❌ `npm run lint` failed with 30 errors, including unused Google auth imports in `SignInScreen.tsx` and missing `jest` globals in the new Firebase auth mock.
 - **Typecheck:** ⚠️ `npm run typecheck` failed because no `typecheck` script exists. The repo does not expose the required command.
 - **Jest (app):** ❌ `npm test` failed—Jest cannot resolve `@react-navigation/native` for the new auth/navigation suites, and `errorHandlingIntegration.test.ts` still fails (expects "2024" in a date label but receives 2025 data).
 - **Jest (functions):** ⚠️ Not run; there is no `test:functions` script in any package.
-- **Detox / Device Tests:** ⚠️ Not run; no Detox configuration or command (`yarn detox test --configuration ios.sim.debug`) exists in this repo, and the required simulators were not documented.
+- **Detox / Device Tests:** ⚠️ Not run; no Detox configuration or command (`npm run test:detox:ios`) exists in this repo, and the required simulators were not documented.
 
 ### Failed Tests
 - `src/navigation/__tests__/AppNavigator.test.tsx`, `authFlowIntegration.test.tsx`, `src/screens/__tests__/SignInScreen.test.tsx`, `SignUpScreen.test.tsx`, `PasswordResetScreen.test.tsx`, `SettingsScreen.test.tsx`: all cannot import `@react-navigation/native` because the dependency was never installed (no entry in `apps/mobile/package-lock.json`).

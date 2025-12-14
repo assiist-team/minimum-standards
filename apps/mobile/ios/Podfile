@@ -20,6 +20,11 @@ use_frameworks! :linkage => :static
 target 'MinimumStandardsMobile' do
   config = use_native_modules!
 
+  # Force GTMSessionFetcher/Core to a version that satisfies both Firebase (>= 3.4, < 6.0) 
+  # and GoogleSignIn (~> 3.3, which means >= 3.3, < 4.0)
+  # Using 3.4.0 which satisfies both constraints
+  pod 'GTMSessionFetcher/Core', '3.4.0'
+
   # Enable modular headers for Firebase dependencies (required for Swift pods)
   pod 'FirebaseCore', :modular_headers => true
   pod 'FirebaseCoreExtension', :modular_headers => true

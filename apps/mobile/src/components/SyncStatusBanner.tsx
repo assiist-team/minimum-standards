@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, useColorScheme, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useTheme } from '../theme/useTheme';
 
 // Conditionally import NetInfo if available
 let NetInfo: any = null;
@@ -19,7 +20,7 @@ export interface SyncStatusBannerProps {
  * Relies on Firestore's built-in offline persistence for queuing.
  */
 export function SyncStatusBanner({ forceShow }: SyncStatusBannerProps) {
-  const isDark = useColorScheme() === 'dark';
+  const theme = useTheme();
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
@@ -68,15 +69,15 @@ export function SyncStatusBanner({ forceShow }: SyncStatusBannerProps) {
     : 'Checking connection...';
 
   return (
-    <View style={[styles.banner, isDark && styles.bannerDark]}>
+    <View style={[styles.banner, { backgroundColor: theme.status.inProgress.background }]}>
       {isSyncing && (
         <ActivityIndicator 
           size="small" 
-          color={isDark ? '#64B5F6' : '#0F62FE'} 
+          color={theme.activityIndicator} 
           style={styles.spinner}
         />
       )}
-      <Text style={[styles.text, isDark && styles.textDark]}>
+      <Text style={[styles.text, { color: theme.status.inProgress.text }]}>
         {message}
       </Text>
     </View>
@@ -85,7 +86,6 @@ export function SyncStatusBanner({ forceShow }: SyncStatusBannerProps) {
 
 const styles = StyleSheet.create({
   banner: {
-    backgroundColor: '#FFF8E1',
     padding: 12,
     margin: 16,
     marginBottom: 0,
@@ -93,18 +93,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  bannerDark: {
-    backgroundColor: '#3E2E1A',
-  },
   spinner: {
     marginRight: 8,
   },
   text: {
-    color: '#B06E00',
     fontSize: 14,
     flex: 1,
-  },
-  textDark: {
-    color: '#FFC107',
   },
 });

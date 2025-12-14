@@ -7,7 +7,6 @@ import {
   StyleSheet,
   FlatList,
   ActivityIndicator,
-  useColorScheme,
   Alert,
 } from 'react-native';
 import { usePeriodLogs } from '../hooks/usePeriodLogs';
@@ -15,6 +14,7 @@ import type { PeriodLogEntry } from '../hooks/usePeriodLogs';
 import { LogEntryModal } from './LogEntryModal';
 import { useStandards } from '../hooks/useStandards';
 import type { ActivityLog } from '@minimum-standards/shared-model';
+import { useTheme } from '../theme/useTheme';
 
 export interface PeriodLogsModalProps {
   visible: boolean;
@@ -27,13 +27,13 @@ export interface PeriodLogsModalProps {
 
 function LogItem({
   item,
-  isDark,
+  theme,
   canEdit,
   onEdit,
   onDelete,
 }: {
   item: PeriodLogEntry;
-  isDark: boolean;
+  theme: ReturnType<typeof useTheme>;
   canEdit: boolean;
   onEdit: () => void;
   onDelete: () => void;
@@ -49,40 +49,40 @@ function LogItem({
   };
 
   return (
-    <View style={[styles.logItem, isDark && styles.logItemDark]}>
+    <View style={[styles.logItem, { backgroundColor: theme.background.primary }]}>
       <View style={styles.logHeader}>
-        <Text style={[styles.logValue, isDark && styles.logValueDark]}>{item.value}</Text>
+        <Text style={[styles.logValue, { color: theme.text.primary }]}>{item.value}</Text>
         <View style={styles.dateContainer}>
-          <Text style={[styles.logDate, isDark && styles.logDateDark]}>
+          <Text style={[styles.logDate, { color: theme.text.secondary }]}>
             {formatDateTime(item.occurredAtMs)}
           </Text>
           {item.editedAtMs && (
-            <Text style={[styles.editedIndicator, isDark && styles.editedIndicatorDark]}>
+            <Text style={[styles.editedIndicator, { color: theme.text.secondary }]}>
               Edited
             </Text>
           )}
         </View>
       </View>
       {item.note && (
-        <Text style={[styles.logNote, isDark && styles.logNoteDark]}>{item.note}</Text>
+        <Text style={[styles.logNote, { color: theme.text.primary }]}>{item.note}</Text>
       )}
       {canEdit && (
         <View style={styles.logActions}>
           <TouchableOpacity
-            style={styles.actionButton}
+            style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
             onPress={onEdit}
             accessibilityLabel="Edit log entry"
             accessibilityRole="button"
           >
-            <Text style={styles.actionButtonText}>Edit</Text>
+            <Text style={[styles.actionButtonText, { color: theme.primary.main }]}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton]}
+            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.background.tertiary }]}
             onPress={onDelete}
             accessibilityLabel="Delete log entry"
             accessibilityRole="button"
           >
-            <Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete</Text>
+            <Text style={[styles.actionButtonText, styles.deleteButtonText, { color: theme.status.missed.text }]}>Delete</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -100,7 +100,7 @@ export function PeriodLogsModal({
   periodLabel,
   onClose,
 }: PeriodLogsModalProps) {
-  const isDark = useColorScheme() === 'dark';
+  const theme = useTheme();
   const { logs, loading, error } = usePeriodLogs(standardId, periodStartMs, periodEndMs);
   const { standards, updateLogEntry, deleteLogEntry, restoreLogEntry, canLogStandard } = useStandards();
   
@@ -205,7 +205,7 @@ export function PeriodLogsModal({
   const renderItem = ({ item }: { item: PeriodLogEntry }) => (
     <LogItem
       item={item}
-      isDark={isDark}
+      theme={theme}
       canEdit={canEdit}
       onEdit={() => handleEditPress(item)}
       onDelete={() => handleDeletePress(item)}
@@ -219,14 +219,14 @@ export function PeriodLogsModal({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.background.modal }]}>
           <View style={styles.modalHeader}>
             <View style={styles.headerContent}>
-              <Text style={[styles.modalTitle, isDark && styles.modalTitleDark]}>
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
                 {periodLabel}
               </Text>
-              <Text style={[styles.modalSubtitle, isDark && styles.modalSubtitleDark]}>
+              <Text style={[styles.modalSubtitle, { color: theme.text.secondary }]}>
                 Logs
               </Text>
             </View>
@@ -235,24 +235,24 @@ export function PeriodLogsModal({
               accessibilityLabel="Close modal"
               accessibilityRole="button"
             >
-              <Text style={[styles.closeButton, isDark && styles.closeButtonDark]}>✕</Text>
+              <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           <View style={styles.content}>
             {loading ? (
               <View style={styles.loadingContainer} testID="logs-loading">
-                <ActivityIndicator size="large" color="#0F62FE" />
+                <ActivityIndicator size="large" color={theme.primary.main} />
               </View>
             ) : error ? (
               <View style={styles.errorContainer}>
-                <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
+                <Text style={[styles.errorText, { color: theme.status.missed.text }]}>
                   {error.message || 'Failed to load logs'}
                 </Text>
               </View>
             ) : logs.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, isDark && styles.emptyTextDark]}>
+                <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
                   No logs found for this period
                 </Text>
               </View>
@@ -270,10 +270,10 @@ export function PeriodLogsModal({
 
         {/* Undo snackbar */}
         {undoLogEntry && (
-          <View style={styles.snackbar}>
-            <Text style={styles.snackbarText}>Log entry deleted</Text>
+          <View style={[styles.snackbar, { backgroundColor: theme.background.tertiary, shadowColor: theme.shadow }]}>
+            <Text style={[styles.snackbarText, { color: theme.text.inverse }]}>Log entry deleted</Text>
             <TouchableOpacity onPress={handleUndoDelete}>
-              <Text style={styles.snackbarAction}>Undo</Text>
+              <Text style={[styles.snackbarAction, { color: theme.primary.light }]}>Undo</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -294,18 +294,13 @@ export function PeriodLogsModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
     maxHeight: '90%',
-  },
-  modalContentDark: {
-    backgroundColor: '#1E1E1E',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -320,25 +315,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111',
     marginBottom: 4,
-  },
-  modalTitleDark: {
-    color: '#E0E0E0',
   },
   modalSubtitle: {
     fontSize: 14,
-    color: '#666',
-  },
-  modalSubtitleDark: {
-    color: '#B0B0B0',
   },
   closeButton: {
     fontSize: 24,
-    color: '#666',
-  },
-  closeButtonDark: {
-    color: '#B0B0B0',
   },
   content: {
     flex: 1,
@@ -355,12 +338,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    color: '#C5221F',
     fontSize: 14,
     textAlign: 'center',
-  },
-  errorTextDark: {
-    color: '#EF5350',
   },
   emptyContainer: {
     padding: 40,
@@ -368,22 +347,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
-  },
-  emptyTextDark: {
-    color: '#B0B0B0',
   },
   logsList: {
     paddingBottom: 20,
   },
   logItem: {
-    backgroundColor: '#f7f8fa',
     borderRadius: 8,
     padding: 12,
-  },
-  logItemDark: {
-    backgroundColor: '#2E2E2E',
   },
   logHeader: {
     flexDirection: 'row',
@@ -394,25 +365,13 @@ const styles = StyleSheet.create({
   logValue: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#0E1116',
-  },
-  logValueDark: {
-    color: '#E0E0E0',
   },
   logDate: {
     fontSize: 14,
-    color: '#666',
-  },
-  logDateDark: {
-    color: '#B0B0B0',
   },
   logNote: {
     fontSize: 14,
-    color: '#333',
     marginTop: 4,
-  },
-  logNoteDark: {
-    color: '#D0D0D0',
   },
   separator: {
     height: 8,
@@ -423,11 +382,7 @@ const styles = StyleSheet.create({
   },
   editedIndicator: {
     fontSize: 12,
-    color: '#666',
     fontStyle: 'italic',
-  },
-  editedIndicatorDark: {
-    color: '#B0B0B0',
   },
   logActions: {
     flexDirection: 'row',
@@ -439,41 +394,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#f0f0f0',
   },
-  deleteButton: {
-    backgroundColor: '#ffebee',
-  },
+  deleteButton: {},
   actionButtonText: {
     fontSize: 14,
-    color: '#0F62FE',
   },
-  deleteButtonText: {
-    color: '#d32f2f',
-  },
+  deleteButtonText: {},
   snackbar: {
     position: 'absolute',
     left: 16,
     right: 16,
     bottom: 24,
-    backgroundColor: '#323232',
     borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
   },
   snackbarText: {
-    color: '#fff',
     fontSize: 14,
   },
   snackbarAction: {
-    color: '#4DBAF7',
     fontWeight: '600',
     fontSize: 14,
   },

@@ -7,7 +7,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  useColorScheme,
 } from 'react-native';
 import type { Standard } from '@minimum-standards/shared-model';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
@@ -16,29 +15,8 @@ import type { DashboardStandard } from '../hooks/useActiveStandardsDashboard';
 import { trackStandardEvent } from '../utils/analytics';
 import { LogEntryModal } from '../components/LogEntryModal';
 import { ErrorBanner } from '../components/ErrorBanner';
-
-export interface ActiveStandardsDashboardScreenProps {
-  onBack: () => void;
-  onLaunchBuilder: () => void;
-  onOpenLogModal?: (standard: Standard) => void;
-  onNavigateToDetail?: (standardId: string) => void;
-}
-
-const STATUS_COLORS_LIGHT: Record<string, { background: string; text: string; bar: string }> = {
-  Met: { background: '#E6F4EA', text: '#1E8E3E', bar: '#1E8E3E' },
-  'In Progress': { background: '#FFF8E1', text: '#B06E00', bar: '#F4B400' },
-  Missed: { background: '#FCE8E6', text: '#C5221F', bar: '#C5221F' },
-};
-
-const STATUS_COLORS_DARK: Record<string, { background: string; text: string; bar: string }> = {
-  Met: { background: '#1E3A2E', text: '#4CAF50', bar: '#4CAF50' },
-  'In Progress': { background: '#3E2E1A', text: '#FFC107', bar: '#FFC107' },
-  Missed: { background: '#3E1E1E', text: '#EF5350', bar: '#EF5350' },
-};
-
-function getStatusColors(isDark: boolean) {
-  return isDark ? STATUS_COLORS_DARK : STATUS_COLORS_LIGHT;
-}
+import { useTheme } from '../theme/useTheme';
+import { getStatusColors } from '../theme/colors';
 
 const CARD_SPACING = 16;
 
@@ -47,7 +25,9 @@ export function ActiveStandardsDashboardScreen({
   onLaunchBuilder,
   onOpenLogModal,
   onNavigateToDetail,
+  backButtonLabel = '← Back',
 }: ActiveStandardsDashboardScreenProps) {
+  const theme = useTheme();
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [logModalVisible, setLogModalVisible] = useState(false);
   
@@ -206,10 +186,10 @@ export function ActiveStandardsDashboardScreen({
       return (
         <View style={styles.skeletonContainer} testID="dashboard-skeletons">
           {[0, 1, 2].map((key) => (
-            <View key={key} style={styles.skeletonCard}>
-              <View style={styles.skeletonLine} />
-              <View style={styles.skeletonLineShort} />
-              <View style={styles.skeletonBar} />
+            <View key={key} style={[styles.skeletonCard, { backgroundColor: theme.background.card }]}>
+              <View style={[styles.skeletonLine, { backgroundColor: theme.background.tertiary }]} />
+              <View style={[styles.skeletonLineShort, { backgroundColor: theme.background.tertiary }]} />
+              <View style={[styles.skeletonBar, { backgroundColor: theme.border.primary }]} />
             </View>
           ))}
         </View>
@@ -219,16 +199,16 @@ export function ActiveStandardsDashboardScreen({
     if (dashboardStandards.length === 0) {
       return (
         <View style={styles.emptyState} testID="dashboard-empty-state">
-          <Text style={styles.emptyTitle}>No active standards yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>No active standards yet</Text>
+          <Text style={[styles.emptySubtitle, { color: theme.text.secondary }]}>
             Pinned standards will appear here once you create them.
           </Text>
           <TouchableOpacity
             onPress={onLaunchBuilder}
-            style={styles.builderButton}
+            style={[styles.builderButton, { backgroundColor: theme.button.primary.background }]}
             accessibilityRole="button"
           >
-            <Text style={styles.builderButtonText}>Open Standards Builder</Text>
+            <Text style={[styles.builderButtonText, { color: theme.button.primary.text }]}>Open Standards Builder</Text>
           </TouchableOpacity>
         </View>
       );
@@ -252,15 +232,20 @@ export function ActiveStandardsDashboardScreen({
     onLaunchBuilder,
     refreshProgress,
     renderCard,
+    theme,
   ]);
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} accessibilityRole="button">
-          <Text style={styles.backButton}>← Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Active Standards</Text>
+    <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
+        {backButtonLabel ? (
+          <TouchableOpacity onPress={onBack} accessibilityRole="button">
+            <Text style={[styles.backButton, { color: theme.primary.main }]}>{backButtonLabel}</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Active Standards</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -291,10 +276,10 @@ function StandardCard({
   onPinLongPress: () => void;
   onCardPress?: () => void;
 }) {
-  const isDark = useColorScheme() === 'dark';
+  const theme = useTheme();
   const { standard, pinned, progress } = entry;
   const status = progress?.status ?? 'In Progress';
-  const colors = getStatusColors(isDark)[status] ?? getStatusColors(isDark)['In Progress'];
+  const statusColors = getStatusColors(theme, status as 'Met' | 'In Progress' | 'Missed');
   const percent = progress?.progressPercent ?? 0;
   
   // Compute period label if not available in progress
@@ -311,7 +296,7 @@ function StandardCard({
 
   return (
     <TouchableOpacity
-      style={[styles.card, isDark && styles.cardDark]}
+      style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}
       onPress={onCardPress}
       activeOpacity={onCardPress ? 0.7 : 1}
       accessibilityRole={onCardPress ? 'button' : undefined}
@@ -320,22 +305,22 @@ function StandardCard({
       <View style={styles.cardHeader}>
         <View style={styles.titleBlock}>
           <Text
-            style={[styles.activityName, isDark && styles.activityNameDark]}
+            style={[styles.activityName, { color: theme.text.primary }]}
             numberOfLines={1}
             accessibilityLabel={`Standard for activity ${standard.activityId}`}
           >
             {standard.activityId}
           </Text>
-          <Text style={[styles.periodText, isDark && styles.periodTextDark]} numberOfLines={2}>
+          <Text style={[styles.periodText, { color: theme.text.secondary }]} numberOfLines={2}>
             {detailLine}
           </Text>
         </View>
         <View style={styles.headerActions}>
           <View
-            style={[styles.statusPill, { backgroundColor: colors.background }]}
+            style={[styles.statusPill, { backgroundColor: statusColors.background }]}
             accessibilityRole="text"
           >
-            <Text style={[styles.statusText, { color: colors.text }]}>
+            <Text style={[styles.statusText, { color: statusColors.text }]}>
               {status}
             </Text>
           </View>
@@ -354,20 +339,20 @@ function StandardCard({
       </View>
 
       <View style={styles.progressSection}>
-        <View style={[styles.progressBar, isDark && styles.progressBarDark]}>
+        <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
           <View
-            style={[styles.progressFill, { width: `${percent}%`, backgroundColor: colors.bar }]}
+            style={[styles.progressFill, { width: `${percent}%`, backgroundColor: statusColors.bar }]}
             accessibilityRole="progressbar"
             accessibilityValue={{ now: percent, min: 0, max: 100 }}
           />
         </View>
         <TouchableOpacity
           onPress={onLogPress}
-          style={styles.logButton}
+          style={[styles.logButton, { backgroundColor: theme.button.primary.background }]}
           accessibilityRole="button"
           accessibilityLabel={`Log progress for ${standard.activityId}`}
         >
-          <Text style={styles.logButtonText}>Log</Text>
+          <Text style={[styles.logButtonText, { color: theme.button.primary.text }]}>Log</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -377,7 +362,6 @@ function StandardCard({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   header: {
     flexDirection: 'row',
@@ -385,19 +369,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: CARD_SPACING,
     paddingVertical: 12,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e6eb',
   },
   backButton: {
     fontSize: 16,
-    color: '#0F62FE',
     fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111',
   },
   headerSpacer: {
     width: 64,
@@ -407,7 +387,6 @@ const styles = StyleSheet.create({
     gap: CARD_SPACING,
   },
   skeletonCard: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     gap: 8,
@@ -415,18 +394,15 @@ const styles = StyleSheet.create({
   skeletonLine: {
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#e0e2e9',
   },
   skeletonLineShort: {
     height: 16,
     width: '60%',
     borderRadius: 8,
-    backgroundColor: '#e0e2e9',
   },
   skeletonBar: {
     height: 4,
     borderRadius: 4,
-    backgroundColor: '#d0d4dd',
   },
   emptyState: {
     flex: 1,
@@ -438,22 +414,18 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111',
   },
   emptySubtitle: {
     fontSize: 14,
-    color: '#5f6368',
     textAlign: 'center',
   },
   builderButton: {
     marginTop: 8,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#0F62FE',
     borderRadius: 8,
   },
   builderButtonText: {
-    color: '#fff',
     fontWeight: '600',
   },
   listContent: {
@@ -461,17 +433,12 @@ const styles = StyleSheet.create({
     gap: CARD_SPACING,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
-  },
-  cardDark: {
-    backgroundColor: '#1E1E1E',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -485,17 +452,9 @@ const styles = StyleSheet.create({
   activityName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0E1116',
-  },
-  activityNameDark: {
-    color: '#E0E0E0',
   },
   periodText: {
     fontSize: 14,
-    color: '#5f6368',
-  },
-  periodTextDark: {
-    color: '#B0B0B0',
   },
   headerActions: {
     alignItems: 'flex-end',
@@ -524,11 +483,7 @@ const styles = StyleSheet.create({
   progressBar: {
     flex: 1,
     height: 4,
-    backgroundColor: '#edeff2',
     borderRadius: 2,
-  },
-  progressBarDark: {
-    backgroundColor: '#333',
   },
   progressFill: {
     height: '100%',
@@ -537,11 +492,9 @@ const styles = StyleSheet.create({
   logButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#0F62FE',
     borderRadius: 999,
   },
   logButtonText: {
-    color: '#fff',
     fontWeight: '600',
   },
 });

@@ -35,7 +35,7 @@ Implement all tasks assigned to you and ONLY those task(s) that have been assign
 ## Implementation process:
 
 1. Analyze the provided spec.md, requirements.md, and visuals (if any)
-2. Spin up the Firebase Emulator Suite (Auth, Firestore, Storage, Functions) and run the React Native target (`yarn ios`, `yarn android`, or `yarn web`) to validate locally.
+2. Spin up the Firebase Emulator Suite (Auth, Firestore, Storage, Functions) and run the React Native target (`npm run ios`, `npm run android`, or `npm run web`) to validate locally.
 3. Analyze patterns in the codebase according to its built-in workflow (navigation stacks, Zustand stores, shared Zod schemas, Cloud Function helpers).
 4. Implement the assigned task group according to requirements and standards, favoring existing primitives before adding new libraries.
 5. Update `agent-os/specs/[this-spec]/tasks.md` to mark completed tasks with `- [x]`.
@@ -48,7 +48,7 @@ Implement all tasks assigned to you and ONLY those task(s) that have been assign
 
 ## Self-verify and test your work by:
 - Running the relevant checks for your scope:
-  - `yarn lint`, `yarn typecheck`, and focused Jest suites for components/hooks or Cloud Functions.
+  - `npm run lint`, `npm run typecheck`, and focused Jest suites for components/hooks or Cloud Functions.
   - Firebase Emulator tests for any Firestore/Auth/Storage/Functions logic (`firebase emulators:exec` or targeted scripts).
   - Detox or manual device testing for user-facing flows.
 - Capturing screenshots or recordings from iOS Simulator and Android Emulator for UI work. Store them in `agent-os/specs/[this-spec]/verification/screenshots/` with descriptive filenames.
@@ -128,10 +128,10 @@ Open `agent-os/product/roadmap.md` and check to see whether any item(s) match th
 
 Run the full stack of automated checks (see `profiles/react-firebase/standards/global/tech-stack.md` for canonical commands/tools):
 
-1. `yarn lint` and `yarn typecheck`
-2. `yarn test` (Jest) for React Native components, hooks, and shared packages
-3. Cloud Functions unit/integration tests via `yarn test:functions` (or equivalent) targeting the Firebase Emulator
-4. Detox smoke suite (`yarn detox test --configuration ios.sim.debug` and Android equivalent) for release candidates
+1. `npm run lint` and `npm run typecheck`
+2. `npm run test` (Jest) for React Native components, hooks, and shared packages
+3. Cloud Functions unit/integration tests via `npm run test:functions` (or equivalent) targeting the Firebase Emulator
+4. Detox smoke suite (`npm run test:detox:ios` and Android equivalent) for release candidates
 
 Capture pass/fail counts for each command plus any failing test names and include them in the verification report. Do NOT attempt to fix failing tests during verification—record the failures and notify the team.
 

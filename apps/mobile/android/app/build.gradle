@@ -2,6 +2,9 @@ apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
+// react-native-vector-icons
+apply from: "../../node_modules/react-native-vector-icons/fonts.gradle"
+
 // react-native-config
 project.ext.envConfigFiles = [
     debug: ".env",

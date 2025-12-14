@@ -15,6 +15,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard, ActivityLog } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
+import { useTheme } from '../theme/useTheme';
 
 export interface LogEntryModalProps {
   visible: boolean;
@@ -22,6 +23,7 @@ export interface LogEntryModalProps {
   logEntry?: ActivityLog | null; // Optional log entry for edit mode
   onClose: () => void;
   onSave: (standardId: string, value: number, occurredAtMs: number, note?: string | null, logEntryId?: string) => Promise<void>;
+  onCreateStandard?: () => void; // Callback to create a new standard from empty state
 }
 
 export function LogEntryModal({
@@ -30,7 +32,9 @@ export function LogEntryModal({
   logEntry,
   onClose,
   onSave,
+  onCreateStandard,
 }: LogEntryModalProps) {
+  const theme = useTheme();
   const [value, setValue] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -198,7 +202,7 @@ export function LogEntryModal({
     if (standardsLoading) {
       return (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0F62FE" />
+          <ActivityIndicator size="large" color={theme.primary.main} />
         </View>
       );
     }
@@ -206,9 +210,25 @@ export function LogEntryModal({
     if (activeStandards.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-            No active standards. Create one in Standards Builder.
+          <Text style={[styles.emptyText, { color: theme.text.primary }]}>
+            No active standards yet.
           </Text>
+          <Text style={[styles.emptySubtext, { color: theme.text.secondary }]}>
+            Create a standard to start logging your progress.
+          </Text>
+          {onCreateStandard && (
+            <TouchableOpacity
+              style={[styles.createStandardButton, { backgroundColor: theme.button.primary.background }]}
+              onPress={() => {
+                onClose();
+                onCreateStandard();
+              }}
+              accessibilityLabel="Create a new standard"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.createStandardButtonText, { color: theme.button.primary.text }]}>Create Standard</Text>
+            </TouchableOpacity>
+          )}
         </View>
       );
     }
@@ -219,12 +239,12 @@ export function LogEntryModal({
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.standardItem}
+            style={[styles.standardItem, { borderBottomColor: theme.divider }]}
             onPress={() => handleStandardSelect(item)}
             accessibilityLabel={`Select standard ${item.summary}`}
             accessibilityRole="button"
           >
-            <Text style={styles.standardItemText}>{item.summary}</Text>
+            <Text style={[styles.standardItemText, { color: theme.text.primary }]}>{item.summary}</Text>
           </TouchableOpacity>
         )}
         style={styles.standardsList}
@@ -240,25 +260,30 @@ export function LogEntryModal({
     return (
       <>
         <View style={styles.field}>
-          <Text style={styles.label}>Value ({selectedStandard.unit})</Text>
+          <Text style={[styles.label, { color: theme.text.primary }]}>Value ({selectedStandard.unit})</Text>
           {quickAddValues && quickAddValues.length > 0 && (
             <View style={styles.quickAddRow}>
               {quickAddValues.map((quickValue) => (
                 <TouchableOpacity
                   key={String(quickValue)}
-                  style={styles.quickAddChip}
+                  style={[styles.quickAddChip, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}
                   onPress={() => handleQuickAddPress(quickValue)}
                   disabled={saving}
                   accessibilityRole="button"
                   accessibilityLabel={`Quick add ${quickValue}`}
                 >
-                  <Text style={styles.quickAddChipText}>{`+${quickValue}`}</Text>
+                  <Text style={[styles.quickAddChipText, { color: theme.primary.main }]}>{`+${quickValue}`}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
           <TextInput
-            style={[styles.input, styles.valueInput, saveError && styles.inputError]}
+            style={[
+              styles.input,
+              styles.valueInput,
+              { backgroundColor: theme.input.background, borderColor: saveError ? theme.input.borderError : theme.input.border, color: theme.input.text },
+              saveError && styles.inputError
+            ]}
             value={value}
             onChangeText={(text) => {
               setValue(text);
@@ -267,12 +292,13 @@ export function LogEntryModal({
               }
             }}
             placeholder="0"
+            placeholderTextColor={theme.input.placeholder}
             keyboardType="numeric"
             editable={!saving}
             autoFocus={true}
             accessibilityLabel={`Enter value in ${selectedStandard.unit}`}
           />
-          {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+          {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
         </View>
 
         {!showNote && (
@@ -283,18 +309,19 @@ export function LogEntryModal({
             accessibilityLabel="Add optional note"
             accessibilityRole="button"
           >
-            <Text style={styles.addNoteText}>+ Add note (optional)</Text>
+            <Text style={[styles.addNoteText, { color: theme.primary.main }]}>+ Add note (optional)</Text>
           </TouchableOpacity>
         )}
 
         {showNote && (
           <View style={styles.field}>
-            <Text style={styles.label}>Note (optional)</Text>
+            <Text style={[styles.label, { color: theme.text.primary }]}>Note (optional)</Text>
             <TextInput
-              style={[styles.input, styles.noteInput]}
+              style={[styles.input, styles.noteInput, { backgroundColor: theme.input.background, borderColor: theme.input.border, color: theme.input.text }]}
               value={note}
               onChangeText={setNote}
               placeholder="e.g., Morning session"
+              placeholderTextColor={theme.input.placeholder}
               multiline
               numberOfLines={3}
               maxLength={500}
@@ -311,7 +338,7 @@ export function LogEntryModal({
               accessibilityLabel="Remove note"
               accessibilityRole="button"
             >
-              <Text style={styles.removeNoteText}>Remove note</Text>
+              <Text style={[styles.removeNoteText, { color: theme.text.secondary }]}>Remove note</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -324,25 +351,25 @@ export function LogEntryModal({
             accessibilityLabel="Select when this activity occurred"
             accessibilityRole="button"
           >
-            <Text style={styles.addNoteText}>+ When?</Text>
+            <Text style={[styles.addNoteText, { color: theme.primary.main }]}>+ When?</Text>
           </TouchableOpacity>
         )}
 
         {showWhen && (
           <View style={styles.field}>
             <View style={styles.whenHeader}>
-              <Text style={styles.label}>When?</Text>
+              <Text style={[styles.label, { color: theme.text.primary }]}>When?</Text>
               <TouchableOpacity
                 onPress={handleNowPress}
-                style={styles.nowButton}
+                style={[styles.nowButton, { backgroundColor: theme.button.secondary.background }]}
                 disabled={saving}
                 accessibilityLabel="Set to current time"
                 accessibilityRole="button"
               >
-                <Text style={styles.nowButtonText}>Now</Text>
+                <Text style={[styles.nowButtonText, { color: theme.primary.main }]}>Now</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.selectedDateText}>{formatDate(selectedDate)}</Text>
+            <Text style={[styles.selectedDateText, { color: theme.text.secondary }]}>{formatDate(selectedDate)}</Text>
             {Platform.OS === 'ios' ? (
               <DateTimePicker
                 value={selectedDate}
@@ -380,23 +407,26 @@ export function LogEntryModal({
                 accessibilityLabel="Collapse date picker"
                 accessibilityRole="button"
               >
-                <Text style={styles.removeNoteText}>Done</Text>
+                <Text style={[styles.removeNoteText, { color: theme.text.secondary }]}>Done</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
 
         <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+          style={[
+            styles.saveButton,
+            { backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background }
+          ]}
           onPress={handleSave}
           disabled={saving || !value.trim()}
           accessibilityLabel="Save log entry"
           accessibilityRole="button"
         >
           {saving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.button.primary.text} />
           ) : (
-            <Text style={styles.saveButtonText}>Save</Text>
+            <Text style={[styles.saveButtonText, { color: theme.button.primary.text }]}>Save</Text>
           )}
         </TouchableOpacity>
       </>
@@ -410,11 +440,11 @@ export function LogEntryModal({
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.background.modal }]}>
           <View style={styles.modalHeader}>
             <View style={styles.headerContent}>
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
                 {showPicker
                   ? 'Select Standard'
                   : isEditMode
@@ -422,7 +452,7 @@ export function LogEntryModal({
                   : 'Log Activity'}
               </Text>
               {selectedStandard && !showPicker && (
-                <Text style={styles.standardSummary} numberOfLines={1}>
+                <Text style={[styles.standardSummary, { color: theme.text.secondary }]} numberOfLines={1}>
                   {selectedStandard.summary}
                 </Text>
               )}
@@ -433,7 +463,7 @@ export function LogEntryModal({
               accessibilityLabel="Close modal"
               accessibilityRole="button"
             >
-              <Text style={styles.closeButton}>✕</Text>
+              <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -449,11 +479,9 @@ export function LogEntryModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -472,16 +500,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#111',
     marginBottom: 4,
   },
   standardSummary: {
     fontSize: 14,
-    color: '#666',
   },
   closeButton: {
     fontSize: 24,
-    color: '#666',
   },
   form: {
     gap: 16,
@@ -493,15 +518,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
   },
   valueInput: {
     fontSize: 32,
@@ -519,23 +541,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#f0f4ff',
     borderWidth: 1,
-    borderColor: '#c9d7ff',
   },
   quickAddChipText: {
-    color: '#0F62FE',
     fontWeight: '700',
   },
   noteInput: {
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  inputError: {
-    borderColor: '#ff4444',
-  },
+  inputError: {},
   errorText: {
-    color: '#ff4444',
     fontSize: 14,
     marginTop: 4,
   },
@@ -543,7 +559,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   addNoteText: {
-    color: '#0F62FE',
     fontSize: 14,
   },
   removeNoteButton: {
@@ -551,21 +566,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   removeNoteText: {
-    color: '#666',
     fontSize: 14,
   },
   saveButton: {
-    backgroundColor: '#0F62FE',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
-  saveButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
   saveButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -577,11 +586,27 @@ const styles = StyleSheet.create({
   emptyContainer: {
     padding: 40,
     alignItems: 'center',
+    gap: 12,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  emptySubtext: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  createStandardButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  createStandardButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   standardsList: {
     maxHeight: 400,
@@ -589,13 +614,11 @@ const styles = StyleSheet.create({
   standardItem: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
     minHeight: 44,
     justifyContent: 'center',
   },
   standardItemText: {
     fontSize: 16,
-    color: '#333',
   },
   whenHeader: {
     flexDirection: 'row',
@@ -607,16 +630,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f0f0f0',
   },
   nowButtonText: {
     fontSize: 14,
-    color: '#0F62FE',
     fontWeight: '600',
   },
   selectedDateText: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 12,
   },
   datePicker: {

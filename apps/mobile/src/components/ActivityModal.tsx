@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
+import { useTheme } from '../theme/useTheme';
 
 export interface ActivityModalProps {
   visible: boolean;
@@ -30,6 +31,7 @@ export function ActivityModal({
   onSave,
   onSelect,
 }: ActivityModalProps) {
+  const theme = useTheme();
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -138,8 +140,8 @@ export function ActivityModal({
       transparent={true}
       onRequestClose={handleClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.background.modal }]}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {isEditMode ? 'Edit Activity' : 'Add Activity'}
@@ -154,7 +156,14 @@ export function ActivityModal({
             <View style={styles.field}>
               <Text style={styles.label}>Name</Text>
               <TextInput
-                style={[styles.input, errors.name && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.name ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 value={name}
                 onChangeText={(text) => {
                   setName(text);
@@ -163,6 +172,7 @@ export function ActivityModal({
                   }
                 }}
                 placeholder="e.g., Sales Calls"
+                placeholderTextColor={theme.input.placeholder}
                 maxLength={120}
                 editable={!saving}
                 autoFocus={!isEditMode}
@@ -174,7 +184,14 @@ export function ActivityModal({
             <View style={styles.field}>
               <Text style={styles.label}>Unit</Text>
               <TextInput
-                style={[styles.input, errors.unit && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.unit ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 value={unit}
                 onChangeText={(text) => {
                   setUnit(text);
@@ -183,6 +200,7 @@ export function ActivityModal({
                   }
                 }}
                 placeholder="e.g., calls (will be pluralized)"
+                placeholderTextColor={theme.input.placeholder}
                 maxLength={40}
                 editable={!saving}
               />
@@ -194,14 +212,19 @@ export function ActivityModal({
 
             {/* Save button */}
             <TouchableOpacity
-              style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+              style={[
+                styles.saveButton,
+                {
+                  backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background,
+                },
+              ]}
               onPress={handleSave}
               disabled={saving}
             >
               {saving ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={theme.button.primary.text} />
               ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
+                <Text style={[styles.saveButtonText, { color: theme.button.primary.text }]}>Save</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -214,11 +237,9 @@ export function ActivityModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -248,18 +269,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
-    color: '#333',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  inputError: {
-    borderColor: '#ff4444',
   },
   errorText: {
     color: '#ff4444',
@@ -267,17 +282,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
     marginTop: 8,
   },
-  saveButtonDisabled: {
-    backgroundColor: '#ccc',
-  },
   saveButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

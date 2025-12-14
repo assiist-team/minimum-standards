@@ -17,10 +17,12 @@ import { AuthStackParamList } from '../navigation/types';
 import { passwordResetSchema, PasswordResetFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
+import { useTheme } from '../theme/useTheme';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export function PasswordResetScreen() {
+  const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,13 +60,13 @@ export function PasswordResetScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>Reset Password</Text>
-        <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
+        <Text style={[styles.title, { color: theme.text.primary }]}>Reset Password</Text>
+        <Text style={[styles.subtitle, { color: theme.text.secondary }]}>Enter your email to receive a reset link</Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
         {success && (
           <View style={styles.successContainer}>
             <Text style={styles.successText}>
@@ -88,9 +90,16 @@ export function PasswordResetScreen() {
                 name="email"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
-                    style={[styles.input, errors.email && styles.inputError]}
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: errors.email ? theme.input.borderError : theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
                     placeholder="Enter your email"
-                    placeholderTextColor="#999"
+                    placeholderTextColor={theme.input.placeholder}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
@@ -106,14 +115,18 @@ export function PasswordResetScreen() {
             </View>
 
             <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.buttonDisabled]}
+              style={[
+                styles.primaryButton,
+                { backgroundColor: theme.button.primary.background },
+                loading && styles.buttonDisabled,
+              ]}
               onPress={handleSubmit(onSubmit)}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={theme.button.primary.text} />
               ) : (
-                <Text style={styles.primaryButtonText}>Send Reset Email</Text>
+                <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>Send Reset Email</Text>
               )}
             </TouchableOpacity>
           </>
@@ -123,7 +136,7 @@ export function PasswordResetScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate('SignIn')}
         >
-          <Text style={styles.linkText}>Back to Sign In</Text>
+          <Text style={[styles.linkText, { color: theme.link }]}>Back to Sign In</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -133,7 +146,6 @@ export function PasswordResetScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   contentContainer: {
     padding: 24,
@@ -145,18 +157,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
@@ -187,19 +195,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  inputError: {
-    borderColor: '#c00',
   },
   fieldError: {
     color: '#c00',
@@ -207,14 +209,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryButton: {
-    backgroundColor: '#0F62FE',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
   primaryButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -226,7 +226,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: '#0F62FE',
     fontSize: 14,
   },
 });

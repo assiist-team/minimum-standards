@@ -5,7 +5,7 @@ Define your technical stack below. This serves as a reference for all team membe
 ### Framework & Runtime
 - **Application Framework:** React Native CLI (TypeScript template)
 - **Language/Runtime:** TypeScript targeting React Native JavaScriptCore/Hermes and Node.js 20 for Cloud Functions
-- **Package Manager:** Yarn (Classic) with workspaces for app + functions
+- **Package Manager:** npm with workspaces for app + functions
 
 ### Frontend (Mobile)
 - **UI Framework:** React Native with React Navigation (native-stack + bottom tabs)

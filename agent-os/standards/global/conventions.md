@@ -8,6 +8,6 @@
 - **Version control**: Feature branches follow `feature/<issue-id>-short-name`. Commit titles follow Conventional Commits (`feat:`, `fix:`).
 - **Documentation**: Each feature folder contains `README.md` explaining navigation entry points, API contracts, and analytics events. Keep `docs/release-checklist.md` current.
 - **Dependency policy**: Prefer React Native Community or Expo-maintained packages. Avoid adding native modules without verifying support for both iOS and Android.
-- **Testing gates**: PRs must pass `yarn lint`, `yarn test`, `yarn typecheck`, relevant Cloud Function tests, and (for release branches) Detox smoke tests on CI.
+- **Testing gates**: PRs must pass `npm run lint`, `npm run test`, `npm run typecheck`, relevant Cloud Function tests, and (for release branches) Detox smoke tests on CI.
 - **Feature flags**: Use Firebase Remote Config for gradual rollouts; fall back to static JSON flags only for offline-critical behavior. Document each flag’s owner and sunset date.
 - **Release cadence**: Weekly mobile release cadence; hotfix branches allowed only for crash regressions. Backend (Cloud Functions) deploys are continuous but require approval if touching security rules.

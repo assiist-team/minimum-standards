@@ -12,10 +12,12 @@ import { Standard } from '@minimum-standards/shared-model';
 import { useStandardsLibrary } from '../hooks/useStandardsLibrary';
 import { useActivities } from '../hooks/useActivities';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { useTheme } from '../theme/useTheme';
 
 export interface StandardsLibraryScreenProps {
   onBack: () => void;
   onSelectStandard?: (standard: Standard) => void; // For builder context
+  onNavigateToBuilder?: () => void; // Navigate to Standards Builder
 }
 
 type Tab = 'active' | 'archived';
@@ -36,7 +38,9 @@ function formatCadenceDisplay(cadence: Standard['cadence']): string {
 export function StandardsLibraryScreen({
   onBack,
   onSelectStandard,
+  onNavigateToBuilder,
 }: StandardsLibraryScreenProps) {
+  const theme = useTheme();
   const {
     activeStandards,
     archivedStandards,
@@ -94,17 +98,17 @@ export function StandardsLibraryScreen({
     const isActive = item.state === 'active' && item.archivedAtMs === null;
 
     return (
-      <View style={styles.standardItem}>
+      <View style={[styles.standardItem, { borderBottomColor: theme.border.secondary }]}>
         <TouchableOpacity
           style={styles.standardContent}
           onPress={() => handleSelect(item)}
           disabled={!onSelectStandard}
         >
           <View style={styles.standardInfo}>
-            <Text style={styles.standardSummary}>{item.summary}</Text>
-            <Text style={styles.standardActivity}>{activityName}</Text>
-            <Text style={styles.standardCadence}>{cadenceDisplay}</Text>
-            <Text style={styles.standardMinimum}>
+            <Text style={[styles.standardSummary, { color: theme.text.primary }]}>{item.summary}</Text>
+            <Text style={[styles.standardActivity, { color: theme.text.secondary }]}>{activityName}</Text>
+            <Text style={[styles.standardCadence, { color: theme.text.secondary }]}>{cadenceDisplay}</Text>
+            <Text style={[styles.standardMinimum, { color: theme.text.secondary }]}>
               Minimum: {item.minimum} {item.unit}
             </Text>
           </View>
@@ -112,10 +116,10 @@ export function StandardsLibraryScreen({
         <View style={styles.standardActions}>
           {isActive ? (
             <TouchableOpacity
-              style={[styles.actionButton, styles.archiveButton]}
+              style={[styles.actionButton, { backgroundColor: theme.archive.background }]}
               onPress={() => handleArchive(item.id)}
             >
-              <Text style={styles.archiveButtonText}>Archive</Text>
+              <Text style={[styles.archiveButtonText, { color: theme.archive.text }]}>Archive</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -131,22 +135,36 @@ export function StandardsLibraryScreen({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.border.secondary }]}>
         <TouchableOpacity onPress={onBack}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Standards Library</Text>
-        <View style={styles.headerSpacer} />
+        {onNavigateToBuilder ? (
+          <TouchableOpacity onPress={onNavigateToBuilder}>
+            <Text style={[styles.builderButton, { color: theme.link }]}>+ New</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
       </View>
       <ErrorBanner error={error} />
 
       {/* Search Input */}
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
         <TextInput
-          style={styles.searchInput}
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: theme.input.background,
+              borderColor: theme.input.border,
+              color: theme.input.text,
+            },
+          ]}
           placeholder="Search standards..."
+          placeholderTextColor={theme.input.placeholder}
           value={searchQuery}
           onChangeText={setSearchQuery}
           autoCapitalize="none"
@@ -156,18 +174,18 @@ export function StandardsLibraryScreen({
       </View>
 
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'active' && styles.tabActive,
+            activeTab === 'active' && { borderBottomColor: theme.link },
           ]}
           onPress={() => setActiveTab('active')}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'active' && styles.tabTextActive,
+              { color: activeTab === 'active' ? theme.link : theme.text.secondary },
             ]}
           >
             Active
@@ -176,14 +194,14 @@ export function StandardsLibraryScreen({
         <TouchableOpacity
           style={[
             styles.tab,
-            activeTab === 'archived' && styles.tabActive,
+            activeTab === 'archived' && { borderBottomColor: theme.link },
           ]}
           onPress={() => setActiveTab('archived')}
         >
           <Text
             style={[
               styles.tabText,
-              activeTab === 'archived' && styles.tabTextActive,
+              { color: activeTab === 'archived' ? theme.link : theme.text.secondary },
             ]}
           >
             Archived
@@ -195,11 +213,11 @@ export function StandardsLibraryScreen({
       <View style={styles.listArea}>
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={theme.activityIndicator} />
           </View>
         ) : currentStandards.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
               {searchQuery.trim()
                 ? 'No standards match your search'
                 : `No ${activeTab} standards`}
@@ -222,7 +240,6 @@ export function StandardsLibraryScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -230,11 +247,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   backButton: {
     fontSize: 16,
-    color: '#007AFF',
   },
   headerTitle: {
     fontSize: 20,
@@ -243,25 +258,23 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 60, // Match back button width for centering
   },
+  builderButton: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   searchContainer: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fafafa',
   },
   searchInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
   },
   tabContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fafafa',
   },
   tab: {
     flex: 1,
@@ -270,17 +283,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabActive: {
-    borderBottomColor: '#007AFF',
-  },
   tabText: {
     fontSize: 16,
-    color: '#666',
     fontWeight: '500',
-  },
-  tabTextActive: {
-    color: '#007AFF',
-    fontWeight: '600',
   },
   listArea: {
     flex: 1,
@@ -298,7 +303,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
   },
   list: {
@@ -312,7 +316,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   standardContent: {
     flex: 1,
@@ -323,22 +326,18 @@ const styles = StyleSheet.create({
   standardSummary: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 4,
   },
   standardActivity: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 2,
   },
   standardCadence: {
     fontSize: 14,
-    color: '#666',
     marginBottom: 2,
   },
   standardMinimum: {
     fontSize: 14,
-    color: '#666',
   },
   standardActions: {
     marginLeft: 16,
@@ -348,11 +347,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
-  archiveButton: {
-    backgroundColor: '#ffebee',
-  },
   archiveButtonText: {
-    color: '#d32f2f',
     fontSize: 14,
     fontWeight: '600',
   },

@@ -18,6 +18,7 @@ import { AuthStackParamList } from '../navigation/types';
 import { signInSchema, SignInFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
+import { useTheme } from '../theme/useTheme';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
@@ -32,6 +33,7 @@ function createAuthErrorFromAnyError(err: any): AuthError {
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export function SignInScreen() {
+  const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,13 +99,13 @@ export function SignInScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>Sign In</Text>
-        <Text style={styles.subtitle}>Welcome back</Text>
+        <Text style={[styles.title, { color: theme.text.primary }]}>Sign In</Text>
+        <Text style={[styles.subtitle, { color: theme.text.secondary }]}>Welcome back</Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
         {error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
@@ -117,9 +119,16 @@ export function SignInScreen() {
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.email ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 placeholder="Enter your email"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.input.placeholder}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -141,9 +150,16 @@ export function SignInScreen() {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.password ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 placeholder="Enter your password"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.input.placeholder}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -158,14 +174,20 @@ export function SignInScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          style={[
+            styles.primaryButton,
+            {
+              backgroundColor: theme.button.primary.background,
+            },
+            loading && styles.buttonDisabled,
+          ]}
           onPress={handleSubmit(onSubmit)}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.button.primary.text} />
           ) : (
-            <Text style={styles.primaryButtonText}>Sign In</Text>
+            <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>Sign In</Text>
           )}
         </TouchableOpacity>
 
@@ -173,7 +195,7 @@ export function SignInScreen() {
           style={styles.linkButton}
           onPress={() => navigation.navigate('PasswordReset')}
         >
-          <Text style={styles.linkText}>Forgot password?</Text>
+          <Text style={[styles.linkText, { color: theme.link }]}>Forgot password?</Text>
         </TouchableOpacity>
 
         <View style={styles.divider}>
@@ -183,17 +205,24 @@ export function SignInScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.secondaryButton, loading && styles.buttonDisabled]}
+          style={[
+            styles.secondaryButton,
+            {
+              backgroundColor: theme.button.secondary.background,
+              borderColor: theme.border.primary,
+            },
+            loading && styles.buttonDisabled,
+          ]}
           onPress={handleGoogleSignIn}
           disabled={loading}
         >
-          <Text style={styles.secondaryButtonText}>Sign in with Google</Text>
+          <Text style={[styles.secondaryButtonText, { color: theme.button.secondary.text }]}>Sign in with Google</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
+          <Text style={[styles.footerText, { color: theme.text.secondary }]}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-            <Text style={styles.footerLink}>Sign up</Text>
+            <Text style={[styles.footerLink, { color: theme.link }]}>Sign up</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -204,7 +233,6 @@ export function SignInScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   contentContainer: {
     padding: 24,
@@ -216,18 +244,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
@@ -248,19 +272,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  inputError: {
-    borderColor: '#c00',
   },
   fieldError: {
     color: '#c00',
@@ -268,27 +286,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryButton: {
-    backgroundColor: '#0F62FE',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
   primaryButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
   secondaryButton: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#333',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -300,7 +313,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   linkText: {
-    color: '#0F62FE',
     fontSize: 14,
   },
   divider: {
@@ -324,11 +336,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: '#666',
     fontSize: 14,
   },
   footerLink: {
-    color: '#0F62FE',
     fontSize: 14,
     fontWeight: '600',
   },

@@ -11,11 +11,12 @@ jest.mock('../../screens/SignInScreen', () => ({
     return React.createElement('View', { testID: 'sign-in-screen' }, 'Sign In Screen');
   },
 }));
-jest.mock('../../screens/HomeScreen', () => ({
-  HomeScreen: () => {
+// HomeScreen removed - using BottomTabNavigator instead
+jest.mock('../BottomTabNavigator', () => ({
+  BottomTabNavigator: () => {
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const React = require('react');
-    return React.createElement('View', { testID: 'home-screen' }, 'Home Screen');
+    return React.createElement('View', { testID: 'main-tabs' }, 'Main Tabs');
   },
 }));
 jest.mock('@react-navigation/native', () => {
@@ -49,8 +50,8 @@ describe('Auth Flow Integration', () => {
     await waitFor(() => {
       // AuthStack should be rendered (SignInScreen present)
       expect(getByTestId('sign-in-screen')).toBeTruthy();
-      // MainStack should NOT be rendered (HomeScreen absent)
-      expect(queryByTestId('home-screen')).toBeNull();
+      // MainStack should NOT be rendered (MainTabs absent)
+      expect(queryByTestId('main-tabs')).toBeNull();
     });
   });
 
@@ -72,8 +73,8 @@ describe('Auth Flow Integration', () => {
     
     // Should show MainStack, allowing Firestore access
     await waitFor(() => {
-      // MainStack should be rendered (HomeScreen present)
-      expect(getByTestId('home-screen')).toBeTruthy();
+      // MainStack should be rendered (MainTabs present)
+      expect(getByTestId('main-tabs')).toBeTruthy();
       // AuthStack should NOT be rendered (SignInScreen absent)
       expect(queryByTestId('sign-in-screen')).toBeNull();
     });
@@ -115,8 +116,8 @@ describe('Auth Flow Integration', () => {
     await waitFor(() => {
       // Should now show AuthStack (SignInScreen present)
       expect(getByTestId('sign-in-screen')).toBeTruthy();
-      // MainStack should NOT be rendered (HomeScreen absent)
-      expect(queryByTestId('home-screen')).toBeNull();
+      // MainStack should NOT be rendered (MainTabs absent)
+      expect(queryByTestId('main-tabs')).toBeNull();
     });
   });
 });

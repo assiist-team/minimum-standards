@@ -6,10 +6,12 @@ import { MainStackParamList } from '../navigation/types';
 import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
+import { useTheme } from '../theme/useTheme';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
 export function SettingsScreen() {
+  const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const { signOut } = useAuthStore();
   const [loading, setLoading] = useState(false);
@@ -31,16 +33,16 @@ export function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
         {error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
@@ -48,14 +50,18 @@ export function SettingsScreen() {
         )}
 
         <TouchableOpacity
-          style={[styles.signOutButton, loading && styles.buttonDisabled]}
+          style={[
+            styles.signOutButton,
+            { backgroundColor: theme.button.destructive.background },
+            loading && styles.buttonDisabled,
+          ]}
           onPress={handleSignOut}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.button.destructive.text} />
           ) : (
-            <Text style={styles.signOutButtonText}>Sign Out</Text>
+            <Text style={[styles.signOutButtonText, { color: theme.button.destructive.text }]}>Sign Out</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -66,37 +72,30 @@ export function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   backButton: {
     fontSize: 16,
-    color: '#0F62FE',
     fontWeight: '600',
   },
   headerTitle: {
     flex: 1,
     fontSize: 20,
     fontWeight: '700',
-    color: '#111',
     textAlign: 'center',
   },
   headerSpacer: {
     width: 60,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
     margin: 24,
-    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
@@ -112,13 +111,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signOutButton: {
-    backgroundColor: '#c00',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
   },
   signOutButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

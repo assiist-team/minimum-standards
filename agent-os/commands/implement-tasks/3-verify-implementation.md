@@ -28,10 +28,10 @@ Open `agent-os/product/roadmap.md` and check to see whether any item(s) match th
 
 Run the full stack of automated checks (see `profiles/react-firebase/standards/global/tech-stack.md` for canonical commands/tools):
 
-1. `yarn lint` and `yarn typecheck`
-2. `yarn test` (Jest) for React Native components, hooks, and shared packages
-3. Cloud Functions unit/integration tests via `yarn test:functions` (or equivalent) targeting the Firebase Emulator
-4. Detox smoke suite (`yarn detox test --configuration ios.sim.debug` and Android equivalent) for release candidates
+1. `npm run lint` and `npm run typecheck`
+2. `npm run test` (Jest) for React Native components, hooks, and shared packages
+3. Cloud Functions unit/integration tests via `npm run test:functions` (or equivalent) targeting the Firebase Emulator
+4. Detox smoke suite (`npm run test:detox:ios` and Android equivalent) for release candidates
 
 Capture pass/fail counts for each command plus any failing test names and include them in the verification report. Do NOT attempt to fix failing tests during verification—record the failures and notify the team.
 

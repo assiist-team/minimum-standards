@@ -30,6 +30,7 @@ import { useActivities } from '../hooks/useActivities';
 import { findMatchingStandard } from '../utils/standardsFilter';
 import { trackStandardEvent } from '../utils/analytics';
 import { Standard } from '@minimum-standards/shared-model';
+import { useTheme } from '../theme/useTheme';
 
 export interface StandardsBuilderScreenProps {
   onBack: () => void;
@@ -38,6 +39,7 @@ export interface StandardsBuilderScreenProps {
 const CADENCE_UNIT_OPTIONS: CadenceUnit[] = ['day', 'week', 'month'];
 
 export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) {
+  const theme = useTheme();
   const {
     selectedActivity,
     setSelectedActivity,
@@ -247,14 +249,18 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
             key={preset}
             style={[
               styles.pillButton,
-              isActive && styles.pillButtonActive,
+              {
+                backgroundColor: isActive ? theme.button.primary.background : theme.button.secondary.background,
+              },
             ]}
             onPress={() => handlePresetPress(preset)}
           >
             <Text
               style={[
                 styles.pillButtonText,
-                isActive && styles.pillButtonTextActive,
+                {
+                  color: isActive ? theme.button.primary.text : theme.text.secondary,
+                },
               ]}
             >
               {preset.charAt(0).toUpperCase() + preset.slice(1)}
@@ -262,7 +268,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
           </TouchableOpacity>
         );
       }),
-    [activePreset, handlePresetPress]
+    [activePreset, handlePresetPress, theme]
   );
 
   const archiveMessage = isArchived
@@ -272,70 +278,78 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.fullScreen}
+      style={[styles.fullScreen, { backgroundColor: theme.background.primary }]}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.secondary }]}>
         <TouchableOpacity onPress={onBack}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Standards Builder</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards Builder</Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Step 1</Text>
-          <Text style={styles.sectionTitle}>Select or create an activity</Text>
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 1</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Select or create an activity</Text>
           {selectedActivity ? (
-            <View style={styles.selectionCard}>
-              <Text style={styles.selectionLabel}>Selected Activity</Text>
-              <Text style={styles.selectionName}>{selectedActivity.name}</Text>
-              <Text style={styles.selectionMeta}>{selectedActivity.unit}</Text>
+            <View style={[styles.selectionCard, { backgroundColor: theme.background.tertiary }]}>
+              <Text style={[styles.selectionLabel, { color: theme.text.tertiary }]}>Selected Activity</Text>
+              <Text style={[styles.selectionName, { color: theme.text.primary }]}>{selectedActivity.name}</Text>
+              <Text style={[styles.selectionMeta, { color: theme.text.tertiary }]}>{selectedActivity.unit}</Text>
             </View>
           ) : (
-            <Text style={styles.placeholderText}>
+            <Text style={[styles.placeholderText, { color: theme.text.secondary }]}>
               Choose an activity to link to this Standard.
             </Text>
           )}
 
           <View style={styles.buttonRow}>
             <TouchableOpacity
-              style={styles.primaryButton}
+              style={[styles.primaryButton, { backgroundColor: theme.button.primary.background }]}
               onPress={() => setLibraryVisible(true)}
             >
-              <Text style={styles.primaryButtonText}>
+              <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
                 {selectedActivity ? 'Change Activity' : 'Open Activity Library'}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.secondaryButton}
+              style={[styles.secondaryButton, { borderColor: theme.border.primary }]}
               onPress={() => setStandardsLibraryVisible(true)}
             >
-              <Text style={styles.secondaryButtonText}>
+              <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>
                 Select from Existing Standard
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Step 2</Text>
-          <Text style={styles.sectionTitle}>Cadence</Text>
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 2</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Cadence</Text>
           <View style={styles.pillRow}>{cadencePresetButtons}</View>
 
           <View style={styles.customCadenceRow}>
             <View style={styles.customField}>
-              <Text style={styles.inputLabel}>Custom interval</Text>
+              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Custom interval</Text>
               <TextInput
                 value={customIntervalInput}
                 onChangeText={handleCustomIntervalChange}
                 keyboardType="number-pad"
                 placeholder="e.g. 2"
-                style={styles.input}
+                placeholderTextColor={theme.input.placeholder}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
               />
             </View>
             <View style={styles.customField}>
-              <Text style={styles.inputLabel}>Unit</Text>
+              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
               <View style={styles.unitRow}>
                 {CADENCE_UNIT_OPTIONS.map((unit) => {
                   const isActive = customUnit === unit && !activePreset;
@@ -344,14 +358,20 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                       key={unit}
                       style={[
                         styles.unitButton,
-                        isActive && styles.unitButtonActive,
+                        {
+                          borderColor: theme.border.primary,
+                          backgroundColor: isActive ? theme.background.tertiary : 'transparent',
+                        },
+                        isActive && { borderColor: theme.link },
                       ]}
                       onPress={() => handleCustomUnitChange(unit)}
                     >
                       <Text
                         style={[
                           styles.unitButtonText,
-                          isActive && styles.unitButtonTextActive,
+                          {
+                            color: isActive ? theme.link : theme.text.secondary,
+                          },
                         ]}
                       >
                         {unit}
@@ -362,23 +382,39 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
               </View>
             </View>
           </View>
-          {cadenceError && <Text style={styles.errorText}>{cadenceError}</Text>}
+          {cadenceError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{cadenceError}</Text>}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Step 3</Text>
-          <Text style={styles.sectionTitle}>Minimum + unit</Text>
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 3</Text>
+          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Minimum + unit</Text>
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.input.background,
+                borderColor: theme.input.border,
+                color: theme.input.text,
+              },
+            ]}
+            placeholderTextColor={theme.input.placeholder}
             keyboardType="number-pad"
             placeholder="Minimum value"
             value={minimum ? String(minimum) : ''}
             onChangeText={handleMinimumChange}
           />
-          {minimumError && <Text style={styles.errorText}>{minimumError}</Text>}
+          {minimumError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{minimumError}</Text>}
 
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.input.background,
+                borderColor: theme.input.border,
+                color: theme.input.text,
+              },
+            ]}
+            placeholderTextColor={theme.input.placeholder}
             placeholder={
               selectedActivity
                 ? `Unit (default ${selectedActivity.unit})`
@@ -389,21 +425,21 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
           />
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Summary</Text>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Live preview</Text>
-            <Text style={styles.summaryValue}>
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Summary</Text>
+          <View style={[styles.summaryCard, { backgroundColor: theme.primary.dark }]}>
+            <Text style={[styles.summaryLabel, { color: theme.text.inverse }]}>Live preview</Text>
+            <Text style={[styles.summaryValue, { color: theme.text.inverse }]}>
               {summaryPreview || 'Complete the steps to see summary'}
             </Text>
           </View>
         </View>
 
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
           <View style={styles.archiveRow}>
             <View style={styles.archiveCopyColumn}>
-              <Text style={styles.sectionTitle}>Archive immediately</Text>
-              <Text style={styles.archiveCopy}>{archiveMessage}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Archive immediately</Text>
+              <Text style={[styles.archiveCopy, { color: theme.text.tertiary }]}>{archiveMessage}</Text>
             </View>
             <Switch
               value={isArchived}
@@ -418,21 +454,22 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
           </View>
         </View>
 
-        {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+        {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
 
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={resetForm}>
-            <Text style={styles.secondaryButtonText}>Reset</Text>
+          <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border.primary }]} onPress={resetForm}>
+            <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>Reset</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.primaryButton,
+              { backgroundColor: theme.button.primary.background },
               saving && styles.primaryButtonDisabled,
             ]}
             onPress={handleSave}
             disabled={saving}
           >
-            <Text style={styles.primaryButtonText}>
+            <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
               {saving ? 'Saving…' : 'Save Standard'}
             </Text>
           </TouchableOpacity>
@@ -456,7 +493,6 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
 const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   header: {
     flexDirection: 'row',
@@ -465,18 +501,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    backgroundColor: '#fff',
   },
   backButton: {
-    color: '#0F62FE',
     fontSize: 16,
     fontWeight: '600',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111',
   },
   headerSpacer: {
     width: 64,
@@ -486,11 +518,9 @@ const styles = StyleSheet.create({
     gap: 24,
   },
   section: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     gap: 12,
-    shadowColor: '#000',
     shadowOpacity: 0.02,
     shadowRadius: 6,
     elevation: 1,
@@ -498,40 +528,32 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 12,
     letterSpacing: 0.5,
-    color: '#6b7280',
     textTransform: 'uppercase',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#111',
   },
   placeholderText: {
     fontSize: 14,
-    color: '#666',
   },
   selectionCard: {
     padding: 16,
     borderRadius: 10,
-    backgroundColor: '#f4f6fb',
     gap: 6,
   },
   selectionLabel: {
     fontSize: 12,
-    color: '#6b7280',
     textTransform: 'uppercase',
   },
   selectionName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111',
   },
   selectionMeta: {
     fontSize: 14,
-    color: '#6b7280',
   },
   primaryButton: {
-    backgroundColor: '#0F62FE',
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -540,7 +562,6 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -553,18 +574,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#f1f3f5',
-  },
-  pillButtonActive: {
-    backgroundColor: '#0F62FE',
   },
   pillButtonText: {
-    color: '#5f6368',
     fontWeight: '600',
     textTransform: 'capitalize',
-  },
-  pillButtonTextActive: {
-    color: '#fff',
   },
   customCadenceRow: {
     flexDirection: 'row',
@@ -576,12 +589,10 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 13,
-    color: '#5f6368',
     fontWeight: '600',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#dfe3e8',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -596,34 +607,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#dfe3e8',
     alignItems: 'center',
   },
-  unitButtonActive: {
-    backgroundColor: '#E6F0FF',
-    borderColor: '#0F62FE',
-  },
   unitButtonText: {
-    color: '#5f6368',
     textTransform: 'capitalize',
   },
-  unitButtonTextActive: {
-    color: '#0F62FE',
-    fontWeight: '600',
-  },
   summaryCard: {
-    backgroundColor: '#0F172A',
     borderRadius: 12,
     padding: 16,
     gap: 8,
   },
   summaryLabel: {
-    color: '#F1F5F9',
     fontSize: 13,
     textTransform: 'uppercase',
   },
   summaryValue: {
-    color: '#fff',
     fontSize: 20,
     fontWeight: '700',
   },
@@ -637,7 +635,6 @@ const styles = StyleSheet.create({
   },
   archiveCopy: {
     fontSize: 14,
-    color: '#6b7280',
     marginTop: 4,
   },
   buttonRow: {
@@ -654,15 +651,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#dfe3e8',
     alignItems: 'center',
   },
   secondaryButtonText: {
-    color: '#111',
     fontWeight: '600',
   },
   errorText: {
-    color: '#d93025',
     fontSize: 14,
   },
 });

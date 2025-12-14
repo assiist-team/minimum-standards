@@ -17,10 +17,12 @@ import { AuthStackParamList } from '../navigation/types';
 import { signUpSchema, SignUpFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
+import { useTheme } from '../theme/useTheme';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 export function SignUpScreen() {
+  const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +56,13 @@ export function SignUpScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
-        <Text style={styles.title}>Sign Up</Text>
-        <Text style={styles.subtitle}>Create your account</Text>
+        <Text style={[styles.title, { color: theme.text.primary }]}>Sign Up</Text>
+        <Text style={[styles.subtitle, { color: theme.text.secondary }]}>Create your account</Text>
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
         {error && (
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
@@ -74,9 +76,16 @@ export function SignUpScreen() {
             name="email"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.email && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.email ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 placeholder="Enter your email"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.input.placeholder}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -98,9 +107,16 @@ export function SignUpScreen() {
             name="password"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.password && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.password ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 placeholder="Enter your password"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.input.placeholder}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -121,9 +137,16 @@ export function SignUpScreen() {
             name="passwordConfirmation"
             render={({ field: { onChange, onBlur, value } }) => (
               <TextInput
-                style={[styles.input, errors.passwordConfirmation && styles.inputError]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.passwordConfirmation ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
                 placeholder="Confirm your password"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.input.placeholder}
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -138,21 +161,25 @@ export function SignUpScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.primaryButton, loading && styles.buttonDisabled]}
+          style={[
+            styles.primaryButton,
+            { backgroundColor: theme.button.primary.background },
+            loading && styles.buttonDisabled,
+          ]}
           onPress={handleSubmit(onSubmit)}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.button.primary.text} />
           ) : (
-            <Text style={styles.primaryButtonText}>Sign Up</Text>
+            <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>Sign Up</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
+          <Text style={[styles.footerText, { color: theme.text.secondary }]}>Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
-            <Text style={styles.footerLink}>Sign in</Text>
+            <Text style={[styles.footerLink, { color: theme.link }]}>Sign in</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -163,7 +190,6 @@ export function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
   },
   contentContainer: {
     padding: 24,
@@ -175,18 +201,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#111',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
-    shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
@@ -207,19 +229,13 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
-  },
-  inputError: {
-    borderColor: '#c00',
   },
   fieldError: {
     color: '#c00',
@@ -227,14 +243,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   primaryButton: {
-    backgroundColor: '#0F62FE',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     marginTop: 8,
   },
   primaryButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -247,11 +261,9 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   footerText: {
-    color: '#666',
     fontSize: 14,
   },
   footerLink: {
-    color: '#0F62FE',
     fontSize: 14,
     fontWeight: '600',
   },

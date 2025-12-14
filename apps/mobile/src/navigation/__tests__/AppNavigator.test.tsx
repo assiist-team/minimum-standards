@@ -13,11 +13,12 @@ jest.mock('../../screens/SignInScreen', () => ({
     return React.createElement('View', { testID: 'sign-in-screen' }, 'Sign In Screen');
   },
 }));
-jest.mock('../../screens/HomeScreen', () => ({
-  HomeScreen: () => {
+// HomeScreen removed - using BottomTabNavigator instead
+jest.mock('../BottomTabNavigator', () => ({
+  BottomTabNavigator: () => {
     // eslint-disable-next-line @typescript-eslint/no-shadow
     const React = require('react');
-    return React.createElement('View', { testID: 'home-screen' }, 'Home Screen');
+    return React.createElement('View', { testID: 'main-tabs' }, 'Main Tabs');
   },
 }));
 jest.mock('@react-navigation/native', () => {
@@ -84,8 +85,8 @@ describe('AppNavigator', () => {
     const { getByTestId } = render(<AppNavigator />);
     
     await waitFor(() => {
-      // MainStack should be rendered - verify HomeScreen is present
-      expect(getByTestId('home-screen')).toBeTruthy();
+      // MainStack should be rendered - verify BottomTabNavigator is present
+      expect(getByTestId('main-tabs')).toBeTruthy();
     });
   });
 

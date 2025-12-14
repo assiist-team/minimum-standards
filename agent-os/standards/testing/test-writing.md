@@ -8,4 +8,4 @@
 - **E2E sanity**: Maintain a small Detox suite (happy-path auth + navigation + write/read) that runs on CI for release branches.
 - **Backend functions**: Use Jest + `firebase-functions-test` against the Emulator for HTTP and trigger functions. Keep each suite hermetic by seeding emulator data per test.
 - **Emulator suite**: Run `firebase emulators:start --only firestore,auth,functions,storage` for integration tests so no real data is touched.
-- **Lint & type gate**: `yarn lint` and `yarn tsc --noEmit` must pass before tests run; this catches most issues earlier and keeps suites fast.
+- **Lint & type gate**: `npm run lint` and `npm run typecheck` must pass before tests run; this catches most issues earlier and keeps suites fast.
