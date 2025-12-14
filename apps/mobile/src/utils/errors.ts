@@ -131,9 +131,14 @@ function getAuthErrorMessage(code: string): string {
     'auth/requires-recent-login': 'Please sign in again to continue.',
     // Google Sign-In specific errors
     'SIGN_IN_CANCELLED': 'Sign in was cancelled.',
+    '12501': 'Sign in was cancelled.', // Android error code for user cancellation
     'IN_PROGRESS': 'Another sign in is in progress.',
     'PLAY_SERVICES_NOT_AVAILABLE': 'Google Play Services is not available.',
     'SIGN_IN_REQUIRED': 'Please sign in to continue.',
+    '10': 'Google Sign-In configuration error. Please contact support.',
+    '7': 'Network error. Check your connection and retry.',
+    '8': 'An internal error occurred. Please try again.',
+    '12500': 'Sign in failed. Please try again.',
   };
 
   return messageMap[code] || 'An authentication error occurred. Please try again.';

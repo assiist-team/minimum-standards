@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +23,9 @@ import { useTheme } from '../theme/useTheme';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
+  // Log the error for debugging
+  console.error('Google Sign-In error:', err);
+  
   // Check if it's a Google Sign-In error (has code property)
   if (err?.code && typeof err.code === 'string') {
     return AuthError.fromFirebaseError(err);
@@ -70,22 +74,33 @@ export function SignInScreen() {
       setLoading(true);
       setError(null);
 
-      // Check if Google Play Services are available (Android)
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      // Check if Google Play Services are available (Android only)
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      }
 
       // Get the user's ID token
-      const { idToken, accessToken } = await GoogleSignin.signIn();
+      const signInResult = await GoogleSignin.signIn();
+      
+      if (!signInResult.idToken) {
+        throw new Error('No ID token received from Google Sign-In');
+      }
 
       // Create a Google credential with the token
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken, accessToken);
+      // accessToken is optional and may not be present on iOS
+      const googleCredential = auth.GoogleAuthProvider.credential(
+        signInResult.idToken,
+        signInResult.accessToken || undefined
+      );
 
       // Sign in the user with the credential
       await auth().signInWithCredential(googleCredential);
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err: any) {
       // Handle Google Sign-In specific errors
-      if (err.code === 'SIGN_IN_CANCELLED') {
+      if (err.code === 'SIGN_IN_CANCELLED' || err.code === '12501') {
         // User cancelled the sign-in flow, don't show error
+        // 12501 is the Android error code for user cancellation
         setLoading(false);
         return;
       }

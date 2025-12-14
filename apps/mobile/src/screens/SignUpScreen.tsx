@@ -7,17 +7,32 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import auth from '@react-native-firebase/auth';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { AuthStackParamList } from '../navigation/types';
 import { signUpSchema, SignUpFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
+
+// Extend AuthError to handle Google Sign-In errors
+function createAuthErrorFromAnyError(err: any): AuthError {
+  // Log the error for debugging
+  console.error('Google Sign-In error:', err);
+  
+  // Check if it's a Google Sign-In error (has code property)
+  if (err?.code && typeof err.code === 'string') {
+    return AuthError.fromFirebaseError(err);
+  }
+  // Otherwise wrap it as unknown error
+  return AuthError.fromFirebaseError(err);
+}
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -49,6 +64,50 @@ export function SignUpScreen() {
     } catch (err) {
       const authError = AuthError.fromFirebaseError(err);
       logAuthErrorToCrashlytics(authError, 'sign_up');
+      setError(authError.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Check if Google Play Services are available (Android only)
+      if (Platform.OS === 'android') {
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      }
+
+      // Get the user's ID token
+      const signInResult = await GoogleSignin.signIn();
+      
+      if (!signInResult.idToken) {
+        throw new Error('No ID token received from Google Sign-In');
+      }
+
+      // Create a Google credential with the token
+      // accessToken is optional and may not be present on iOS
+      const googleCredential = auth.GoogleAuthProvider.credential(
+        signInResult.idToken,
+        signInResult.accessToken || undefined
+      );
+
+      // Sign in/up the user with the credential (Firebase automatically creates account if new)
+      await auth().signInWithCredential(googleCredential);
+      // Navigation will be handled by AppNavigator based on auth state
+    } catch (err: any) {
+      // Handle Google Sign-In specific errors
+      if (err.code === 'SIGN_IN_CANCELLED' || err.code === '12501') {
+        // User cancelled the sign-in flow, don't show error
+        // 12501 is the Android error code for user cancellation
+        setLoading(false);
+        return;
+      }
+
+      const authError = createAuthErrorFromAnyError(err);
+      logAuthErrorToCrashlytics(authError, 'google_sign_up');
       setError(authError.message);
     } finally {
       setLoading(false);
@@ -176,6 +235,27 @@ export function SignUpScreen() {
           )}
         </TouchableOpacity>
 
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.secondaryButton,
+            {
+              backgroundColor: theme.button.secondary.background,
+              borderColor: theme.border.primary,
+            },
+            loading && styles.buttonDisabled,
+          ]}
+          onPress={handleGoogleSignUp}
+          disabled={loading}
+        >
+          <Text style={[styles.secondaryButtonText, { color: theme.button.secondary.text }]}>Sign up with Google</Text>
+        </TouchableOpacity>
+
         <View style={styles.footer}>
           <Text style={[styles.footerText, { color: theme.text.secondary }]}>Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
@@ -252,8 +332,33 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  secondaryButton: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: '#999',
+    fontSize: 14,
   },
   footer: {
     flexDirection: 'row',
