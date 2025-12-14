@@ -180,12 +180,11 @@ describe('StandardsBuilderScreen', () => {
 
   test('pre-fills form when standard is selected', () => {
     const { StandardsLibraryModal } = require('../../components/StandardsLibraryModal');
-    const mockOnSelectStandard = jest.fn();
     StandardsLibraryModal.mockImplementation(({ onSelectStandard }: any) => {
       // Simulate selecting a standard
       React.useEffect(() => {
         onSelectStandard(mockStandard);
-      }, []);
+      }, [onSelectStandard]);
       return null;
     });
 

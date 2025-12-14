@@ -53,12 +53,6 @@ const mockStandard = {
   deletedAtMs: null,
 };
 
-const mockArchivedStandard = {
-  ...mockStandard,
-  state: 'archived' as const,
-  archivedAtMs: 2000,
-};
-
 function setupHook(overrides: Partial<ReturnType<typeof usePeriodLogs>> = {}) {
   mockUsePeriodLogs.mockReturnValue({
     logs: [],

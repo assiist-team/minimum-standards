@@ -148,7 +148,6 @@ describe('LogEntryModal Integration Tests', () => {
       });
 
       // Set a past date (mock the date picker change)
-      const pastDate = new Date('2024-01-01T10:00:00Z');
       // In a real test, we would simulate the date picker change
       // For now, we'll verify the "Now" button works
       const nowButton = getByText('Now');

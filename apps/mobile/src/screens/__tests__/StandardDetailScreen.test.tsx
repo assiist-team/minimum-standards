@@ -19,28 +19,31 @@ jest.mock('../../hooks/useStandards', () => ({
   useStandards: jest.fn(),
 }));
 
-jest.mock('../../components/LogEntryModal', () => ({
-  LogEntryModal: ({ visible, standard, onClose, onSave }: any) => {
-    if (!visible) return null;
-    const React = require('react');
-    const { View, Text, TouchableOpacity } = require('react-native');
-    return (
-      <View testID="log-entry-modal">
-        <Text>LogEntryModal</Text>
-        {standard && <Text testID="modal-standard-id">{standard.id}</Text>}
-        <TouchableOpacity testID="modal-close" onPress={onClose}>
-          <Text>Close</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          testID="modal-save"
-          onPress={() => onSave(standard?.id || '', 10, Date.now(), null)}
-        >
-          <Text>Save</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  },
-}));
+jest.mock('../../components/LogEntryModal', () => {
+  // eslint-disable-next-line @typescript-eslint/no-shadow
+  const React = require('react');
+  const { View, Text, TouchableOpacity } = require('react-native');
+  return {
+    LogEntryModal: ({ visible, standard, onClose, onSave }: any) => {
+      if (!visible) return null;
+      return (
+        <View testID="log-entry-modal">
+          <Text>LogEntryModal</Text>
+          {standard && <Text testID="modal-standard-id">{standard.id}</Text>}
+          <TouchableOpacity testID="modal-close" onPress={onClose}>
+            <Text>Close</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="modal-save"
+            onPress={() => onSave(standard?.id || '', 10, Date.now(), null)}
+          >
+            <Text>Save</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    },
+  };
+});
 
 jest.mock('../../components/PeriodLogsModal', () => ({
   PeriodLogsModal: () => null,
@@ -384,7 +387,7 @@ describe('StandardDetailScreen', () => {
       try {
         const progressBars = getAllByRole('progressbar');
         expect(progressBars.length).toBeGreaterThan(0);
-      } catch (e) {
+      } catch {
         // Progress bar might not be rendered in all states, which is acceptable
         // The important part is that accessibility labels exist where they should
       }
@@ -503,7 +506,9 @@ describe('StandardDetailScreen', () => {
     });
 
     test('displays computed period label in summary instead of generic fallback', () => {
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const { useStandardHistory } = require('../../hooks/useStandardHistory');
+      // eslint-disable-next-line @typescript-eslint/no-shadow
       const { useStandards } = require('../../hooks/useStandards');
 
       useStandardHistory.mockReturnValue({

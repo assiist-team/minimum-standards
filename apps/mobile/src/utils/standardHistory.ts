@@ -4,7 +4,6 @@ import {
   calculatePeriodWindow,
   derivePeriodStatus,
   PeriodStatus,
-  PeriodWindow,
 } from '@minimum-standards/shared-model';
 
 export type PeriodHistoryLogSlice = {
@@ -25,9 +24,6 @@ export type PeriodHistoryEntry = {
   periodEndMs: number;
 };
 
-const numberFormatter = new Intl.NumberFormat('en-US', {
-  maximumFractionDigits: 1,
-});
 
 /**
  * Computes all periods with logs for a standard, ordered most-recent-first.

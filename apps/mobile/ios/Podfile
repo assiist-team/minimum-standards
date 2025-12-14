@@ -13,15 +13,25 @@ $LOAD_PATH.unshift(ruby_compat_dir) unless $LOAD_PATH.include?(ruby_compat_dir)
 platform :ios, min_ios_version_supported
 prepare_react_native_project!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+# Firebase Swift pods require frameworks to generate Swift bridging headers
+# Use static linkage for React Native compatibility
+use_frameworks! :linkage => :static
 
 target 'MinimumStandardsMobile' do
   config = use_native_modules!
-  use_modular_headers!
+
+  # Enable modular headers for Firebase dependencies (required for Swift pods)
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseAppCheckInterop', :modular_headers => true
+  pod 'FirebaseAuth', :modular_headers => true
+  pod 'FirebaseAuthInterop', :modular_headers => true
+  pod 'FirebaseFirestore', :modular_headers => true
+  pod 'FirebaseFirestoreInternal', :modular_headers => true
+  pod 'FirebaseMessaging', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'RecaptchaInterop', :modular_headers => true
 
   use_react_native!(
     :path => config[:reactNativePath],
@@ -30,6 +40,26 @@ target 'MinimumStandardsMobile' do
   )
 
   post_install do |installer|
+    legacy_grpc_modulemap = '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap'
+    new_grpc_modulemap = '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
+    modulemap_keys = %w[
+      OTHER_CFLAGS
+      OTHER_SWIFT_FLAGS
+      OTHER_CPLUSPLUSFLAGS
+      OTHER_LDFLAGS
+      OTHER_CCFLAGS
+    ]
+    # Some pods already ship module maps and forcing DEFINES_MODULE causes redefinition
+    force_no_module_targets = %w[
+      ReactCommon
+    ]
+    private_headers_root =
+      if installer.sandbox.respond_to?(:private_headers_root) && installer.sandbox.private_headers_root
+        installer.sandbox.private_headers_root
+      else
+        File.join(installer.sandbox.root, 'Headers/Private')
+      end
+
     react_native_post_install(
       installer,
       config[:reactNativePath],
@@ -42,7 +72,8 @@ target 'MinimumStandardsMobile' do
       target.build_configurations.each do |build_config|
         # Fix module build issues
         build_config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-        build_config.build_settings['DEFINES_MODULE'] = 'YES'
+        build_config.build_settings['DEFINES_MODULE'] =
+          force_no_module_targets.include?(target.name) ? 'NO' : 'YES'
         
         # Fix for "Could not build module" errors
         build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
@@ -56,22 +87,14 @@ target 'MinimumStandardsMobile' do
         # Fix for module map issues
         build_config.build_settings['SWIFT_VERSION'] = '5.0'
         
-        # Fix gRPC-C++ modulemap path
-        if target.name == 'gRPC-C++'
-          other_cflags = build_config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
-          if other_cflags.is_a?(String)
-            fixed_flags = other_cflags.gsub(
-              '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap',
-              '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
-            )
-            build_config.build_settings['OTHER_CFLAGS'] = fixed_flags
-          elsif other_cflags.is_a?(Array)
-            build_config.build_settings['OTHER_CFLAGS'] = other_cflags.map do |flag|
-              flag.gsub(
-                '${PODS_ROOT}/Headers/Private/grpc/gRPC-Core.modulemap',
-                '${PODS_ROOT}/gRPC-Core/include/grpc/module.modulemap'
-              )
-            end
+        modulemap_keys.each do |key|
+          value = build_config.build_settings[key]
+          next if value.nil?
+
+          if value.is_a?(String)
+            build_config.build_settings[key] = value.gsub(legacy_grpc_modulemap, new_grpc_modulemap)
+          elsif value.is_a?(Array)
+            build_config.build_settings[key] = value.map { |flag| flag.gsub(legacy_grpc_modulemap, new_grpc_modulemap) }
           end
         end
       end
@@ -87,6 +110,7 @@ target 'MinimumStandardsMobile' do
       text = File.read(xcconfig_path)
       updated = text.gsub(/ ?-fmodule-map-file="\$\{PODS_ROOT\}\/Headers\/Public\/react_runtime\/React-jsitooling\.modulemap"/, '')
       updated = updated.gsub(/ ?-Xcc -fmodule-map-file="\$\{PODS_ROOT\}\/Headers\/Public\/react_runtime\/React-jsitooling\.modulemap"/, '')
+      updated = updated.gsub(legacy_grpc_modulemap, new_grpc_modulemap)
 
       if updated != text
         # Collapse duplicate spaces that may be left behind
@@ -116,9 +140,22 @@ target 'MinimumStandardsMobile' do
       File.write(xcconfig_path, text)
     end
 
+    # ReactCommon already defines its own module map; ensure DEFINES_MODULE stays disabled
+    %w[
+      ReactCommon/ReactCommon.debug.xcconfig
+      ReactCommon/ReactCommon.release.xcconfig
+    ].each do |relative_path|
+      xcconfig_path = File.join(installer.sandbox.root, 'Target Support Files', relative_path)
+      next unless File.exist?(xcconfig_path)
+
+      text = File.read(xcconfig_path)
+      updated = text.gsub('DEFINES_MODULE = YES', 'DEFINES_MODULE = NO')
+      File.write(xcconfig_path, updated) if updated != text
+    end
+
     # Ensure legacy gRPC module map path exists for targets that still reference it
     grpc_modulemap_src = File.join(installer.sandbox.root, 'gRPC-Core/include/grpc/module.modulemap')
-    grpc_modulemap_dst = File.join(installer.sandbox.root, 'Headers/Private/grpc/gRPC-Core.modulemap')
+    grpc_modulemap_dst = File.join(private_headers_root, 'grpc/gRPC-Core.modulemap')
     if File.exist?(grpc_modulemap_src)
       FileUtils.mkdir_p(File.dirname(grpc_modulemap_dst))
       FileUtils.cp(grpc_modulemap_src, grpc_modulemap_dst)

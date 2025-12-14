@@ -140,8 +140,9 @@ describe('Error Handling and UX Integration Tests', () => {
       expect(periodLabel).not.toBe('Current period');
       expect(periodLabel).toMatch(/December|January|February|March|April|May|June|July|August|September|October|November/i);
       
-      // Should contain date range format
-      expect(periodLabel).toContain('2024');
+      // Should contain date range format with current year
+      const currentYear = new Date().getFullYear().toString();
+      expect(periodLabel).toContain(currentYear);
     });
   });
 

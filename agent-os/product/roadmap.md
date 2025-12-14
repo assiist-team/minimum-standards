@@ -10,7 +10,8 @@
 8. [x] Edit/delete logs (explicit + auditable) — Add explicit edit and delete actions for logs (prefer `editedAt` and soft-delete via `deletedAt`) and ensure totals/status recompute deterministically and immediately everywhere. `[S]` (completed 2025-12-12)
 9. [x] Standards Templates Library (local-only) — Implement local-only Standards templates: activate a template in one tap, create from scratch, and "save as template" when creating/editing a Standard (no sharing/import in MVP). `[M]` (completed 2025-12-12)
 10. [x] Truthful, low-friction UX + error handling — Ensure logging "0" is supported, periods are never ambiguous in UI, copy stays neutral/factual, and error handling follows the project standards (clear user messaging, retries where safe, Crashlytics logging). `[S]` (completed 2025-12-13)
-11. [ ] End-to-end verification suite — Add automated coverage for the critical flows (create Activity → create Standard → log multiple times → backdate → status changes → history → edit/delete) using the Firebase Emulator Suite, Jest/RNTL, and a small Detox smoke pass. `[M]`
+11. [ ] User authentication flows — Implement complete authentication system: auth state management with Firebase Auth persistence, sign up (email/password), sign in (email/password + Google OAuth), protected navigation/routes that redirect unauthenticated users to auth screens, sign out functionality, and password reset flow. Ensure auth state is properly initialized before app navigation and all Firestore security rules are enforced. `[L]`
+12. [ ] End-to-end verification suite — Add automated coverage for the critical flows (create Activity → create Standard → log multiple times → backdate → status changes → history → edit/delete) using the Firebase Emulator Suite, Jest/RNTL, and a small Detox smoke pass. `[M]`
 
 > Notes
 > - Order items by technical dependencies and product architecture

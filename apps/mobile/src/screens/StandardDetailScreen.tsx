@@ -82,6 +82,7 @@ export function StandardDetailScreen({
         console.warn('Analytics tracking failed:', err);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [standard?.id, standard?.activityId]);
 
   // Compute current period progress

@@ -76,7 +76,7 @@ describe('LogEntryModal', () => {
         loading: false,
       });
 
-      const { getByText, getByTestId } = render(
+      const { getByText } = render(
         <LogEntryModal
           visible={true}
           standard={null}
@@ -311,7 +311,7 @@ describe('LogEntryModal', () => {
       const onClose = jest.fn();
       const onSave = jest.fn();
 
-      const { getByText, queryByText } = render(
+      const { getByText } = render(
         <LogEntryModal
           visible={true}
           standard={mockStandard}

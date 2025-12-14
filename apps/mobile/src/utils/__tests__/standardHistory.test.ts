@@ -147,7 +147,6 @@ describe('computeStandardHistory', () => {
   describe('status derivation for historical periods', () => {
     test('derives Met status for periods that met target', () => {
       const now = new Date('2025-12-11T12:00:00Z').getTime();
-      const pastPeriodEnd = new Date('2025-12-04T00:00:00Z').getTime(); // Past week ended
       const logs: PeriodHistoryLogSlice[] = [
         {
           id: 'log-1',

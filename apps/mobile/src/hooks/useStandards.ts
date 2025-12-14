@@ -19,7 +19,7 @@ import {
   sanitizePinOrder,
   togglePin,
 } from '../utils/dashboardPins';
-import { FirestoreError, normalizeFirebaseError } from '../utils/errors';
+import { normalizeFirebaseError } from '../utils/errors';
 import { retryFirestoreWrite } from '../utils/retry';
 
 export interface CreateStandardInput {

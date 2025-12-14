@@ -1,0 +1,88 @@
+# Tech stack reference
+- Follow `agent-os/standards/global/tech-stack.md` for canonical tooling (React Native CLI + Firebase, Yarn-based scripts, emulator expectations). Update that reference first if the stack changes.
+
+# Verification Report: User authentication flows
+
+**Spec:** `2025-12-13-user-authentication-flows`
+**Date:** 2025-12-13
+**Verifier:** implementation-verifier
+**Status:** ❌ Failed
+
+---
+
+## Executive Summary
+The navigation/authentication scaffolding exists, but several critical deliverables remain unfinished or broken. Google OAuth is stubbed out, Crashlytics logging throws at runtime, and the auth store never subscribes to Firebase directly. Feature-specific tests are either absent or ineffective, and the new React Navigation packages were never installed, so Jest cannot execute. Because of these gaps, the feature cannot be accepted.
+
+---
+
+## 1. Tasks Verification
+
+**Status:** ⚠️ Issues Found
+
+### Completed Tasks
+- [x] Task Group 1: Auth state store + initialization hook created, tests cover state transitions.
+- [x] Task Group 2: React Navigation stacks, guards, and loading screen implemented.
+- [x] Task Group 3: Sign In/Up/Reset/Settings screens with React Hook Form + Zod schemas delivered.
+- [x] Task Group 4: Additional test files scaffolded for auth flow coverage.
+
+### Incomplete or Issues
+- [⚠️] 1.3 Auth store never subscribes to `onAuthStateChanged`; only the hook updates state, so the store cannot respond without the hook mounted.
+- [⚠️] 2.1 Navigation guard tests (`AppNavigator.test.tsx`) merely assert that `getByTestId` exists, so they never verify that Auth vs Main stacks render in the right situations.
+- [⚠️] 3.3 Google sign-in is not implemented—the handler just shows an alert and imports `GoogleSignin` from the wrong package.
+- [⚠️] 3.7 Crashlytics logging helper instantiates `crashlytics()` immediately and later calls it as a function, which would throw and prevent logging.
+- [⚠️] 4.3 Auth/Firestore integration tests (`authFlowIntegration.test.tsx`) never hit Firestore or security rules; they only check that `getByTestId` exists after rerenders.
+
+### Incomplete or Issues Notes
+- Implementation directory (`agent-os/specs/2025-12-13-user-authentication-flows/implementation/`) is empty; no per-task write-ups exist to verify.
+
+---
+
+## 2. Documentation Verification
+
+**Status:** ⚠️ Issues Found
+
+### Implementation Documentation
+- [ ] Task Group 1 implementation report (missing)
+- [ ] Task Group 2 implementation report (missing)
+- [ ] Task Group 3 implementation report (missing)
+- [ ] Task Group 4 implementation report (missing)
+
+### Verification Documentation
+- None provided by area verifiers.
+
+### Missing Documentation
+- Implementation folder is empty; no Markdown reports exist for any task group.
+
+---
+
+## 3. Roadmap Updates
+
+**Status:** ⚠️ No Updates Needed
+
+### Updated Roadmap Items
+- [ ] Roadmap item 11 remains unchecked because the feature failed verification.
+
+### Notes
+- Do not update `agent-os/product/roadmap.md` until the Google auth flow, Crashlytics logging, and test suite issues are resolved.
+
+---
+
+## 4. Test Suite Results
+
+**Status:** ❌ Critical Failures
+
+### Test Summary
+- **Lint:** ❌ `npm run lint` (fallback because `yarn` is unavailable) failed with 30 errors, including unused Google auth imports in `SignInScreen.tsx` and missing `jest` globals in the new Firebase auth mock.
+- **Typecheck:** ⚠️ `npm run typecheck` failed because no `typecheck` script exists. The repo does not expose the required command.
+- **Jest (app):** ❌ `npm test` failed—Jest cannot resolve `@react-navigation/native` for the new auth/navigation suites, and `errorHandlingIntegration.test.ts` still fails (expects "2024" in a date label but receives 2025 data).
+- **Jest (functions):** ⚠️ Not run; there is no `test:functions` script in any package.
+- **Detox / Device Tests:** ⚠️ Not run; no Detox configuration or command (`yarn detox test --configuration ios.sim.debug`) exists in this repo, and the required simulators were not documented.
+
+### Failed Tests
+- `src/navigation/__tests__/AppNavigator.test.tsx`, `authFlowIntegration.test.tsx`, `src/screens/__tests__/SignInScreen.test.tsx`, `SignUpScreen.test.tsx`, `PasswordResetScreen.test.tsx`, `SettingsScreen.test.tsx`: all cannot import `@react-navigation/native` because the dependency was never installed (no entry in `apps/mobile/package-lock.json`).
+- `src/utils/__tests__/errorHandlingIntegration.test.ts`: still expects 2024 date labels and fails against current data (`December 8, 2025 - December 14, 2025`).
+
+### Notes
+- React Navigation packages (`@react-navigation/native`, `@react-navigation/native-stack`, `react-native-screens`) are listed in `package.json` but absent from `package-lock.json`, so neither Metro nor Jest can resolve them until `npm install` runs and pods are updated.
+- Crashlytics logging could not be validated because the helper currently throws before calling `crashlytics().recordError`.
+- No device/emulator smoke tests were executed; Detox commands are missing and would require additional setup per the tech stack guide.

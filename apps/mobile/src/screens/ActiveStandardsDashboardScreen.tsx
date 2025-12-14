@@ -48,7 +48,6 @@ export function ActiveStandardsDashboardScreen({
   onOpenLogModal,
   onNavigateToDetail,
 }: ActiveStandardsDashboardScreenProps) {
-  const isDark = useColorScheme() === 'dark';
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [logModalVisible, setLogModalVisible] = useState(false);
   

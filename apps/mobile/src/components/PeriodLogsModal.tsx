@@ -14,7 +14,7 @@ import { usePeriodLogs } from '../hooks/usePeriodLogs';
 import type { PeriodLogEntry } from '../hooks/usePeriodLogs';
 import { LogEntryModal } from './LogEntryModal';
 import { useStandards } from '../hooks/useStandards';
-import type { Standard, ActivityLog } from '@minimum-standards/shared-model';
+import type { ActivityLog } from '@minimum-standards/shared-model';
 
 export interface PeriodLogsModalProps {
   visible: boolean;
@@ -160,7 +160,7 @@ export function PeriodLogsModal({
               await deleteLogEntry(item.id, standardId);
               setUndoLogEntry(item);
               scheduleUndoClear();
-            } catch (err) {
+            } catch {
               Alert.alert('Error', 'Failed to delete log entry');
             }
           },
@@ -181,7 +181,7 @@ export function PeriodLogsModal({
         undoTimerRef.current = null;
       }
       setUndoLogEntry(null);
-    } catch (err) {
+    } catch {
       Alert.alert('Error', 'Failed to restore log entry');
     }
   }, [undoLogEntry, restoreLogEntry, standardId]);

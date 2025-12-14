@@ -3,7 +3,6 @@ import auth from '@react-native-firebase/auth';
 import firestore, {
   FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
-import { Standard } from '@minimum-standards/shared-model';
 import { useStandards } from './useStandards';
 import {
   computeStandardHistory,

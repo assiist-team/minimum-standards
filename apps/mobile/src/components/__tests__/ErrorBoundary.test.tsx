@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { ErrorBoundary } from '../ErrorBoundary';
-import auth from '@react-native-firebase/auth';
 
 // Mock Firebase Auth
 jest.mock('@react-native-firebase/auth', () => ({

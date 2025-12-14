@@ -65,7 +65,7 @@ describe('SyncStatusBanner', () => {
       return () => {};
     });
 
-    const { getByText, queryByText, rerender } = render(<SyncStatusBanner />);
+    const { getByText, queryByText } = render(<SyncStatusBanner />);
 
     await waitFor(() => {
       expect(getByText(/offline/i)).toBeTruthy();
