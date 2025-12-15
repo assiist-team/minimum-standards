@@ -2,6 +2,7 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import FirebaseCore
+import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, RCTBridgeDelegate {
@@ -69,5 +70,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate, RCTBridgeDelegate {
     return url
   }
 
-  // Re-add URL handling (e.g., Google Sign-In) here if needed.
+  func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    if GIDSignIn.sharedInstance.handle(url) {
+      NSLog("[AppDelegate] GIDSignIn handled incoming URL: \(url.absoluteString)")
+      return true
+    }
+    return RCTLinkingManager.application(app, open: url, options: options)
+  }
+
+  func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+    return RCTLinkingManager.application(
+      application,
+      continue: userActivity,
+      restorationHandler: restorationHandler
+    )
+  }
 }

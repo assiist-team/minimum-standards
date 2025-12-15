@@ -530,6 +530,57 @@ Until these checkpoints appear consistently in Xcode logs, assume the blank scre
   `xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme MinimumStandardsMobile -configuration Debug -sdk iphonesimulator -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build`
 - ✅ Result: native build now completes on the Paper bridge. Next verification steps are on-device smoke tests (real login, navigation) plus re-adding any required URL handlers (e.g., Google Sign-In) so deep links continue to work without relying on Fabric.
 
+### 10.2 Paper bridge checklist (2025-12-14 @ 18:10 PT)
+
+1. **Deep-link handler reinstated:**  
+   - `AppDelegate.swift` now sticks to the Paper-friendly `import React` + `RCTLinkingManager` APIs (no `React_RCTLinking` module required) and still forwards both universal links and custom URL schemes through `GIDSignIn.sharedInstance.handle(url:)` before falling back to `RCTLinkingManager`.  
+   - Code reference:
+```73:94:apps/mobile/ios/MinimumStandardsMobile/AppDelegate.swift
+func application(
+  _ app: UIApplication,
+  open url: URL,
+  options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+) -> Bool {
+  if GIDSignIn.sharedInstance.handle(url) {
+    NSLog("[AppDelegate] GIDSignIn handled incoming URL: \(url.absoluteString)")
+    return true
+  }
+  return RCTLinkingManager.application(app, open: url, options: options)
+}
+```
+
+2. **Pod install command whenever `ios/build` is wiped:**  
+   - Generated headers (e.g., `FBReactNativeSpec`) live under `apps/mobile/ios/build`. After deleting that folder, rerun:  
+     ```bash
+     cd apps/mobile/ios
+     RCT_NEW_ARCH_ENABLED=0 USE_FABRIC=0 RCT_FABRIC_ENABLED=0 bundle exec pod install
+     ```  
+   - This keeps Paper/Fabric-off codegen in sync with the reverted AppDelegate.
+
+3. **iOS smoke test required after pod sync:**  
+   - Launch the simulator to verify Paper bridge behavior:  
+     ```bash
+     cd apps/mobile
+     npx react-native run-ios --simulator="iPhone 16 Pro"
+     ```  
+   - Confirm Google Sign-In / deep links by tapping a `minimumstandards://` link or initiating `GIDSignIn`. Android parity is tracked separately; this doc stays iOS-only by request.
+
+4. **Recovering from `EPERM` on Fabric provider stubs:**  
+   - If `pod install` fails with `EPERM: operation not permitted` while rewriting `RCTThirdPartyFabricComponentsProvider.*`, delete those files from `node_modules/react-native/React/Fabric/` and immediately rerun the same Fabric-off `pod install` command. Xcode regenerates them automatically with the correct permissions.
+
+Log each run of the commands above inside `terminals/*.txt` so we can prove when the bridge state last changed.
+
+### 10.3 iOS simulator smoke test (2025-12-14 @ 18:25 PT)
+
+- Command:
+  ```bash
+  cd apps/mobile
+  npx react-native run-ios --simulator="iPhone 16e"
+  ```
+- Result: build + install succeeded, CLI reported `success Successfully launched the app` against simulator ID `7CE5E513-69E1-4725-B2C4-94AB9721B2FE`. Log saved at `~/.cursor/.../agent-tools/66c7c866-97c9-4d83-9a11-3eec025ed43d.txt`.
+- Warning you can ignore: Xcode prints a destination-selection warning because multiple simulators satisfy the spec; it still picks the 16e target automatically.
+- This run proves the Paper bridge + restored deep-link handler load and execute on current RN 0.83 without Fabric.
+
 ## 9. Commands Reference
 
 ```bash
