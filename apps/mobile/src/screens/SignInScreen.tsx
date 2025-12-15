@@ -88,17 +88,32 @@ export function SignInScreen() {
       // Get the user's ID token
       console.log('[Google Sign-In] Calling GoogleSignin.signIn()...');
       const signInResult = await GoogleSignin.signIn();
+
+      if (signInResult.type !== 'success') {
+        console.log('[Google Sign-In] User cancelled sign-in during success response');
+        return;
+      }
+
+      const {
+        data: { idToken: embeddedIdToken, user },
+      } = signInResult;
+
       console.log('[Google Sign-In] Sign-in result received:', {
-        hasIdToken: !!signInResult.idToken,
-        hasAccessToken: !!signInResult.accessToken,
-        user: signInResult.user ? {
-          email: signInResult.user.email,
-          name: signInResult.user.name,
-        } : null,
+        hasEmbeddedIdToken: !!embeddedIdToken,
+        user: user
+          ? {
+              email: user.email,
+              name: user.name,
+            }
+          : null,
       });
-      
-      if (!signInResult.idToken) {
-        console.error('[Google Sign-In] No ID token received from Google Sign-In');
+
+      const tokens = await GoogleSignin.getTokens();
+      const resolvedIdToken = tokens.idToken || embeddedIdToken;
+      const resolvedAccessToken = tokens.accessToken || undefined;
+
+      if (!resolvedIdToken) {
+        console.error('[Google Sign-In] No ID token available after Google Sign-In');
         throw new Error('No ID token received from Google Sign-In');
       }
 
@@ -106,8 +121,8 @@ export function SignInScreen() {
       // accessToken is optional and may not be present on iOS
       console.log('[Google Sign-In] Creating Firebase credential...');
       const googleCredential = auth.GoogleAuthProvider.credential(
-        signInResult.idToken,
-        signInResult.accessToken || undefined
+        resolvedIdToken,
+        resolvedAccessToken
       );
 
       // Sign in the user with the credential

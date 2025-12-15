@@ -14,8 +14,16 @@ export function AuthStack() {
         component={SignInScreen}
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="SignUp" component={SignUpScreen} />
-      <Stack.Screen name="PasswordReset" component={PasswordResetScreen} />
+      <Stack.Screen 
+        name="SignUp" 
+        component={SignUpScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen 
+        name="PasswordReset" 
+        component={PasswordResetScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
