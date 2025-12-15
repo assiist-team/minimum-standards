@@ -9,6 +9,27 @@ console.log('=== INDEX.JS EXECUTING ===');
 import { AppRegistry, LogBox } from 'react-native';
 import { name as appName } from './app.json';
 
+if (typeof global.__r === 'function' && !global.__metroRequireWrapperInstalled) {
+  const originalRequire = global.__r;
+  global.__r = function wrappedRequire(moduleId, ...rest) {
+    try {
+      return originalRequire(moduleId, ...rest);
+    } catch (error) {
+      const modules = typeof originalRequire.getModules === 'function' ? originalRequire.getModules() : null;
+      const moduleMeta = modules && modules[moduleId];
+      const verboseName = moduleMeta?.verboseName ?? moduleMeta?.path;
+      console.error(
+        '[require wrapper] Failed to load module',
+        moduleId,
+        verboseName ? `(${verboseName})` : '',
+        error
+      );
+      throw error;
+    }
+  };
+  global.__metroRequireWrapperInstalled = true;
+}
+
 // Force register RCTEventEmitter to fix React Native 0.83 Fabric bug
 try {
   const { BatchedBridge } = require('react-native/Libraries/BatchedBridge/BatchedBridge');

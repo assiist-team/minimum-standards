@@ -417,6 +417,54 @@ Everything launched correctly at commit `5030e11a93a685630b432e98f8869ce0cdadf0a
 
 **Takeaway:** the only structural difference that explains the RCTEventEmitter regression is the architectural shift in `AppDelegate.swift`. Commit `5030e11a` booted via `RCTReactNativeFactory` (old architecture) whereas HEAD uses the Fabric-friendly `RCTAppDelegate`. Every downstream JS change is defensive logging layered on after the regression started. If we revert the AppDelegate back to the working pattern—or otherwise disable Fabric—we should get back to the stable baseline and won’t need the manual `RCTEventEmitter` registration hack.
 
+### 8.11 Physical device regression: `require("undefined")` + `useTheme` undefined (2025-12-14 @ 21:15 PT)
+
+**What’s new:** Running on the simulator (Metro dev bundle) now works end-to-end, but the real device—still forced to use the embedded `main.jsbundle`—crashes immediately after auth initialization with the following sequence:
+
+```
+[App] Google Sign-In initialization completed
+[AuthStore] onAuthStateChanged listener registered successfully
+[AuthStore] Auth state updated, isInitialized: true
+Error: Requiring unknown module "undefined". If you are sure the module exists, try restarting Metro...
+Warning: TypeError: Cannot read property 'useTheme' of undefined
+    in SyncStatusBanner …
+```
+
+Key observations:
+- `[App/Bisect]` logs prove every top-level module (ErrorBoundary, SyncStatusBanner, AppNavigator, hooks) loads successfully before the crash; the failure happens only when React re-renders after auth resolves.
+- Hermes’ `Requiring unknown module "undefined"` message only occurs in production (numbered-module) bundles. Metro dev builds identify modules by path strings, which is why the simulator does not reproduce this.
+- Immediately after the unknown-module exception, React tries to re-render `SyncStatusBanner`, but the `useTheme` import is `undefined`, causing the `TypeError`. When a module fails to evaluate in Hermes, Metro leaves it in the cache as `undefined`, so the caller sees exactly this failure.
+
+**Most likely cause:** the embedded bundle on-device is stale or corrupted relative to the native build. The module ID table baked into `main.jsbundle` no longer matches the JavaScript that’s actually running, so any `require(moduleId)` call can end up requesting `undefined`. This only happens when:
+1. The bundle was built from different source code than what Xcode compiled (e.g., `main.jsbundle` left over from an older commit).
+2. Hermes bytecode stripping removed a module that we still reference (common when `metro.config.js` excludes `*.ts` inputs located outside `apps/mobile`).
+3. A dynamic `require(variable)` call executed with `variable === undefined` only in release mode (e.g., asset requires inside JSON configs).
+
+**Immediate actions:**
+1. **Rebuild the embedded bundle from HEAD.**  
+   ```bash
+   cd apps/mobile
+   rm -f ios/main.jsbundle
+   npx react-native bundle \
+     --entry-file index.js \
+     --bundle-output ios/main.jsbundle \
+     --assets-dest ios \
+     --platform ios \
+     --dev false
+   ```
+   Delete the app from the device, reinstall from Xcode with `FORCE_EMBEDDED_JS_BUNDLE=1`, and confirm `=== INDEX.JS EXECUTING ===` appears before the crash. If the error disappears, the problem was simply a mismatched bundle.
+2. **Temporarily bypass `SyncStatusBanner`.** Comment out the banner render in `App.tsx` (or change `loadModuleOrFallback` to return the fallback component unconditionally) and redeploy. If the device succeeds without the banner, instrument `SyncStatusBanner.tsx` by logging `Object.keys(require('../theme/useTheme'))` to verify the module exports exist before calling the hook.
+3. **Capture a Hermes stack.** Run the device build with `HERMES_ENABLE_DEBUGGER=1` and attach `hermesc` (or use Xcode’s “Pause on exceptions”) to see which module ID tried to load `undefined`. Once you have the numeric ID, search for `__d(function(global, require, module, exports) { ... }, <ID>, ...)` in the generated `main.jsbundle` to map it back to a file.
+4. **Consider shipping a dev-style bundle to the device temporarily.** Re-run the bundler with `--dev true --minify false` to keep human-readable module names in the embedded bundle. This slows the device down but replaces the opaque `"undefined"` errors with the actual path that failed, drastically shortening the investigation.
+
+Until the embedded bundle is rebuilt in lock-step with the native binary, expect simulator (Metro) runs to pass while physical devices (embedded Hermes) continue to crash in `SyncStatusBanner`.
+
+### 8.12 SyncStatusBanner NetInfo import fix attempt (2025-12-14 @ 21:45 PT)
+
+- Replaced the inline `try/catch` NetInfo require inside `SyncStatusBanner` with a lazy helper (`getOptionalNetInfo()`) so Metro always assigns a dependency slot at build time.
+- Rebuilt the embedded bundle (`--dev true --minify false`). Device run still crashed with `require("undefined")` immediately after `[AuthStore] Auth state updated, isInitialized: true`, so the undefined-module issue persists even though the module map now includes the helper file.
+- React Navigation now renders far enough to show `ScreenStackHeaderConfig` warnings: `UIView base class does not support pointerEvent value: box-none`. Modern RN 0.83 headers inherit from `UIView`, so header configs no longer accept `pointerEvents="box-none"`. Need to remove/guard that prop when Paper bridge is active. Logged here so we address it once the require crash is resolved.
+
 ## 9. Eliminate Metro: Prebundle Test
 
 To confirm Metro is not the issue, prebundle the JS and embed it in the app:

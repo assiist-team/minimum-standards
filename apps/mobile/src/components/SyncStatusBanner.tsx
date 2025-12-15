@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useTheme } from '../theme/useTheme';
-
-// Conditionally import NetInfo if available
-let NetInfo: any = null;
-try {
-  NetInfo = require('@react-native-community/netinfo').default;
-} catch {
-  // NetInfo not installed, will use fallback
-}
+import { getOptionalNetInfo } from '../utils/optionalNetInfo';
 
 export interface SyncStatusBannerProps {
   /** Whether to show the banner even when online (for testing) */
@@ -23,6 +16,7 @@ export function SyncStatusBanner({ forceShow }: SyncStatusBannerProps) {
   const theme = useTheme();
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const NetInfo = getOptionalNetInfo();
 
   useEffect(() => {
     if (!NetInfo) {
