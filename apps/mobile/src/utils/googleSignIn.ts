@@ -9,20 +9,28 @@ import Config from 'react-native-config';
  * Get it from Firebase Console > Authentication > Sign-in method > Google > Web client ID
  */
 export function initializeGoogleSignIn() {
+  console.log('[Google Sign-In] Initializing Google Sign-In...');
   const webClientId = Config.GOOGLE_SIGN_IN_WEB_CLIENT_ID;
 
   if (!webClientId) {
-    console.warn(
-      'Google Sign-In webClientId not configured. ' +
+    console.error(
+      '[Google Sign-In] ERROR: webClientId not configured. ' +
       'Set GOOGLE_SIGN_IN_WEB_CLIENT_ID in your .env file. ' +
       'See .env.example for reference.'
     );
     return;
   }
 
-  GoogleSignin.configure({
-    webClientId, // Required for iOS and Android
-    offlineAccess: true, // If you want to access Google API on behalf of the user FROM YOUR SERVER
-    scopes: ['email', 'profile'], // What API you want to access on behalf of the user
-  });
+  console.log('[Google Sign-In] Configuring Google Sign-In with webClientId:', webClientId.substring(0, 20) + '...');
+  try {
+    GoogleSignin.configure({
+      webClientId, // Required for Firebase authentication
+      iosClientId: '1055581806274-1n5keauch2qufmqirdcnvrdl8221q6m6.apps.googleusercontent.com', // iOS OAuth client ID
+      offlineAccess: true, // If you want to access Google API on behalf of the user FROM YOUR SERVER
+      scopes: ['email', 'profile'], // What API you want to access on behalf of the user
+    });
+    console.log('[Google Sign-In] Google Sign-In configured successfully');
+  } catch (error) {
+    console.error('[Google Sign-In] Error configuring Google Sign-In:', error);
+  }
 }

@@ -9,13 +9,24 @@ import { useAuthStore } from '../stores/authStore';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
+console.log('[AppNavigator] Module evaluation started');
+
 export function AppNavigator() {
   const { user, isInitialized } = useAuthStore();
+  console.log('[AppNavigator] Render start', {
+    isInitialized,
+    hasUser: !!user,
+    userId: user?.uid,
+  });
 
   // Show loading screen while auth state initializes
   if (!isInitialized) {
+    console.log('[AppNavigator] Auth not initialized yet - rendering LoadingScreen');
     return <LoadingScreen />;
   }
+
+  const destination = user ? 'MainStack' : 'AuthStack';
+  console.log('[AppNavigator] Auth initialized - rendering', destination);
 
   return (
     <NavigationContainer>

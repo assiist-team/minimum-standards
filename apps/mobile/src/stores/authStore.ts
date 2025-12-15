@@ -42,21 +42,69 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   initialize: () => {
+    console.log('[AuthStore] Starting auth initialization...');
+    
     // Prevent duplicate listeners
     if (unsubscribeAuthState) {
+      console.log('[AuthStore] Already initialized, skipping duplicate initialization');
       // Return a no-op cleanup function if already initialized
       return () => {
         // Already initialized, cleanup handled elsewhere
       };
     }
 
-    // Set up auth state listener
-    unsubscribeAuthState = auth().onAuthStateChanged((user) => {
-      set({ user, isInitialized: true });
-    });
+    // Check current user synchronously to set initial state immediately
+    // This prevents showing the sign-in screen if user is already authenticated
+    console.log('[AuthStore] Checking current user synchronously...');
+    try {
+      const currentUser = auth().currentUser;
+      console.log('[AuthStore] Current user check result:', currentUser ? `User ID: ${currentUser.uid}` : 'No current user');
+      if (currentUser) {
+        console.log('[AuthStore] Setting initial state with current user');
+        set({ user: currentUser, isInitialized: true });
+      }
+    } catch (error) {
+      console.error('[AuthStore] ERROR: Failed to check current user:', error);
+      // Continue with initialization even if current user check fails
+    }
+
+    // Timeout fallback: if onAuthStateChanged doesn't fire within 3 seconds,
+    // assume no user and proceed (prevents infinite loading screen)
+    console.log('[AuthStore] Setting up 3s timeout fallback...');
+    const timeoutId = setTimeout(() => {
+      console.log('[AuthStore] Timeout fired - checking initialization state...');
+      const state = useAuthStore.getState();
+      if (!state.isInitialized) {
+        console.warn('[AuthStore] Auth initialization timeout - proceeding without auth state');
+        set({ user: null, isInitialized: true });
+      } else {
+        console.log('[AuthStore] Timeout fired but already initialized, ignoring');
+      }
+    }, 3000);
+
+    // Set up auth state listener for future changes
+    // Note: onAuthStateChanged fires immediately with current auth state,
+    // so if currentUser was null, the listener will fire with null and set isInitialized: true
+    console.log('[AuthStore] Setting up onAuthStateChanged listener...');
+    try {
+      unsubscribeAuthState = auth().onAuthStateChanged((user) => {
+        console.log('[AuthStore] onAuthStateChanged callback fired:', user ? `User ID: ${user.uid}` : 'No user');
+        clearTimeout(timeoutId);
+        set({ user, isInitialized: true });
+        console.log('[AuthStore] Auth state updated, isInitialized: true');
+      });
+      console.log('[AuthStore] onAuthStateChanged listener registered successfully');
+    } catch (error) {
+      console.error('[AuthStore] ERROR: Failed to set up onAuthStateChanged listener:', error);
+      // Clear timeout and set initialized to true to prevent infinite loading
+      clearTimeout(timeoutId);
+      set({ user: null, isInitialized: true });
+    }
 
     // Return cleanup function
     const cleanup = () => {
+      console.log('[AuthStore] Cleanup called');
+      clearTimeout(timeoutId);
       if (unsubscribeAuthState) {
         unsubscribeAuthState();
         unsubscribeAuthState = null;

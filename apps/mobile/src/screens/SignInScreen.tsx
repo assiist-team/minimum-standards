@@ -70,37 +70,64 @@ export function SignInScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    // Log immediately to verify function is called
+    console.log('=== GOOGLE SIGN-IN BUTTON PRESSED ===');
+    console.log('[Google Sign-In] Starting Google Sign-In flow...');
+    
     try {
       setLoading(true);
       setError(null);
 
       // Check if Google Play Services are available (Android only)
       if (Platform.OS === 'android') {
+        console.log('[Google Sign-In] Checking Google Play Services...');
         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        console.log('[Google Sign-In] Google Play Services available');
       }
 
       // Get the user's ID token
+      console.log('[Google Sign-In] Calling GoogleSignin.signIn()...');
       const signInResult = await GoogleSignin.signIn();
+      console.log('[Google Sign-In] Sign-in result received:', {
+        hasIdToken: !!signInResult.idToken,
+        hasAccessToken: !!signInResult.accessToken,
+        user: signInResult.user ? {
+          email: signInResult.user.email,
+          name: signInResult.user.name,
+        } : null,
+      });
       
       if (!signInResult.idToken) {
+        console.error('[Google Sign-In] No ID token received from Google Sign-In');
         throw new Error('No ID token received from Google Sign-In');
       }
 
       // Create a Google credential with the token
       // accessToken is optional and may not be present on iOS
+      console.log('[Google Sign-In] Creating Firebase credential...');
       const googleCredential = auth.GoogleAuthProvider.credential(
         signInResult.idToken,
         signInResult.accessToken || undefined
       );
 
       // Sign in the user with the credential
+      console.log('[Google Sign-In] Signing in with Firebase credential...');
       await auth().signInWithCredential(googleCredential);
+      console.log('[Google Sign-In] Successfully signed in with Firebase');
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err: any) {
+      console.error('[Google Sign-In] Error occurred:', {
+        code: err.code,
+        message: err.message,
+        error: err,
+        stack: err.stack,
+      });
+
       // Handle Google Sign-In specific errors
       if (err.code === 'SIGN_IN_CANCELLED' || err.code === '12501') {
         // User cancelled the sign-in flow, don't show error
         // 12501 is the Android error code for user cancellation
+        console.log('[Google Sign-In] User cancelled sign-in');
         setLoading(false);
         return;
       }

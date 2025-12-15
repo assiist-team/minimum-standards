@@ -9,10 +9,17 @@ export function useAuthInitialization() {
   const initialize = useAuthStore((state) => state.initialize);
 
   useEffect(() => {
+    console.log('[useAuthInitialization] Effect running - calling initialize()');
     // Initialize auth state listener (returns cleanup function)
     const cleanup = initialize();
+    console.log('[useAuthInitialization] initialize() returned cleanup function');
 
     // Cleanup listener on unmount
-    return cleanup;
+    return () => {
+      console.log('[useAuthInitialization] Cleanup invoked - tearing down auth listener');
+      if (typeof cleanup === 'function') {
+        cleanup();
+      }
+    };
   }, [initialize]);
 }
