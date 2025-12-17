@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FirebaseFirestoreTypes,
+  collection,
+  doc,
+  query,
+  where,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { useStandards } from './useStandards';
@@ -55,13 +59,12 @@ export function useStandardHistory(
 
     // Query all logs for this standard (no time filter, we'll compute periods)
     // We filter by standardId and exclude deleted logs
-    const logsRef = firebaseFirestore
-      .collection('users')
-      .doc(userId)
-      .collection('activityLogs')
-      .where('standardId', '==', standardId);
+    const logsQuery = query(
+      collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+      where('standardId', '==', standardId)
+    );
 
-    const unsubscribe = logsRef.onSnapshot(
+    const unsubscribe = logsQuery.onSnapshot(
       (snapshot) => {
         const nextLogs: PeriodHistoryLogSlice[] = [];
         snapshot.forEach((docSnap) => {

@@ -16,7 +16,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 
 export interface StandardsLibraryScreenProps {
-  onBack: () => void;
+  onBack?: () => void; // Optional - not shown on main screen
   onSelectStandard?: (standard: Standard) => void; // For builder context
   onNavigateToBuilder?: () => void; // Navigate to Standards Builder
 }
@@ -90,7 +90,9 @@ export function StandardsLibraryScreen({
   const handleSelect = (standard: Standard) => {
     if (onSelectStandard) {
       onSelectStandard(standard);
-      onBack();
+      if (onBack) {
+        onBack();
+      }
     }
   };
 
@@ -140,9 +142,7 @@ export function StandardsLibraryScreen({
     <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
-        <TouchableOpacity onPress={onBack}>
-          <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Standards Library</Text>
         {onNavigateToBuilder ? (
           <TouchableOpacity onPress={onNavigateToBuilder}>

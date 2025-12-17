@@ -51,9 +51,10 @@ export function StandardsBuilderScreenWrapperForDashboard() {
 
 export function StandardsLibraryScreenWrapper() {
   const navigation = useNavigation<StandardsNavigationProp>();
+  const canGoBack = navigation.canGoBack();
   return (
     <StandardsLibraryScreen
-      onBack={() => navigation.goBack()}
+      onBack={canGoBack ? () => navigation.goBack() : undefined}
       onSelectStandard={(standard) => {
         // Navigate to Standard Detail when a standard is selected
         navigation.navigate('StandardDetail', { standardId: standard.id });

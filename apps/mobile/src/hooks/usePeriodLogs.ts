@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
 import {
   FirebaseFirestoreTypes,
+  collection,
+  doc,
+  query,
+  where,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { TimestampMs } from '@minimum-standards/shared-model';
@@ -48,15 +52,14 @@ export function usePeriodLogs(
     setLoading(true);
     setError(null);
 
-    const logsRef = firebaseFirestore
-      .collection('users')
-      .doc(userId)
-      .collection('activityLogs')
-      .where('standardId', '==', standardId)
-      .where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(periodStartMs))
-      .where('occurredAt', '<', firebaseFirestore.Timestamp.fromMillis(periodEndMs));
+    const logsQuery = query(
+      collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+      where('standardId', '==', standardId),
+      where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(periodStartMs)),
+      where('occurredAt', '<', firebaseFirestore.Timestamp.fromMillis(periodEndMs))
+    );
 
-    const unsubscribe = logsRef.onSnapshot(
+    const unsubscribe = logsQuery.onSnapshot(
       (snapshot) => {
         const nextLogs: PeriodLogEntry[] = [];
         snapshot.forEach((docSnap) => {

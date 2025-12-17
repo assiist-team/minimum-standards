@@ -1,4 +1,10 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  collection,
+  doc,
+  query,
+  where,
+} from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { Activity } from '@minimum-standards/shared-model';
 import {
@@ -88,13 +94,12 @@ export function useActivities(): UseActivitiesResult {
     setLoading(true);
     setError(null);
 
-    const activitiesRef = firebaseFirestore
-      .collection('users')
-      .doc(userId)
-      .collection('activities')
-      .where('deletedAt', '==', null); // Filter out soft-deleted
+    const activitiesQuery = query(
+      collection(doc(firebaseFirestore, 'users', userId), 'activities'),
+      where('deletedAt', '==', null) // Filter out soft-deleted
+    );
 
-    const unsubscribe = activitiesRef.onSnapshot(
+    const unsubscribe = activitiesQuery.onSnapshot(
       (snapshot) => {
         try {
           const activitiesList: Activity[] = [];
@@ -135,10 +140,10 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-      const activitiesRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activities');
+      const activitiesCollection = collection(
+        doc(firebaseFirestore, 'users', userId),
+        'activities'
+      );
 
       // Create temporary ID for optimistic update
       const tempId = `temp_${Date.now()}`;
@@ -158,7 +163,7 @@ export function useActivities(): UseActivitiesResult {
 
       try {
         // Create document in Firestore
-        const docRef = activitiesRef.doc();
+        const docRef = doc(activitiesCollection);
         
         // Convert to Firestore format (unit will be normalized by schema)
         const firestoreData = toFirestoreActivity(activityData);
@@ -199,11 +204,10 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-        const docRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activities')
-        .doc(activityId);
+        const docRef = doc(
+          collection(doc(firebaseFirestore, 'users', userId), 'activities'),
+          activityId
+        );
 
       // Optimistic update
       setActivities((prev) => {
@@ -247,11 +251,10 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-        const docRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activities')
-        .doc(activityId);
+        const docRef = doc(
+          collection(doc(firebaseFirestore, 'users', userId), 'activities'),
+          activityId
+        );
 
       // Optimistic update: remove from list
       const activityToDelete = activities.find((a) => a.id === activityId);

@@ -45,33 +45,33 @@ export function BottomTabNavigator() {
         name="Dashboard"
         component={DashboardStack}
         options={{
-          tabBarLabel: 'Active',
+          tabBarLabel: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="dashboard" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Active tab',
+          tabBarAccessibilityLabel: 'Dashboard tab',
         }}
       />
       <Tab.Screen
         name="Standards"
         component={StandardsStack}
         options={{
-          tabBarLabel: 'Standards Library',
+          tabBarLabel: 'Standards',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="list" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Standards Library tab',
+          tabBarAccessibilityLabel: 'Standards tab',
         }}
       />
       <Tab.Screen
         name="Activities"
         component={ActivitiesStack}
         options={{
-          tabBarLabel: 'Activities Library',
+          tabBarLabel: 'Activities',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="star" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Activities Library tab',
+          tabBarAccessibilityLabel: 'Activities tab',
         }}
       />
       <Tab.Screen

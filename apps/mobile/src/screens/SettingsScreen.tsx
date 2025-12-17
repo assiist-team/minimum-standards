@@ -35,9 +35,7 @@ export function SettingsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
       <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>

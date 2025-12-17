@@ -1,5 +1,9 @@
 import { create } from 'zustand';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import {
+  FirebaseAuthTypes,
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+} from '@react-native-firebase/auth';
 import { firebaseAuth } from '../firebase/firebaseApp';
 
 export interface AuthState {
@@ -38,7 +42,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
-    await firebaseAuth.signOut();
+    await firebaseSignOut(firebaseAuth);
     set({ user: null });
   },
 
@@ -92,7 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // so if currentUser was null, the listener will fire with null and set isInitialized: true
     console.log('[AuthStore] Setting up onAuthStateChanged listener...');
     try {
-      unsubscribeAuthState = firebaseAuth.onAuthStateChanged((user) => {
+      unsubscribeAuthState = onAuthStateChanged(firebaseAuth, (user) => {
         const uid = user?.uid;
         console.log('[AuthStore] onAuthStateChanged callback fired:', uid ? `User ID: ${uid}` : 'No user');
         if (uid) {

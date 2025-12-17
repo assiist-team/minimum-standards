@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import {
+  FirebaseFirestoreTypes,
+  collection,
+  doc,
+  query,
+  where,
+} from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import {
   Standard,
@@ -67,13 +73,12 @@ export function useActiveStandardsDashboard() {
       nowMs
     );
 
-    const logsRef = firebaseFirestore
-      .collection('users')
-      .doc(userId)
-      .collection('activityLogs')
-      .where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(earliestStart));
+    const logsQuery = query(
+      collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+      where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(earliestStart))
+    );
 
-    const unsubscribe = logsRef.onSnapshot(
+    const unsubscribe = logsQuery.onSnapshot(
       (snapshot) => {
         const nextLogs: DashboardLogSlice[] = [];
         snapshot.forEach((docSnap) => {

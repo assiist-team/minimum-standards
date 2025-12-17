@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FirebaseFirestoreTypes,
+  collection,
+  doc,
+  query,
+  where,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import {
@@ -133,11 +137,10 @@ export function useStandards(): UseStandardsResult {
     if (!userId) {
       return null;
     }
-    return firebaseFirestore
-      .collection('users')
-      .doc(userId)
-      .collection('preferences')
-      .doc(DASHBOARD_PINS_DOC_ID);
+    return doc(
+      collection(doc(firebaseFirestore, 'users', userId), 'preferences'),
+      DASHBOARD_PINS_DOC_ID
+    );
   }, [userId]);
 
   useEffect(() => {
@@ -152,11 +155,10 @@ export function useStandards(): UseStandardsResult {
     setStandardsLoading(true);
     setStandardsError(null);
 
-    const standardsQuery = firebaseFirestore
-      .collection('users')
-      .doc(userId)
-      .collection('standards')
-      .where('deletedAt', '==', null);
+    const standardsQuery = query(
+      collection(doc(firebaseFirestore, 'users', userId), 'standards'),
+      where('deletedAt', '==', null)
+    );
 
     const unsubscribe = standardsQuery.onSnapshot(
       (snapshot) => {
@@ -224,7 +226,12 @@ export function useStandards(): UseStandardsResult {
           return;
         }
 
-        const data = snapshot.data() as DashboardPinsDoc;
+        const data = snapshot.data() as DashboardPinsDoc | undefined;
+        if (!data) {
+          setPinState(EMPTY_PINS_STATE);
+          setPinsLoading(false);
+          return;
+        }
         setPinState({
           pinnedStandardIds: Array.isArray(data.pinnedStandardIds)
             ? data.pinnedStandardIds.filter(
@@ -256,13 +263,14 @@ export function useStandards(): UseStandardsResult {
   );
 
   const { pinnedStandards, orderedActiveStandards } = useMemo(
-    () => buildOrderedStandards(activeStandards, pinState.pinnedStandardIds),
-    [activeStandards, pinState.pinnedStandardIds]
+    () => buildOrderedStandards(activeStandards, pinState?.pinnedStandardIds ?? []),
+    [activeStandards, pinState?.pinnedStandardIds]
   );
 
   useEffect(() => {
     if (
       !dashboardPinsRef ||
+      !pinState ||
       pinState.pinnedStandardIds.length === 0 ||
       activeStandards.length === 0
     ) {
@@ -297,12 +305,12 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      const standardsCollection = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('standards');
+      const standardsCollection = collection(
+        doc(firebaseFirestore, 'users', userId),
+        'standards'
+      );
 
-      const docRef = standardsCollection.doc();
+      const docRef = doc(standardsCollection);
       const isArchived = input.isArchived;
       const quickAddValues = buildDefaultQuickAddValues({
         minimum: input.minimum,
@@ -348,11 +356,10 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      const standardRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('standards')
-        .doc(standardId);
+      const standardRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'standards'),
+        standardId
+      );
 
       await retryFirestoreWrite(async () => {
         await standardRef.update({
@@ -404,11 +411,9 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logsRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activityLogs')
-        .doc();
+      const logsRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'activityLogs')
+      );
 
       await retryFirestoreWrite(async () => {
         await logsRef.set({
@@ -438,11 +443,10 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activityLogs')
-        .doc(logEntryId);
+      const logRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+        logEntryId
+      );
 
       await retryFirestoreWrite(async () => {
         await logRef.update({
@@ -469,11 +473,10 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activityLogs')
-        .doc(logEntryId);
+      const logRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+        logEntryId
+      );
 
       await retryFirestoreWrite(async () => {
         await logRef.update({
@@ -497,11 +500,10 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logRef = firebaseFirestore
-        .collection('users')
-        .doc(userId)
-        .collection('activityLogs')
-        .doc(logEntryId);
+      const logRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+        logEntryId
+      );
 
       await retryFirestoreWrite(async () => {
         await logRef.update({
@@ -537,10 +539,11 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      let nextOrder: string[] = pinStateRef.current.pinnedStandardIds;
+      let nextOrder: string[] = pinStateRef.current?.pinnedStandardIds ?? [];
       setPinState((prev) => {
-        nextOrder = togglePin(prev.pinnedStandardIds, standardId, true);
-        return { ...prev, pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
+        const currentPins = prev?.pinnedStandardIds ?? [];
+        nextOrder = togglePin(currentPins, standardId, true);
+        return { pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
       });
 
       try {
@@ -560,10 +563,11 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      let nextOrder: string[] = pinStateRef.current.pinnedStandardIds;
+      let nextOrder: string[] = pinStateRef.current?.pinnedStandardIds ?? [];
       setPinState((prev) => {
-        nextOrder = togglePin(prev.pinnedStandardIds, standardId, false);
-        return { ...prev, pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
+        const currentPins = prev?.pinnedStandardIds ?? [];
+        nextOrder = togglePin(currentPins, standardId, false);
+        return { pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
       });
 
       try {
@@ -583,10 +587,11 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      let nextOrder: string[] = pinStateRef.current.pinnedStandardIds;
+      let nextOrder: string[] = pinStateRef.current?.pinnedStandardIds ?? [];
       setPinState((prev) => {
-        nextOrder = movePinToIndex(prev.pinnedStandardIds, standardId, targetIndex);
-        return { ...prev, pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
+        const currentPins = prev?.pinnedStandardIds ?? [];
+        nextOrder = movePinToIndex(currentPins, standardId, targetIndex);
+        return { pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
       });
 
       try {
@@ -609,7 +614,7 @@ export function useStandards(): UseStandardsResult {
     archivedStandards,
     pinnedStandards,
     orderedActiveStandards,
-    pinOrder: pinState.pinnedStandardIds,
+    pinOrder: pinState?.pinnedStandardIds ?? [],
     loading,
     error,
     createStandard,
