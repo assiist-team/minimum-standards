@@ -15,6 +15,7 @@ import { ActivityModal } from '../components/ActivityModal';
 import { Activity } from '@minimum-standards/shared-model';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 
 /**
  * Standalone Activity Library screen.
@@ -174,13 +175,13 @@ export function ActivityLibraryScreen({
             style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
             onPress={() => handleEditPress(item)}
           >
-            <Text style={[styles.actionButtonText, { color: theme.link }]}>Edit</Text>
+            <Text style={[styles.actionButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight, color: theme.link }]}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.archive.background }]}
             onPress={() => handleDeletePress(item)}
           >
-            <Text style={[styles.actionButtonText, styles.deleteButtonText, { color: theme.archive.text }]}>
+            <Text style={[styles.actionButtonText, styles.deleteButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight, color: theme.archive.text }]}>
               Delete
             </Text>
           </TouchableOpacity>
@@ -222,7 +223,7 @@ export function ActivityLibraryScreen({
             onPress={handleAddPress}
             accessibilityRole="button"
           >
-            <Text style={[styles.inlineCreateButtonText, { color: theme.button.primary.text }]}>+ Create</Text>
+            <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ Create</Text>
           </TouchableOpacity>
         </View>
         {hasFocusedSearch && (
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   inlineCreateButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   searchHint: {
     marginTop: 8,
@@ -442,7 +443,7 @@ const styles = StyleSheet.create({
   },
   deleteButton: {},
   actionButtonText: {
-    fontSize: 14,
+    // fontSize and fontWeight come from typography.button.small
   },
   deleteButtonText: {},
   snackbar: {

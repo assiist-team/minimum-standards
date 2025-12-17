@@ -4,6 +4,7 @@ import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 
 export function SettingsScreen() {
   const theme = useTheme();
@@ -53,7 +54,7 @@ export function SettingsScreen() {
           {loading ? (
             <ActivityIndicator color={theme.button.destructive.text} />
           ) : (
-            <Text style={[styles.signOutButtonText, { color: theme.button.destructive.text }]}>Sign Out</Text>
+            <Text style={[styles.signOutButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.destructive.text }]}>Sign Out</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -104,8 +105,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signOutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   buttonDisabled: {
     opacity: 0.6,

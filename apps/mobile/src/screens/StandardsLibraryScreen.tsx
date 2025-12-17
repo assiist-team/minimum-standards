@@ -14,6 +14,7 @@ import { useStandardsLibrary } from '../hooks/useStandardsLibrary';
 import { useActivities } from '../hooks/useActivities';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 
 export interface StandardsLibraryScreenProps {
   onBack?: () => void; // Optional - not shown on main screen
@@ -123,14 +124,14 @@ export function StandardsLibraryScreen({
               style={[styles.actionButton, { backgroundColor: theme.archive.background }]}
               onPress={() => handleArchive(item.id)}
             >
-              <Text style={[styles.archiveButtonText, { color: theme.archive.text }]}>Archive</Text>
+              <Text style={[styles.archiveButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight, color: theme.archive.text }]}>Archive</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               style={[styles.actionButton, styles.activateButton]}
               onPress={() => handleActivate(item.id)}
             >
-              <Text style={styles.activateButtonText}>Activate</Text>
+              <Text style={[styles.activateButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight }]}>Activate</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -146,7 +147,7 @@ export function StandardsLibraryScreen({
         <Text style={styles.headerTitle}>Standards Library</Text>
         {onNavigateToBuilder ? (
           <TouchableOpacity onPress={onNavigateToBuilder}>
-            <Text style={[styles.builderButton, { color: theme.link }]}>+ New</Text>
+            <Text style={[styles.builderButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.link }]}>+ New</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.headerSpacer} />
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backButton: {
-    fontSize: 16,
+    // fontSize and fontWeight come from typography.button.primary
   },
   headerTitle: {
     fontSize: 20,
@@ -261,8 +262,7 @@ const styles = StyleSheet.create({
     width: 60, // Match back button width for centering
   },
   builderButton: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   searchContainer: {
     padding: 16,
@@ -350,15 +350,13 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   archiveButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.small
   },
   activateButton: {
     backgroundColor: '#e8f5e9',
   },
   activateButtonText: {
     color: '#2e7d32',
-    fontSize: 14,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.small
   },
 });

@@ -12,6 +12,7 @@ import { useStandards } from '../hooks/useStandards';
 import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 
 export interface ArchivedStandardsScreenProps {
   onBack: () => void;
@@ -79,7 +80,7 @@ export function ArchivedStandardsScreen({
         accessibilityLabel="Logging disabled for archives"
         accessibilityState={{ disabled: true }}
       >
-        <Text style={[styles.logButtonText, { color: theme.text.disabled }]}>Logging disabled for archives</Text>
+        <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.text.disabled }]}>Logging disabled for archives</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -87,7 +88,7 @@ export function ArchivedStandardsScreen({
         onPress={() => handleUnarchive(item)}
         accessibilityRole="button"
       >
-        <Text style={[styles.secondaryButtonText, { color: theme.link }]}>Unarchive Standard</Text>
+        <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight, color: theme.link }]}>Unarchive Standard</Text>
       </TouchableOpacity>
     </View>
   );
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   secondaryButton: {
     borderWidth: 1,
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.secondary
   },
   emptyState: {
     flex: 1,

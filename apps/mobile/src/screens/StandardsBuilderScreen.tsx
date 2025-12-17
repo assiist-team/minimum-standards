@@ -14,9 +14,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  FlatList,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActivityLibraryModal } from '../components/ActivityLibraryModal';
 import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
 import { ActivityModal } from '../components/ActivityModal';
 import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
@@ -32,6 +33,7 @@ import { findMatchingStandard } from '../utils/standardsFilter';
 import { trackStandardEvent } from '../utils/analytics';
 import { Standard } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 
 export interface StandardsBuilderScreenProps {
   onBack: () => void;
@@ -58,9 +60,9 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
 
   const { createStandard, standards, unarchiveStandard } = useStandards();
   const { activities, createActivity } = useActivities();
-  const [libraryVisible, setLibraryVisible] = useState(false);
   const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
+  const [activityDropdownVisible, setActivityDropdownVisible] = useState(false);
   const [activePreset, setActivePreset] = useState<CadencePreset | null>('weekly');
   const [customIntervalInput, setCustomIntervalInput] = useState('1');
   const [customUnit, setCustomUnit] = useState<CadenceUnit>('week');
@@ -73,7 +75,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
 
   const handleActivitySelect = (activity: Activity) => {
     setSelectedActivity(activity);
-    setLibraryVisible(false);
+    setActivityDropdownVisible(false);
   };
 
   const handleActivityCreate = (activity: Activity) => {
@@ -268,6 +270,8 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
               style={[
                 styles.pillButtonText,
                 {
+                  fontSize: typography.button.pill.fontSize,
+                  fontWeight: typography.button.pill.fontWeight,
                   color: isActive ? theme.button.primary.text : theme.text.secondary,
                 },
               ]}
@@ -294,6 +298,8 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
             style={[
               styles.pillButtonText,
               {
+                fontSize: typography.button.pill.fontSize,
+                fontWeight: typography.button.pill.fontWeight,
                 color: isCustomActive ? theme.button.primary.text : theme.text.secondary,
               },
             ]}
@@ -315,7 +321,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     >
       <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack}>
-          <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
+          <Text style={[styles.backButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Create Standard</Text>
         <View style={styles.headerSpacer} />
@@ -328,33 +334,40 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
             <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 1</Text>
             <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Select or create an activity</Text>
           </View>
-          {selectedActivity ? (
-            <View style={[styles.selectionCard, { backgroundColor: theme.background.tertiary }]}>
-              <Text style={[styles.selectionLabel, { color: theme.text.tertiary }]}>Selected Activity</Text>
-              <Text style={[styles.selectionName, { color: theme.text.primary }]}>{selectedActivity.name}</Text>
-              <Text style={[styles.selectionMeta, { color: theme.text.tertiary }]}>{selectedActivity.unit}</Text>
-            </View>
-          ) : (
-            <Text style={[styles.placeholderText, { color: theme.text.secondary }]}>
-              Choose an activity to link to this Standard.
-            </Text>
-          )}
-
-          <View style={styles.buttonRow}>
+          
+          <View style={styles.activitySelectorRow}>
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: theme.button.primary.background }]}
+              style={[
+                styles.activityDropdown,
+                {
+                  backgroundColor: theme.input.background,
+                  borderColor: theme.input.border,
+                },
+              ]}
+              onPress={() => setActivityDropdownVisible(true)}
+            >
+              {selectedActivity ? (
+                <View style={styles.selectedActivityContent}>
+                  <Text style={[styles.selectedActivityName, { color: theme.text.primary }]}>
+                    {selectedActivity.name}
+                  </Text>
+                  <Text style={[styles.selectedActivityUnit, { color: theme.text.secondary }]}>
+                    {selectedActivity.unit}
+                  </Text>
+                </View>
+              ) : (
+                <Text style={[styles.dropdownPlaceholder, { color: theme.input.placeholder }]}>
+                  Select an activity...
+                </Text>
+              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.createActivityButton, { backgroundColor: theme.button.primary.background }]}
               onPress={() => setActivityModalVisible(true)}
             >
-              <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
+              <Text style={[styles.createActivityButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
                 Create
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: theme.border.primary }]}
-              onPress={() => setLibraryVisible(true)}
-            >
-              <Text style={[styles.primaryButtonText, { color: theme.text.primary }]}>
-                Select
               </Text>
             </TouchableOpacity>
           </View>
@@ -456,6 +469,8 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                           style={[
                             styles.unitButtonText,
                             {
+                              fontSize: typography.button.secondary.fontSize,
+                              fontWeight: typography.button.secondary.fontWeight,
                               color: isActive ? theme.link : theme.text.secondary,
                             },
                           ]}
@@ -482,7 +497,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
           {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border.primary }]} onPress={resetForm}>
-              <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>Reset</Text>
+              <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight, color: theme.text.primary }]}>Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -493,7 +508,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
+              <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
                 {saving ? 'Saving…' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -501,11 +516,67 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         </View>
       </View>
 
-      <ActivityLibraryModal
-        visible={libraryVisible}
-        onClose={() => setLibraryVisible(false)}
-        onSelectActivity={handleActivitySelect}
-      />
+      {/* Activity Dropdown Modal */}
+      <Modal
+        visible={activityDropdownVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setActivityDropdownVisible(false)}
+      >
+        <View style={styles.dropdownOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setActivityDropdownVisible(false)}
+          />
+          <View
+            style={[
+              styles.dropdownContent,
+              { backgroundColor: theme.background.modal },
+            ]}
+            pointerEvents="box-none"
+          >
+            <View pointerEvents="auto">
+              <FlatList
+                data={activities}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.activityDropdownItem,
+                      {
+                        backgroundColor: selectedActivity?.id === item.id ? theme.background.tertiary : 'transparent',
+                        borderBottomColor: theme.border.secondary,
+                      },
+                    ]}
+                    onPress={() => handleActivitySelect(item)}
+                  >
+                    <View style={styles.activityDropdownItemContent}>
+                      <Text style={[styles.activityDropdownItemName, { color: theme.text.primary }]}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.activityDropdownItemUnit, { color: theme.text.secondary }]}>
+                        {item.unit}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                style={styles.dropdownList}
+                contentContainerStyle={styles.dropdownListContent}
+                nestedScrollEnabled={true}
+                ListEmptyComponent={
+                  <View style={styles.dropdownEmpty}>
+                    <Text style={[styles.dropdownEmptyText, { color: theme.text.secondary }]}>
+                      No activities found
+                    </Text>
+                  </View>
+                }
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <StandardsLibraryModal
         visible={standardsLibraryVisible}
         onClose={() => setStandardsLibraryVisible(false)}
@@ -534,8 +605,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   backButton: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   headerTitle: {
     fontSize: 18,
@@ -616,8 +686,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   pillRow: {
     flexDirection: 'row',
@@ -629,7 +698,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   pillButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.pill
     textTransform: 'capitalize',
   },
   customCadenceRow: {
@@ -663,6 +732,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unitButtonText: {
+    // fontSize and fontWeight come from typography.button.secondary
     textTransform: 'capitalize',
   },
   summaryCard: {
@@ -695,7 +765,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.secondary
   },
   errorText: {
     fontSize: 14,
@@ -707,5 +777,87 @@ const styles = StyleSheet.create({
   minimumUnitField: {
     flex: 1,
     gap: 6,
+  },
+  activitySelectorRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  activityDropdown: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  selectedActivityContent: {
+    gap: 4,
+  },
+  selectedActivityName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectedActivityUnit: {
+    fontSize: 14,
+  },
+  dropdownPlaceholder: {
+    fontSize: 16,
+  },
+  createActivityButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    minHeight: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  createActivityButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
+  },
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownContent: {
+    width: '90%',
+    maxHeight: '70%',
+    minHeight: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+    alignSelf: 'center',
+    zIndex: 1000,
+    elevation: 5,
+  },
+  dropdownList: {
+    flex: 1,
+  },
+  dropdownListContent: {
+    paddingVertical: 8,
+  },
+  activityDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  activityDropdownItemContent: {
+    gap: 4,
+  },
+  activityDropdownItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activityDropdownItemUnit: {
+    fontSize: 14,
+  },
+  dropdownEmpty: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  dropdownEmptyText: {
+    fontSize: 16,
   },
 });

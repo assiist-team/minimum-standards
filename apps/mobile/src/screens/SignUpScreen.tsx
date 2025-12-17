@@ -20,6 +20,7 @@ import { signUpSchema, SignUpFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 import { firebaseAuth } from '../firebase/firebaseApp';
 
 // Extend AuthError to handle Google Sign-In errors
@@ -274,7 +275,7 @@ export function SignUpScreen() {
           {loading ? (
             <ActivityIndicator color={theme.button.primary.text} />
           ) : (
-            <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>Sign Up</Text>
+            <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Sign Up</Text>
           )}
         </TouchableOpacity>
 
@@ -296,7 +297,7 @@ export function SignUpScreen() {
           onPress={handleGoogleSignUp}
           disabled={loading}
         >
-          <Text style={[styles.secondaryButtonText, { color: theme.button.secondary.text }]}>Sign up with Google</Text>
+          <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight, color: theme.button.secondary.text }]}>Sign up with Google</Text>
         </TouchableOpacity>
 
         <View style={styles.footer}>
@@ -372,8 +373,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   secondaryButton: {
     borderWidth: 1,
@@ -382,8 +382,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.secondary
   },
   buttonDisabled: {
     opacity: 0.6,

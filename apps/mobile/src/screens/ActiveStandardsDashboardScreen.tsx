@@ -18,6 +18,7 @@ import { LogEntryModal } from '../components/LogEntryModal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { getStatusColors } from '../theme/colors';
+import { typography } from '../theme/typography';
 
 const CARD_SPACING = 16;
 
@@ -210,7 +211,7 @@ export function ActiveStandardsDashboardScreen({
             style={[styles.builderButton, { backgroundColor: theme.button.primary.background }]}
             accessibilityRole="button"
           >
-            <Text style={[styles.builderButtonText, { color: theme.button.primary.text }]}>Create Standard</Text>
+            <Text style={[styles.builderButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Standard</Text>
           </TouchableOpacity>
         </View>
       );
@@ -354,7 +355,7 @@ function StandardCard({
           accessibilityRole="button"
           accessibilityLabel={`Log progress for ${standard.activityId}`}
         >
-          <Text style={[styles.logButtonText, { color: theme.button.primary.text }]}>Log</Text>
+          <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   builderButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   listContent: {
     padding: CARD_SPACING,
@@ -497,6 +498,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   logButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
 });

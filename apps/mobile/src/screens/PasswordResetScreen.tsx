@@ -18,6 +18,7 @@ import { passwordResetSchema, PasswordResetFormData } from '../schemas/authSchem
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
@@ -126,7 +127,7 @@ export function PasswordResetScreen() {
               {loading ? (
                 <ActivityIndicator color={theme.button.primary.text} />
               ) : (
-                <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>Send Reset Email</Text>
+                <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Send Reset Email</Text>
               )}
             </TouchableOpacity>
           </>
@@ -215,8 +216,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   buttonDisabled: {
     opacity: 0.6,

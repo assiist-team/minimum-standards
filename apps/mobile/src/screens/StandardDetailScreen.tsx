@@ -19,6 +19,7 @@ import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { getStatusColors } from '../theme/colors';
+import { typography } from '../theme/typography';
 
 export interface StandardDetailScreenProps {
   standardId: string;
@@ -282,7 +283,7 @@ export function StandardDetailScreen({
               accessibilityRole="button"
               accessibilityLabel={`Log progress for ${standard.activityId}`}
             >
-              <Text style={[styles.logButtonText, { color: theme.button.primary.text }]}>Log</Text>
+              <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -312,7 +313,7 @@ export function StandardDetailScreen({
             accessibilityRole="button"
             accessibilityLabel="Edit standard"
           >
-            <Text style={[styles.actionButtonText, { color: theme.primary.main }]}>Edit</Text>
+            <Text style={[styles.actionButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.primary.main }]}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleArchivePress}
@@ -322,7 +323,7 @@ export function StandardDetailScreen({
               standard.state === 'active' ? 'Archive standard' : 'Unarchive standard'
             }
           >
-            <Text style={[styles.actionButtonText, { color: theme.primary.main }]}>
+            <Text style={[styles.actionButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.primary.main }]}>
               {standard.state === 'active' ? 'Archive' : 'Unarchive'}
             </Text>
           </TouchableOpacity>
@@ -460,7 +461,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   logButtonText: {
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
   historySection: {
     gap: 12,
@@ -491,7 +492,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    // fontSize and fontWeight come from typography.button.primary
   },
 });
