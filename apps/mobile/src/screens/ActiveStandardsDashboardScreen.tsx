@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Standard } from '@minimum-standards/shared-model';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboard';
@@ -28,6 +29,7 @@ export function ActiveStandardsDashboardScreen({
   backButtonLabel = '← Back',
 }: ActiveStandardsDashboardScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [logModalVisible, setLogModalVisible] = useState(false);
   
@@ -237,7 +239,7 @@ export function ActiveStandardsDashboardScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         {backButtonLabel ? (
           <TouchableOpacity onPress={onBack} accessibilityRole="button">
             <Text style={[styles.backButton, { color: theme.primary.main }]}>{backButtonLabel}</Text>

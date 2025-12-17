@@ -190,14 +190,6 @@ export function ActivityLibraryScreen({
   return (
     <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       <ErrorBanner error={error} />
-      {onClose && (
-        <View style={[styles.header, { borderBottomColor: theme.border.secondary }]}>
-          <Text style={styles.headerTitle}>Activity Library</Text>
-          <TouchableOpacity onPress={onClose}>
-            <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
         <View style={styles.searchRow}>
@@ -329,20 +321,6 @@ export function ActivityLibraryScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  closeButton: {
-    fontSize: 24,
   },
   searchContainer: {
     padding: 16,

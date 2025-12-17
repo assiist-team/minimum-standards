@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { BottomTabParamList, SETTINGS_TAB_ROUTE_NAME } from './types';
 import { DashboardStack } from './DashboardStack';
@@ -13,6 +14,7 @@ const Tab = createBottomTabNavigator<BottomTabParamList>();
 
 export function BottomTabNavigator() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tab.Navigator
@@ -24,8 +26,10 @@ export function BottomTabNavigator() {
         tabBarStyle: {
           backgroundColor: theme.tabBar.background,
           borderTopColor: theme.tabBar.border,
-          paddingBottom: Platform.OS === 'ios' ? 20 : 8,
+          paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8),
           paddingTop: 8,
+          paddingLeft: Math.max(insets.left, 16),
+          paddingRight: Math.max(insets.right, 16),
           height: Platform.OS === 'ios' ? 88 : 64,
         },
         tabBarLabelStyle: {
@@ -41,33 +45,33 @@ export function BottomTabNavigator() {
         name="Dashboard"
         component={DashboardStack}
         options={{
-          tabBarLabel: 'Dashboard',
+          tabBarLabel: 'Active',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="dashboard" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Dashboard tab',
+          tabBarAccessibilityLabel: 'Active tab',
         }}
       />
       <Tab.Screen
         name="Standards"
         component={StandardsStack}
         options={{
-          tabBarLabel: 'Standards',
+          tabBarLabel: 'Standards Library',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="list" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Standards tab',
+          tabBarAccessibilityLabel: 'Standards Library tab',
         }}
       />
       <Tab.Screen
         name="Activities"
         component={ActivitiesStack}
         options={{
-          tabBarLabel: 'Activities',
+          tabBarLabel: 'Activities Library',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="star" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Activities tab',
+          tabBarAccessibilityLabel: 'Activities Library tab',
         }}
       />
       <Tab.Screen

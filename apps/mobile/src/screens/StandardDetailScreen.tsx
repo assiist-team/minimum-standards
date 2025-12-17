@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Standard } from '@minimum-standards/shared-model';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useStandardHistory } from '../hooks/useStandardHistory';
@@ -33,6 +34,7 @@ export function StandardDetailScreen({
   onArchive,
 }: StandardDetailScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [logModalVisible, setLogModalVisible] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<{
     startMs: number;
@@ -237,7 +239,7 @@ export function StandardDetailScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack} accessibilityRole="button">
           <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
         </TouchableOpacity>

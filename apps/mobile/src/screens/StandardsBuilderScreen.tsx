@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityLibraryModal } from '../components/ActivityLibraryModal';
 import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
 import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
@@ -40,6 +41,7 @@ const CADENCE_UNIT_OPTIONS: CadenceUnit[] = ['day', 'week', 'month'];
 
 export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     selectedActivity,
     setSelectedActivity,
@@ -280,7 +282,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       style={[styles.fullScreen, { backgroundColor: theme.background.primary }]}
     >
-      <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.secondary }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack}>
           <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
