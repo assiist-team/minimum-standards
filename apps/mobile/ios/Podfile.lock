@@ -2686,7 +2686,7 @@ PODS:
     - react-native-config/App (= 1.6.1)
   - react-native-config/App (1.6.1):
     - React-Core
-  - react-native-safe-area-context (5.6.2):
+  - react-native-safe-area-context (4.10.8):
     - React-Core
   - React-nativeconfig (0.76.5)
   - React-NativeModulesApple (0.76.5):
@@ -3003,7 +3003,7 @@ PODS:
   - RNGoogleSignin (13.3.1):
     - GoogleSignIn (~> 7.1)
     - React-Core
-  - RNScreens (4.18.0):
+  - RNScreens (3.35.0):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -3393,7 +3393,7 @@ SPEC CHECKSUMS:
   React-Mapbuffer: f0c766c9dfb313c91b07457beb4e4ec9b2e02435
   React-microtasksnativemodule: 2b269ab96f8d54e52c4534d1cf8012879663a28c
   react-native-config: 8ebcf99c9ed605aea6ecea5ecb80416c63f0fbdc
-  react-native-safe-area-context: 6c8805194166a9d6b3e53ba69ca76756c9bfb052
+  react-native-safe-area-context: b72c4611af2e86d80a59ac76279043d8f75f454c
   React-nativeconfig: 565ebf4340d9ede95b523f0e3640f48286985ef5
   React-NativeModulesApple: 6ec0cac27d99644895c1c22b2b7a33441854a539
   React-perflogger: 16e049953d21b37e9871ddf0b02f414e12ff14ba
@@ -3430,11 +3430,11 @@ SPEC CHECKSUMS:
   RNFBMessaging: 873220424f6f6aa5c787baf5c7099e1e2ba087c9
   RNGestureHandler: c8ad2600d18590ae682c9b4103e797322c191cbc
   RNGoogleSignin: 576a84dd0407b912e7a0adf07492de9feb79e5d9
-  RNScreens: 7d068d2fffbdd254300c47c87480496fd9dbe736
+  RNScreens: 4a5446dc4d922b2375df14c3a3f30bfc7719f6b1
   RNVectorIcons: d629dbc9c0c9ec0fcb6aea868d4d66c5a34e9312
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   Yoga: 7548e4449365bf0ef60db4aefe58abff37fcabec
 
-PODFILE CHECKSUM: 9ad637f144699c02e07bbb7f9d4606c83fb5a472
+PODFILE CHECKSUM: e8ef9e375b6d04b451a766f652bb837381481a49
 
 COCOAPODS: 1.16.2

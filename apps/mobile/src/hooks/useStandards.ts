@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import firestore, {
+import {
   FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import {
   Standard,
   StandardCadence,
@@ -123,7 +123,7 @@ export function useStandards(): UseStandardsResult {
   const pinStateRef = useRef(pinState);
   const [pinsLoading, setPinsLoading] = useState(true);
   const [pinsError, setPinsError] = useState<Error | null>(null);
-  const userId = auth().currentUser?.uid;
+  const userId = firebaseAuth.currentUser?.uid;
 
   useEffect(() => {
     pinStateRef.current = pinState;
@@ -133,7 +133,7 @@ export function useStandards(): UseStandardsResult {
     if (!userId) {
       return null;
     }
-    return firestore()
+    return firebaseFirestore
       .collection('users')
       .doc(userId)
       .collection('preferences')
@@ -150,7 +150,7 @@ export function useStandards(): UseStandardsResult {
     setStandardsLoading(true);
     setStandardsError(null);
 
-    const standardsQuery = firestore()
+    const standardsQuery = firebaseFirestore
       .collection('users')
       .doc(userId)
       .collection('standards')
@@ -210,7 +210,7 @@ export function useStandards(): UseStandardsResult {
           dashboardPinsRef
             .set({
               pinnedStandardIds: [],
-              updatedAt: firestore.FieldValue.serverTimestamp(),
+              updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
             })
             .catch((err) => {
               const normalizedError = normalizeFirebaseError(err);
@@ -277,7 +277,7 @@ export function useStandards(): UseStandardsResult {
       .set(
         {
           pinnedStandardIds: sanitized,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
       )
@@ -293,7 +293,7 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      const standardsCollection = firestore()
+      const standardsCollection = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('standards');
@@ -317,9 +317,9 @@ export function useStandards(): UseStandardsResult {
           input.cadence
         ),
         ...(quickAddValues ? { quickAddValues } : {}),
-        archivedAt: isArchived ? firestore.FieldValue.serverTimestamp() : null,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        archivedAt: isArchived ? firebaseFirestore.FieldValue.serverTimestamp() : null,
+        createdAt: firebaseFirestore.FieldValue.serverTimestamp(),
+        updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         deletedAt: null,
       };
 
@@ -344,7 +344,7 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
-      const standardRef = firestore()
+      const standardRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('standards')
@@ -354,9 +354,9 @@ export function useStandards(): UseStandardsResult {
         await standardRef.update({
           state: shouldArchive ? 'archived' : 'active',
           archivedAt: shouldArchive
-            ? firestore.FieldValue.serverTimestamp()
+            ? firebaseFirestore.FieldValue.serverTimestamp()
             : null,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         });
       });
     },
@@ -400,7 +400,7 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logsRef = firestore()
+      const logsRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activityLogs')
@@ -410,10 +410,10 @@ export function useStandards(): UseStandardsResult {
         await logsRef.set({
           standardId,
           value,
-          occurredAt: firestore.Timestamp.fromMillis(occurredAtMs),
+          occurredAt: firebaseFirestore.Timestamp.fromMillis(occurredAtMs),
           note,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          createdAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
           editedAt: null,
           deletedAt: null,
         });
@@ -434,7 +434,7 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logRef = firestore()
+      const logRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activityLogs')
@@ -443,10 +443,10 @@ export function useStandards(): UseStandardsResult {
       await retryFirestoreWrite(async () => {
         await logRef.update({
           value,
-          occurredAt: firestore.Timestamp.fromMillis(occurredAtMs),
+          occurredAt: firebaseFirestore.Timestamp.fromMillis(occurredAtMs),
           note,
-          editedAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          editedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         });
       });
     },
@@ -465,7 +465,7 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logRef = firestore()
+      const logRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activityLogs')
@@ -473,8 +473,8 @@ export function useStandards(): UseStandardsResult {
 
       await retryFirestoreWrite(async () => {
         await logRef.update({
-          deletedAt: firestore.FieldValue.serverTimestamp(),
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          deletedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         });
       });
     },
@@ -493,7 +493,7 @@ export function useStandards(): UseStandardsResult {
         );
       }
 
-      const logRef = firestore()
+      const logRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activityLogs')
@@ -502,7 +502,7 @@ export function useStandards(): UseStandardsResult {
       await retryFirestoreWrite(async () => {
         await logRef.update({
           deletedAt: null,
-          updatedAt: firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         });
       });
     },
@@ -518,7 +518,7 @@ export function useStandards(): UseStandardsResult {
         await dashboardPinsRef.set(
           {
             pinnedStandardIds: nextOrder,
-            updatedAt: firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
           },
           { merge: true }
         );

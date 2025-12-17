@@ -1,13 +1,11 @@
 import UIKit
 import React
-import React_RCTAppDelegate
 import FirebaseCore
 import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, RCTBridgeDelegate {
   var window: UIWindow?
-  private var bridge: RCTBridge?
   private let reactModuleName = "MinimumStandardsMobile"
 
   // Allows forcing the embedded JS bundle even for Debug builds to eliminate Metro from the equation.
@@ -20,32 +18,35 @@ class AppDelegate: UIResponder, UIApplicationDelegate, RCTBridgeDelegate {
 
   func application(
     _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     // Configure Firebase BEFORE bootstrapping the React Native bridge.
     FirebaseApp.configure()
 
-    bridge = RCTBridge(delegate: self, launchOptions: launchOptions)
-    guard let bridge = bridge else {
-      NSLog("[AppDelegate] ERROR: Failed to initialize RCTBridge")
-      return false
+    let bridge = RCTBridge(delegate: self, launchOptions: launchOptions)!
+    let rootView = RCTRootView(bridge: bridge, moduleName: reactModuleName, initialProperties: nil)
+
+    if #available(iOS 13.0, *) {
+        rootView.backgroundColor = UIColor.systemBackground
+    } else {
+        rootView.backgroundColor = UIColor.white
     }
 
-    let rootView = RCTRootView(bridge: bridge, moduleName: reactModuleName, initialProperties: nil)
-    rootView.backgroundColor = UIColor.white
-
+    self.window = UIWindow(frame: UIScreen.main.bounds)
     let rootViewController = UIViewController()
     rootViewController.view = rootView
-
-    window = UIWindow(frame: UIScreen.main.bounds)
-    window?.rootViewController = rootViewController
-    window?.makeKeyAndVisible()
+    self.window?.rootViewController = rootViewController
+    self.window?.makeKeyAndVisible()
 
     NSLog("[AppDelegate] didFinishLaunching completed, moduleName: \(reactModuleName) (Paper bridge)")
     return true
   }
 
   func sourceURL(for bridge: RCTBridge!) -> URL! {
+    return bundleURL()
+  }
+
+  func bundleURL() -> URL? {
 #if DEBUG
     if shouldForceEmbeddedBundle {
       NSLog("[AppDelegate] FORCE_EMBEDDED_JS_BUNDLE enabled - loading embedded bundle")
@@ -80,17 +81,5 @@ class AppDelegate: UIResponder, UIApplicationDelegate, RCTBridgeDelegate {
       return true
     }
     return RCTLinkingManager.application(app, open: url, options: options)
-  }
-
-  func application(
-    _ application: UIApplication,
-    continue userActivity: NSUserActivity,
-    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
-  ) -> Bool {
-    return RCTLinkingManager.application(
-      application,
-      continue: userActivity,
-      restorationHandler: restorationHandler
-    )
   }
 }

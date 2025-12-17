@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import auth from '@react-native-firebase/auth';
-import firestore, {
+import {
   FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
+import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { TimestampMs } from '@minimum-standards/shared-model';
 
 export type PeriodLogEntry = {
@@ -36,7 +36,7 @@ export function usePeriodLogs(
   const [logs, setLogs] = useState<PeriodLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const userId = auth().currentUser?.uid;
+  const userId = firebaseAuth.currentUser?.uid;
 
   useEffect(() => {
     if (!userId || !standardId || periodStartMs === null || periodEndMs === null) {
@@ -48,13 +48,13 @@ export function usePeriodLogs(
     setLoading(true);
     setError(null);
 
-    const logsRef = firestore()
+    const logsRef = firebaseFirestore
       .collection('users')
       .doc(userId)
       .collection('activityLogs')
       .where('standardId', '==', standardId)
-      .where('occurredAt', '>=', firestore.Timestamp.fromMillis(periodStartMs))
-      .where('occurredAt', '<', firestore.Timestamp.fromMillis(periodEndMs));
+      .where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(periodStartMs))
+      .where('occurredAt', '<', firebaseFirestore.Timestamp.fromMillis(periodEndMs));
 
     const unsubscribe = logsRef.onSnapshot(
       (snapshot) => {

@@ -1,15 +1,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { SignUpScreen } from '../SignUpScreen';
-import auth from '@react-native-firebase/auth';
 import { logAuthErrorToCrashlytics } from '../../utils/crashlytics';
-
-jest.mock('@react-native-firebase/auth', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    createUserWithEmailAndPassword: jest.fn(() => Promise.resolve()),
-  })),
-}));
 
 jest.mock('../../utils/crashlytics', () => ({
   logAuthErrorToCrashlytics: jest.fn(),
@@ -25,6 +17,8 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
+const authModule = require('@react-native-firebase/auth');
+const mockAuthInstance = authModule.__mockAuthInstance;
 const mockLogAuthErrorToCrashlytics = logAuthErrorToCrashlytics as jest.MockedFunction<typeof logAuthErrorToCrashlytics>;
 
 describe('SignUpScreen', () => {
@@ -51,13 +45,10 @@ describe('SignUpScreen', () => {
   });
 
   test('logs auth error to Crashlytics when sign up fails', async () => {
-    const mockAuth = auth as jest.MockedFunction<typeof auth>;
-    const mockCreateUser = jest.fn(() => 
-      Promise.reject({ code: 'auth/email-already-in-use', message: 'Email already in use' })
-    );
-    mockAuth.mockReturnValue({
-      createUserWithEmailAndPassword: mockCreateUser,
-    } as any);
+    mockAuthInstance.createUserWithEmailAndPassword.mockRejectedValueOnce({
+      code: 'auth/email-already-in-use',
+      message: 'Email already in use',
+    });
 
     const { getByPlaceholderText, getByText } = render(<SignUpScreen />);
 

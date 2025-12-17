@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
 import { normalizeFirebaseError } from '../utils/errors';
-import auth from '@react-native-firebase/auth';
+import { firebaseAuth } from '../firebase/firebaseApp';
 
 // Conditionally import Crashlytics if available
 let crashlytics: any = null;
@@ -60,7 +60,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     try {
       // Set user identifier if authenticated
-      const user = auth().currentUser;
+      const user = firebaseAuth.currentUser;
       if (user?.uid) {
         crashlytics().setUserId(user.uid);
       }

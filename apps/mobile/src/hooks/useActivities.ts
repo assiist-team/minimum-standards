@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { Activity } from '@minimum-standards/shared-model';
 import {
   fromFirestoreActivity,
@@ -61,7 +60,7 @@ export function useActivities(): UseActivitiesResult {
   const [searchQueryInput, setSearchQueryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const userId = auth().currentUser?.uid;
+  const userId = firebaseAuth.currentUser?.uid;
 
   // Debounced search query for filtering
   useEffect(() => {
@@ -87,7 +86,7 @@ export function useActivities(): UseActivitiesResult {
     setLoading(true);
     setError(null);
 
-    const activitiesRef = firestore()
+    const activitiesRef = firebaseFirestore
       .collection('users')
       .doc(userId)
       .collection('activities')
@@ -134,7 +133,7 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-      const activitiesRef = firestore()
+      const activitiesRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activities');
@@ -198,7 +197,7 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-      const docRef = firestore()
+        const docRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activities')
@@ -246,7 +245,7 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-      const docRef = firestore()
+        const docRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activities')
@@ -280,7 +279,7 @@ export function useActivities(): UseActivitiesResult {
         throw new Error('User not authenticated');
       }
 
-      const docRef = firestore()
+        const docRef = firebaseFirestore
         .collection('users')
         .doc(userId)
         .collection('activities')
@@ -298,7 +297,7 @@ export function useActivities(): UseActivitiesResult {
       try {
         await docRef.update({
           deletedAt: null,
-          updatedAt: firestore.FieldValue.serverTimestamp()
+          updatedAt: firebaseFirestore.FieldValue.serverTimestamp()
         });
       } catch (err) {
         setActivities((prev) => prev.filter((a) => a.id !== activity.id));

@@ -629,6 +629,24 @@ Log each run of the commands above inside `terminals/*.txt` so we can prove when
 - Warning you can ignore: Xcode prints a destination-selection warning because multiple simulators satisfy the spec; it still picks the 16e target automatically.
 - This run proves the Paper bridge + restored deep-link handler load and execute on current RN 0.83 without Fabric.
 
+### 10.4 Fabric/New-Arch Migration Attempt (2025-12-15)
+
+We attempted to migrate fully to the new architecture (Fabric) to resolve lifecycle warnings and align with modern React Native defaults:
+
+1. **Native config:**
+   - `.xcode.env` and `Podfile` flags set to enable Fabric/New Arch (`RCT_NEW_ARCH_ENABLED=1`, etc.).
+   - `AppDelegate.swift` updated to inherit from `RCTAppDelegate` instead of `UIResponder`.
+   - `Info.plist` confirmed to have `RCTNewArchEnabled: true`.
+
+2. **JS Entry Point (`index.js`) fix:**
+   - Removed the manual `BatchedBridge`/`RCTEventEmitter` registration hacks and the `__r` (Metro require) wrapper. These were legacy workarounds that actively broke Fabric's auto-registration mechanism.
+
+3. **Status:**
+   - The app boots natively (Fabric bridge initializes).
+   - However, the `RCTEventEmitter` registration error persists on-device: `[Error: Failed to call into JavaScript module method RCTEventEmitter.receiveEvent()...]`.
+   - **Root Cause:** The device is holding onto a **stale JS bundle** that still contains the old `index.js` hacks. Because `FORCE_EMBEDDED_JS_BUNDLE` is on, Xcode isn't effectively overwriting the resource on every run.
+   - **Required Fix:** A full clean (Product > Clean Build Folder) and deleting the app from the device is required to force the new, clean bundle to install. Until this happens, the "blank screen" symptoms will persist because the stale JS crashes immediately on any event.
+
 ## 9. Commands Reference
 
 ```bash

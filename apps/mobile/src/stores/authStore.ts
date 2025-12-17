@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { firebaseAuth } from '../firebase/firebaseApp';
 
 export interface AuthState {
   // Current authenticated user
@@ -37,7 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
-    await auth().signOut();
+    await firebaseAuth.signOut();
     set({ user: null });
   },
 
@@ -57,7 +58,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // This prevents showing the sign-in screen if user is already authenticated
     console.log('[AuthStore] Checking current user synchronously...');
     try {
-      const currentUser = auth().currentUser;
+      const currentUser = firebaseAuth.currentUser;
       console.log('[AuthStore] Current user check result:', currentUser ? `User ID: ${currentUser.uid}` : 'No current user');
       if (currentUser) {
         console.log('[AuthStore] Setting initial state with current user');
@@ -87,7 +88,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // so if currentUser was null, the listener will fire with null and set isInitialized: true
     console.log('[AuthStore] Setting up onAuthStateChanged listener...');
     try {
-      unsubscribeAuthState = auth().onAuthStateChanged((user) => {
+      unsubscribeAuthState = firebaseAuth.onAuthStateChanged((user) => {
         console.log('[AuthStore] onAuthStateChanged callback fired:', user ? `User ID: ${user.uid}` : 'No user');
         clearTimeout(timeoutId);
         set({ user, isInitialized: true });

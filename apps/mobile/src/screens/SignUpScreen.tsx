@@ -13,13 +13,14 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import auth from '@react-native-firebase/auth';
+import { GoogleAuthProvider } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { AuthStackParamList } from '../navigation/types';
 import { signUpSchema, SignUpFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
+import { firebaseAuth } from '../firebase/firebaseApp';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
@@ -59,7 +60,7 @@ export function SignUpScreen() {
     try {
       setLoading(true);
       setError(null);
-      await auth().createUserWithEmailAndPassword(data.email, data.password);
+      await firebaseAuth.createUserWithEmailAndPassword(data.email, data.password);
       // User is automatically signed in, navigation handled by AppNavigator
     } catch (err) {
       const authError = AuthError.fromFirebaseError(err);
@@ -121,14 +122,14 @@ export function SignUpScreen() {
       // Create a Google credential with the token
       // accessToken is optional and may not be present on iOS
       console.log('[Google Sign-Up] Creating Firebase credential...');
-      const googleCredential = auth.GoogleAuthProvider.credential(
+      const googleCredential = GoogleAuthProvider.credential(
         resolvedIdToken,
         resolvedAccessToken
       );
 
       // Sign in/up the user with the credential (Firebase automatically creates account if new)
       console.log('[Google Sign-Up] Signing in with Firebase credential...');
-      await auth().signInWithCredential(googleCredential);
+      await firebaseAuth.signInWithCredential(googleCredential);
       console.log('[Google Sign-Up] Successfully signed in with Firebase');
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err: any) {

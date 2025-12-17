@@ -1,5 +1,6 @@
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
 import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { firebaseFirestore } from '../firebase/firebaseApp';
 
 type FirestoreActivityData = {
   name: string;
@@ -37,13 +38,11 @@ export function toFirestoreActivity(
   updatedAt: FirebaseFirestoreTypes.FieldValue;
   deletedAt: FirebaseFirestoreTypes.Timestamp | null;
 } {
-  const firestore = require('@react-native-firebase/firestore').default();
-  
   return {
     name: activity.name,
     unit: activity.unit, // Already normalized via schema transform
-    createdAt: firestore.FieldValue.serverTimestamp(),
-    updatedAt: firestore.FieldValue.serverTimestamp(),
+    createdAt: firebaseFirestore.FieldValue.serverTimestamp(),
+    updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
     deletedAt: null,
   };
 }
@@ -56,10 +55,8 @@ export function toFirestoreActivityUpdate(
 ): Partial<FirestoreActivityData> & {
   updatedAt: FirebaseFirestoreTypes.FieldValue;
 } {
-  const firestore = require('@react-native-firebase/firestore').default();
-  
   const result: any = {
-    updatedAt: firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
   };
 
   if (updates.name !== undefined) {
@@ -79,10 +76,8 @@ export function toFirestoreActivityDelete(): {
   deletedAt: FirebaseFirestoreTypes.Timestamp;
   updatedAt: FirebaseFirestoreTypes.FieldValue;
 } {
-  const firestore = require('@react-native-firebase/firestore').default();
-  
   return {
-    deletedAt: firestore.Timestamp.now(),
-    updatedAt: firestore.FieldValue.serverTimestamp(),
+    deletedAt: firebaseFirestore.Timestamp.now(),
+    updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
   };
 }

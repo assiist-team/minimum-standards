@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import auth from '@react-native-firebase/auth';
-import firestore, {
+import {
   FirebaseFirestoreTypes,
 } from '@react-native-firebase/firestore';
+import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { useStandards } from './useStandards';
 import {
   computeStandardHistory,
@@ -34,7 +34,7 @@ export function useStandardHistory(
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<Error | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
-  const userId = auth().currentUser?.uid;
+  const userId = firebaseAuth.currentUser?.uid;
   const resolvedTimezone =
     timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
 
@@ -55,7 +55,7 @@ export function useStandardHistory(
 
     // Query all logs for this standard (no time filter, we'll compute periods)
     // We filter by standardId and exclude deleted logs
-    const logsRef = firestore()
+    const logsRef = firebaseFirestore
       .collection('users')
       .doc(userId)
       .collection('activityLogs')

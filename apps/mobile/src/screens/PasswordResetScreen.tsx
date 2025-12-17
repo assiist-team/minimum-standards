@@ -12,7 +12,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import auth from '@react-native-firebase/auth';
+import { firebaseAuth } from '../firebase/firebaseApp';
 import { AuthStackParamList } from '../navigation/types';
 import { passwordResetSchema, PasswordResetFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
@@ -44,7 +44,7 @@ export function PasswordResetScreen() {
       setLoading(true);
       setError(null);
       setSuccess(false);
-      await auth().sendPasswordResetEmail(data.email);
+      await firebaseAuth.sendPasswordResetEmail(data.email);
       setSuccess(true);
       // Navigate back to sign in after a short delay
       setTimeout(() => {

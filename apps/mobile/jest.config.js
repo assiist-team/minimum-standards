@@ -5,5 +5,7 @@ module.exports = {
       '<rootDir>/test/mocks/reactNativeFirebaseFirestore.js',
     '^@react-native-firebase/auth$':
       '<rootDir>/test/mocks/reactNativeFirebaseAuth.js',
+    '^@react-native-firebase/app$':
+      '<rootDir>/test/mocks/reactNativeFirebaseApp.js',
   },
 };

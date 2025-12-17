@@ -13,6 +13,9 @@ export interface SyncStatusBannerProps {
  * Relies on Firestore's built-in offline persistence for queuing.
  */
 export function SyncStatusBanner({ forceShow }: SyncStatusBannerProps) {
+  // Gate rendering until NetInfo resolves to avoid touching theme hooks
+  // while the optional NetInfo dependency is still resolving in Hermes.
+  // We call useTheme unconditionally (hooks rule) but guard its usage.
   const theme = useTheme();
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -49,6 +52,11 @@ export function SyncStatusBanner({ forceShow }: SyncStatusBannerProps) {
       unsubscribe();
     };
   }, [isConnected]);
+
+  // Don't render until NetInfo resolves to avoid theme hook errors during module resolution
+  if (isConnected === null) {
+    return null;
+  }
 
   // Don't show banner if online and not syncing (unless forced)
   if (!forceShow && isConnected && !isSyncing) {

@@ -1,4 +1,7 @@
 # Resolve react_native_pods.rb with node to allow for hoisting
+# Explicitly disable New Architecture for podspec evaluation
+ENV['RCT_NEW_ARCH_ENABLED'] = '0'
+
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
     "react-native/scripts/react_native_pods.rb",
@@ -40,10 +43,9 @@ target 'MinimumStandardsMobile' do
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
-    :app_path => "#{Pod::Config.instance.installation_root}/..",
     :fabric_enabled => false,
-    :new_arch_enabled => false
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
   post_install do |installer|
@@ -93,6 +95,16 @@ target 'MinimumStandardsMobile' do
         
         # Fix for module map issues
         build_config.build_settings['SWIFT_VERSION'] = '5.0'
+
+        # Force disable RCT_NEW_ARCH_ENABLED in build settings
+        if build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+          if build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'].is_a?(Array)
+            build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'].delete('RCT_NEW_ARCH_ENABLED=1')
+          elsif build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'].is_a?(String)
+            build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = 
+              build_config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'].gsub('RCT_NEW_ARCH_ENABLED=1', '')
+          end
+        end
         
         modulemap_keys.each do |key|
           value = build_config.build_settings[key]
@@ -166,6 +178,20 @@ target 'MinimumStandardsMobile' do
     if File.exist?(grpc_modulemap_src)
       FileUtils.mkdir_p(File.dirname(grpc_modulemap_dst))
       FileUtils.cp(grpc_modulemap_src, grpc_modulemap_dst)
+    end
+    
+    # Fix hermes-engine script phase to ensure NODE_BINARY is set
+    installer.pods_project.targets.each do |target|
+      if target.name == 'hermes-engine'
+        target.build_phases.each do |phase|
+          if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+            if phase.name && phase.name.include?('Replace Hermes')
+              # Prepend export NODE_BINARY to the script
+              phase.shell_script = "export NODE_BINARY=#{`which node`.strip}\n" + phase.shell_script
+            end
+          end
+        end
+      end
     end
   end
 end

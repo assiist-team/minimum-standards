@@ -1,23 +1,29 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { SignInScreen } from '../SignInScreen';
-import auth from '@react-native-firebase/auth';
 import { logAuthErrorToCrashlytics } from '../../utils/crashlytics';
-
-jest.mock('@react-native-firebase/auth', () => ({
-  __esModule: true,
-  default: jest.fn(() => ({
-    signInWithEmailAndPassword: jest.fn(() => Promise.resolve()),
-    GoogleAuthProvider: {
-      credential: jest.fn(),
-    },
-  })),
-}));
 
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
     hasPlayServices: jest.fn(() => Promise.resolve()),
-    signIn: jest.fn(() => Promise.resolve({ idToken: 'token', accessToken: 'access' })),
+    signIn: jest.fn(() =>
+      Promise.resolve({
+        type: 'success',
+        data: {
+          idToken: 'token',
+          user: {
+            email: 'test@example.com',
+            name: 'Tester',
+          },
+        },
+      })
+    ),
+    getTokens: jest.fn(() =>
+      Promise.resolve({
+        idToken: 'token',
+        accessToken: 'access',
+      })
+    ),
   },
 }));
 
@@ -35,6 +41,8 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
+const authModule = require('@react-native-firebase/auth');
+const mockAuthInstance = authModule.__mockAuthInstance;
 const mockLogAuthErrorToCrashlytics = logAuthErrorToCrashlytics as jest.MockedFunction<typeof logAuthErrorToCrashlytics>;
 
 describe('SignInScreen', () => {
@@ -51,13 +59,12 @@ describe('SignInScreen', () => {
   });
 
   test('logs auth error to Crashlytics when email/password sign in fails', async () => {
-    const mockAuth = auth as jest.MockedFunction<typeof auth>;
-    const mockSignInWithEmailAndPassword = jest.fn(() => 
-      Promise.reject({ code: 'auth/invalid-credential', message: 'Invalid credential' })
-    );
-    mockAuth.mockReturnValue({
-      signInWithEmailAndPassword: mockSignInWithEmailAndPassword,
-    } as any);
+    const mockSignInWithEmailAndPassword =
+      mockAuthInstance.signInWithEmailAndPassword as jest.MockedFunction<typeof mockAuthInstance.signInWithEmailAndPassword>;
+    mockSignInWithEmailAndPassword.mockRejectedValueOnce({
+      code: 'auth/invalid-credential',
+      message: 'Invalid credential',
+    });
 
     const { getByPlaceholderText, getByText } = render(<SignInScreen />);
 

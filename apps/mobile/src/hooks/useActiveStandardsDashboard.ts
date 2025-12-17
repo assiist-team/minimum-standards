@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import auth from '@react-native-firebase/auth';
-import firestore, {
-  FirebaseFirestoreTypes,
-} from '@react-native-firebase/firestore';
+import { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import {
   Standard,
   calculatePeriodWindow,
@@ -49,7 +47,7 @@ export function useActiveStandardsDashboard() {
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<Error | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
-  const userId = auth().currentUser?.uid;
+  const userId = firebaseAuth.currentUser?.uid;
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
 
   useEffect(() => {
@@ -69,11 +67,11 @@ export function useActiveStandardsDashboard() {
       nowMs
     );
 
-    const logsRef = firestore()
+    const logsRef = firebaseFirestore
       .collection('users')
       .doc(userId)
       .collection('activityLogs')
-      .where('occurredAt', '>=', firestore.Timestamp.fromMillis(earliestStart));
+      .where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(earliestStart));
 
     const unsubscribe = logsRef.onSnapshot(
       (snapshot) => {

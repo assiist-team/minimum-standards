@@ -1,4 +1,4 @@
-import auth from '@react-native-firebase/auth';
+import { firebaseAuth } from '../firebase/firebaseApp';
 import { AuthError } from './errors';
 
 /**
@@ -29,7 +29,7 @@ export function logAuthErrorToCrashlytics(error: AuthError, context?: string) {
 
   try {
     // Set user identifier if authenticated
-    const user = auth().currentUser;
+    const user = firebaseAuth.currentUser;
     if (user?.uid) {
       crashlytics.setUserId(user.uid);
     }

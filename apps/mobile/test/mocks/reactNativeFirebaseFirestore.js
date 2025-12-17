@@ -37,17 +37,15 @@ function createCollectionRef() {
   };
 }
 
-function firestore() {
-  return {
-    collection: () => createCollectionRef(),
-  };
-}
+const firestoreInstance = {
+  collection: () => createCollectionRef(),
+};
 
-firestore.FieldValue = {
+firestoreInstance.FieldValue = {
   serverTimestamp: () => ({ _methodName: 'serverTimestamp' }),
 };
 
-firestore.Timestamp = {
+firestoreInstance.Timestamp = {
   now: () => ({
     toMillis: () => Date.now(),
   }),
@@ -56,9 +54,15 @@ firestore.Timestamp = {
   }),
 };
 
+function getFirestore() {
+  return firestoreInstance;
+}
+
 module.exports = {
   __esModule: true,
-  default: firestore,
-  FieldValue: firestore.FieldValue,
-  Timestamp: firestore.Timestamp,
+  default: getFirestore,
+  getFirestore,
+  FieldValue: firestoreInstance.FieldValue,
+  Timestamp: firestoreInstance.Timestamp,
+  __mockFirestore: firestoreInstance,
 };
