@@ -142,11 +142,13 @@ export function useStandards(): UseStandardsResult {
 
   useEffect(() => {
     if (!userId) {
+      console.warn('[useStandards] No user ID available - cannot subscribe to standards collection');
       setStandardsLoading(false);
       setStandardsError(new Error('User not authenticated'));
       return;
     }
 
+    console.log('[useStandards] Subscribing to standards collection for user:', userId);
     setStandardsLoading(true);
     setStandardsError(null);
 
@@ -196,11 +198,13 @@ export function useStandards(): UseStandardsResult {
 
   useEffect(() => {
     if (!dashboardPinsRef) {
+      console.warn('[useStandards] No dashboardPinsRef available - cannot subscribe to dashboardPins');
       setPinsLoading(false);
       setPinState(EMPTY_PINS_STATE);
       return;
     }
 
+    console.log('[useStandards] Subscribing to dashboardPins for user:', userId);
     setPinsLoading(true);
     setPinsError(null);
 

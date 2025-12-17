@@ -59,10 +59,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     console.log('[AuthStore] Checking current user synchronously...');
     try {
       const currentUser = firebaseAuth.currentUser;
-      console.log('[AuthStore] Current user check result:', currentUser ? `User ID: ${currentUser.uid}` : 'No current user');
-      if (currentUser) {
+      const uid = currentUser?.uid;
+      console.log('[AuthStore] Current user check result:', uid ? `User ID: ${uid}` : 'No current user');
+      if (currentUser && uid) {
+        console.log('[AuthStore] Authenticated user UID available for Firestore operations:', uid);
         console.log('[AuthStore] Setting initial state with current user');
         set({ user: currentUser, isInitialized: true });
+      } else {
+        console.warn('[AuthStore] No authenticated user - Firestore operations will fail');
       }
     } catch (error) {
       console.error('[AuthStore] ERROR: Failed to check current user:', error);
@@ -89,7 +93,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     console.log('[AuthStore] Setting up onAuthStateChanged listener...');
     try {
       unsubscribeAuthState = firebaseAuth.onAuthStateChanged((user) => {
-        console.log('[AuthStore] onAuthStateChanged callback fired:', user ? `User ID: ${user.uid}` : 'No user');
+        const uid = user?.uid;
+        console.log('[AuthStore] onAuthStateChanged callback fired:', uid ? `User ID: ${uid}` : 'No user');
+        if (uid) {
+          console.log('[AuthStore] Authenticated user UID available for Firestore operations:', uid);
+        } else {
+          console.warn('[AuthStore] No authenticated user - Firestore operations will fail');
+        }
         clearTimeout(timeoutId);
         set({ user, isInitialized: true });
         console.log('[AuthStore] Auth state updated, isInitialized: true');

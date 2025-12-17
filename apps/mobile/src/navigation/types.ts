@@ -12,6 +12,7 @@ export type AuthStackParamList = {
 // Individual tab stack param lists
 export type DashboardStackParamList = {
   ActiveStandardsDashboard: undefined;
+  StandardsBuilder: { standardId?: string };
   StandardDetail: { standardId: string };
 };
 

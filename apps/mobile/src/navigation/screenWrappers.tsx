@@ -40,6 +40,15 @@ export function StandardsBuilderScreenWrapper() {
   );
 }
 
+export function StandardsBuilderScreenWrapperForDashboard() {
+  const navigation = useNavigation<DashboardNavigationProp>();
+  return (
+    <StandardsBuilderScreen
+      onBack={() => navigation.goBack()}
+    />
+  );
+}
+
 export function StandardsLibraryScreenWrapper() {
   const navigation = useNavigation<StandardsNavigationProp>();
   return (
@@ -73,15 +82,10 @@ export function ActiveStandardsDashboardScreenWrapper() {
     <ActiveStandardsDashboardScreen
       onBack={canGoBack ? () => navigation.goBack() : () => {}}
       onLaunchBuilder={() => {
-        // Navigate to Standards tab and then to Builder
-        // Use getParent to access the tab navigator
-        const tabNavigator = navigation.getParent();
-        if (tabNavigator) {
-          // @ts-expect-error - React Navigation types don't fully support nested navigation
-          tabNavigator.navigate('Standards', { screen: 'StandardsBuilder' });
-        }
+        // Navigate to StandardsBuilder within the Dashboard stack
+        navigation.navigate('StandardsBuilder', {});
       }}
-      onNavigateToDetail={(standardId) => {
+      onNavigateToDetail={(standardId: string) => {
         navigation.navigate('StandardDetail', { standardId });
       }}
       backButtonLabel={canGoBack ? '← Back' : undefined}
@@ -96,11 +100,30 @@ export function StandardDetailScreenWrapper({ route }: { route: { params: { stan
   const standard = standards.find((s) => s.id === route.params.standardId);
 
   const handleEdit = (standardToEdit: Standard) => {
-    // Navigate to Standards tab and then to Builder with the standard
-    const tabNavigator = navigation.getParent();
-    if (tabNavigator && standardToEdit) {
-      // @ts-expect-error - React Navigation types don't fully support nested navigation
-      tabNavigator.navigate('Standards', { screen: 'StandardsBuilder', params: { standardId: standardToEdit.id } });
+    // Navigate to StandardsBuilder within the same stack (Dashboard or Standards)
+    // Both stacks now have StandardsBuilder, so we can navigate directly
+    if (standardToEdit) {
+      // Check which stack we're in by checking the navigation state
+      const state = navigation.getState();
+      const currentRoute = state.routes[state.index];
+      
+      // Determine if we're in Dashboard or Standards stack by checking parent
+      const parent = navigation.getParent();
+      if (parent) {
+        const parentState = parent.getState();
+        const parentRoute = parentState.routes[parentState.index];
+        
+        // If parent route is 'Dashboard', navigate within Dashboard stack
+        if (parentRoute.name === 'Dashboard') {
+          (navigation as DashboardNavigationProp).navigate('StandardsBuilder', { standardId: standardToEdit.id });
+        } else if (parentRoute.name === 'Standards') {
+          // Navigate within Standards stack
+          (navigation as StandardsNavigationProp).navigate('StandardsBuilder', { standardId: standardToEdit.id });
+        }
+      } else {
+        // Fallback: try Dashboard navigation first
+        (navigation as DashboardNavigationProp).navigate('StandardsBuilder', { standardId: standardToEdit.id });
+      }
     }
   };
 

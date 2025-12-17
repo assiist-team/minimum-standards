@@ -78,11 +78,13 @@ export function useActivities(): UseActivitiesResult {
   // Subscribe to activities collection
   useEffect(() => {
     if (!userId) {
+      console.warn('[useActivities] No user ID available - cannot subscribe to activities collection');
       setLoading(false);
       setError(new Error('User not authenticated'));
       return;
     }
 
+    console.log('[useActivities] Subscribing to activities collection for user:', userId);
     setLoading(true);
     setError(null);
 
