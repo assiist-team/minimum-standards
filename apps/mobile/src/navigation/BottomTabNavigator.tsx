@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { BottomTabParamList } from './types';
+import { BottomTabParamList, SETTINGS_TAB_ROUTE_NAME } from './types';
 import { DashboardStack } from './DashboardStack';
 import { StandardsStack } from './StandardsStack';
 import { ActivitiesStack } from './ActivitiesStack';
@@ -71,7 +71,7 @@ export function BottomTabNavigator() {
         }}
       />
       <Tab.Screen
-        name="Settings"
+        name={SETTINGS_TAB_ROUTE_NAME}
         component={SettingsStack}
         options={{
           tabBarLabel: 'Settings',

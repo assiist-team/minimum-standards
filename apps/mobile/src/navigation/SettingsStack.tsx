@@ -1,5 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SettingsStackParamList } from './types';
+import {
+  SETTINGS_STACK_ROOT_SCREEN_NAME,
+  SettingsStackParamList,
+} from './types';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator<SettingsStackParamList>();
@@ -7,12 +10,12 @@ const Stack = createNativeStackNavigator<SettingsStackParamList>();
 export function SettingsStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Settings"
+      initialRouteName={SETTINGS_STACK_ROOT_SCREEN_NAME}
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name={SETTINGS_STACK_ROOT_SCREEN_NAME} component={SettingsScreen} />
     </Stack.Navigator>
   );
 }

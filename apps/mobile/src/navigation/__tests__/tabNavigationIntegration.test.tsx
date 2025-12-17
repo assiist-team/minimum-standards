@@ -1,5 +1,9 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import {
+  SETTINGS_STACK_ROOT_SCREEN_NAME,
+  SETTINGS_TAB_ROUTE_NAME,
+} from '../types';
 
 // Mock BottomTabNavigator and its dependencies before importing
 jest.mock('../BottomTabNavigator', () => ({
@@ -17,8 +21,8 @@ jest.mock('../BottomTabNavigator', () => ({
         setCurrentScreen('StandardsLibrary');
       } else if (tab === 'Activities') {
         setCurrentScreen('ActivityLibrary');
-      } else if (tab === 'Settings') {
-        setCurrentScreen('Settings');
+      } else if (tab === SETTINGS_TAB_ROUTE_NAME) {
+        setCurrentScreen(SETTINGS_STACK_ROOT_SCREEN_NAME);
       }
     };
 
@@ -47,7 +51,7 @@ jest.mock('../BottomTabNavigator', () => ({
       ),
       React.createElement(
         TouchableOpacity,
-        { testID: 'settings-tab', onPress: () => handleTabPress('Settings') },
+        { testID: 'settings-tab', onPress: () => handleTabPress(SETTINGS_TAB_ROUTE_NAME) },
         React.createElement(Text, null, 'Settings')
       ),
       // Current screen based on tab and navigation

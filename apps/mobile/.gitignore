@@ -5,6 +5,8 @@
 # Xcode
 #
 build/
+ios/.last_build_configuration
+ios/.xcode.env
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -21,6 +23,9 @@ DerivedData
 *.ipa
 *.xcuserstate
 **/.xcode.env.local
+
+# React Native Hermes artifacts
+ios/hermes-engine/
 
 # Android/IntelliJ
 #

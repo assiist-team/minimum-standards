@@ -1,5 +1,8 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 
+export const SETTINGS_TAB_ROUTE_NAME = 'SettingsTab' as const;
+export const SETTINGS_STACK_ROOT_SCREEN_NAME = 'SettingsRoot' as const;
+
 export type AuthStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
@@ -23,7 +26,7 @@ export type ActivitiesStackParamList = {
 };
 
 export type SettingsStackParamList = {
-  Settings: undefined;
+  SettingsRoot: undefined;
 };
 
 // Bottom tab navigator param list
@@ -31,7 +34,7 @@ export type BottomTabParamList = {
   Dashboard: NavigatorScreenParams<DashboardStackParamList>;
   Standards: NavigatorScreenParams<StandardsStackParamList>;
   Activities: NavigatorScreenParams<ActivitiesStackParamList>;
-  Settings: NavigatorScreenParams<SettingsStackParamList>;
+  SettingsTab: NavigatorScreenParams<SettingsStackParamList>;
 };
 
 // Main stack now contains the bottom tab navigator
