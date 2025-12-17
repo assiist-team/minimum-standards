@@ -16,10 +16,6 @@ export interface StandardsBuilderState {
   unitOverride: string | null; // Override for unit (null means use Activity's unit)
   setUnitOverride: (unit: string | null) => void;
 
-  // Archive toggle
-  isArchived: boolean;
-  setIsArchived: (isArchived: boolean) => void;
-
   // Reset store
   reset: () => void;
 
@@ -39,12 +35,16 @@ export interface StandardsBuilderState {
   } | null;
 }
 
+const defaultWeeklyCadence: StandardCadence = {
+  interval: 1,
+  unit: 'week',
+};
+
 const initialState = {
   selectedActivity: null,
-  cadence: null,
+  cadence: defaultWeeklyCadence,
   minimum: null,
   unitOverride: null,
-  isArchived: false,
 };
 
 export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get) => ({
@@ -68,10 +68,6 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
 
   setUnitOverride: (unitOverride) => {
     set({ unitOverride });
-  },
-
-  setIsArchived: (isArchived) => {
-    set({ isArchived });
   },
 
   getEffectiveUnit: () => {

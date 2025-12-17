@@ -20,6 +20,10 @@ jest.mock('../../components/StandardsLibraryModal', () => ({
   StandardsLibraryModal: jest.fn(() => null),
 }));
 
+jest.mock('../../components/ActivityModal', () => ({
+  ActivityModal: jest.fn(() => null),
+}));
+
 jest.mock('../../hooks/useActivities', () => ({
   useActivities: jest.fn(),
 }));
@@ -160,7 +164,7 @@ describe('StandardsBuilderScreen', () => {
 
     fireEvent.changeText(getByPlaceholderText('Minimum value'), '200');
     fireEvent.press(getByText('Weekly'));
-    fireEvent.press(getByText('Save Standard'));
+    fireEvent.press(getByText('Save'));
 
     await waitFor(() => expect(hookValue.createStandard).toHaveBeenCalled());
     expect(hookValue.createStandard).toHaveBeenCalledWith(
@@ -173,9 +177,10 @@ describe('StandardsBuilderScreen', () => {
   });
 
   // Task Group 4: Pre-fill and duplicate prevention tests
-  test('renders "Select from Existing Standard" button', () => {
+  test('renders "Create" and "Select" buttons', () => {
     const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
-    expect(getByText('Select from Existing Standard')).toBeTruthy();
+    expect(getByText('Create')).toBeTruthy();
+    expect(getByText('Select')).toBeTruthy();
   });
 
   test('pre-fills form when standard is selected', () => {
@@ -212,7 +217,7 @@ describe('StandardsBuilderScreen', () => {
     useStandardsBuilderStore.getState().setUnitOverride(mockStandard.unit);
 
     const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
-    fireEvent.press(getByText('Save Standard'));
+    fireEvent.press(getByText('Save'));
 
     await waitFor(() => {
       expect(hookValue.unarchiveStandard).toHaveBeenCalledWith(archivedStandard.id);
@@ -230,7 +235,7 @@ describe('StandardsBuilderScreen', () => {
     useStandardsBuilderStore.getState().setUnitOverride(mockStandard.unit);
 
     const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
-    fireEvent.press(getByText('Save Standard'));
+    fireEvent.press(getByText('Save'));
 
     await waitFor(() => {
       expect(getByText('A Standard with these values already exists')).toBeTruthy();
@@ -249,7 +254,7 @@ describe('StandardsBuilderScreen', () => {
     useStandardsBuilderStore.getState().setUnitOverride(mockStandard.unit);
 
     const { getByText } = render(<StandardsBuilderScreen onBack={jest.fn()} />);
-    fireEvent.press(getByText('Save Standard'));
+    fireEvent.press(getByText('Save'));
 
     await waitFor(() => {
       expect(hookValue.createStandard).toHaveBeenCalled();

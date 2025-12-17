@@ -11,7 +11,6 @@ import {
   StyleSheet,
   ScrollView,
   TextInput,
-  Switch,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -19,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityLibraryModal } from '../components/ActivityLibraryModal';
 import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
+import { ActivityModal } from '../components/ActivityModal';
 import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
 import {
   CADENCE_PRESETS,
@@ -51,17 +51,16 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     setMinimum,
     unitOverride,
     setUnitOverride,
-    isArchived,
-    setIsArchived,
     getSummaryPreview,
     generatePayload,
     reset,
   } = useStandardsBuilderStore();
 
   const { createStandard, standards, unarchiveStandard } = useStandards();
-  const { activities } = useActivities();
+  const { activities, createActivity } = useActivities();
   const [libraryVisible, setLibraryVisible] = useState(false);
   const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
+  const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [activePreset, setActivePreset] = useState<CadencePreset | null>('weekly');
   const [customIntervalInput, setCustomIntervalInput] = useState('1');
   const [customUnit, setCustomUnit] = useState<CadenceUnit>('week');
@@ -75,6 +74,17 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   const handleActivitySelect = (activity: Activity) => {
     setSelectedActivity(activity);
     setLibraryVisible(false);
+  };
+
+  const handleActivityCreate = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setActivityModalVisible(false);
+  };
+
+  const handleActivitySave = async (
+    activityData: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>
+  ): Promise<Activity> => {
+    return await createActivity(activityData);
   };
 
   const handleStandardSelect = (standard: Standard) => {
@@ -216,20 +226,12 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         }
       } else {
         // No duplicate found: create new Standard
-        await createStandard({
-          ...payload,
-          isArchived,
-        });
+        await createStandard(payload);
         trackStandardEvent('standard_create', {
           activityId: payload.activityId,
-          archived: isArchived,
+          archived: false,
           cadence: payload.cadence,
         });
-        if (isArchived) {
-          trackStandardEvent('standard_archive', {
-            activityId: payload.activityId,
-          });
-        }
         Alert.alert('Standard saved', 'Your Standard has been saved successfully.');
       }
       resetForm();
@@ -242,9 +244,14 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     }
   };
 
+  const handleCustomPress = useCallback(() => {
+    setActivePreset(null);
+    setCadenceError(null);
+  }, []);
+
   const cadencePresetButtons = useMemo(
-    () =>
-      (Object.keys(CADENCE_PRESETS) as CadencePreset[]).map((preset) => {
+    () => {
+      const presetButtons = (Object.keys(CADENCE_PRESETS) as CadencePreset[]).map((preset) => {
         const isActive = activePreset === preset;
         return (
           <TouchableOpacity
@@ -269,13 +276,37 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
             </Text>
           </TouchableOpacity>
         );
-      }),
-    [activePreset, handlePresetPress, theme]
-  );
+      });
 
-  const archiveMessage = isArchived
-    ? 'Archived Standards cannot accept new log entries.'
-    : 'When active, Standards can be logged from the dashboard.';
+      const isCustomActive = activePreset === null;
+      const customButton = (
+        <TouchableOpacity
+          key="custom"
+          style={[
+            styles.pillButton,
+            {
+              backgroundColor: isCustomActive ? theme.button.primary.background : theme.button.secondary.background,
+            },
+          ]}
+          onPress={handleCustomPress}
+        >
+          <Text
+            style={[
+              styles.pillButtonText,
+              {
+                color: isCustomActive ? theme.button.primary.text : theme.text.secondary,
+              },
+            ]}
+          >
+            Custom
+          </Text>
+        </TouchableOpacity>
+      );
+
+      return [...presetButtons, customButton];
+    },
+    [activePreset, handlePresetPress, handleCustomPress, theme]
+  );
 
   return (
     <KeyboardAvoidingView
@@ -286,14 +317,17 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         <TouchableOpacity onPress={onBack}>
           <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards Builder</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Create Standard</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <View style={styles.body}>
+        <ScrollView style={styles.form} contentContainerStyle={styles.content}>
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 1</Text>
-          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Select or create an activity</Text>
+          <View style={styles.stepHeader}>
+            <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 1</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Select or create an activity</Text>
+          </View>
           {selectedActivity ? (
             <View style={[styles.selectionCard, { backgroundColor: theme.background.tertiary }]}>
               <Text style={[styles.selectionLabel, { color: theme.text.tertiary }]}>Selected Activity</Text>
@@ -309,37 +343,31 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={[styles.primaryButton, { backgroundColor: theme.button.primary.background }]}
-              onPress={() => setLibraryVisible(true)}
+              onPress={() => setActivityModalVisible(true)}
             >
               <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
-                {selectedActivity ? 'Change Activity' : 'Open Activity Library'}
+                Create
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.secondaryButton, { borderColor: theme.border.primary }]}
-              onPress={() => setStandardsLibraryVisible(true)}
+              onPress={() => setLibraryVisible(true)}
             >
-              <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>
-                Select from Existing Standard
+              <Text style={[styles.primaryButtonText, { color: theme.text.primary }]}>
+                Select
               </Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 2</Text>
-          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Cadence</Text>
-          <View style={styles.pillRow}>{cadencePresetButtons}</View>
-
-          <View style={styles.customCadenceRow}>
-            <View style={styles.customField}>
-              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Custom interval</Text>
+          <View style={styles.stepHeader}>
+            <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 2</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Minimum + unit</Text>
+          </View>
+          <View style={styles.minimumUnitRow}>
+            <View style={styles.minimumUnitField}>
               <TextInput
-                value={customIntervalInput}
-                onChangeText={handleCustomIntervalChange}
-                keyboardType="number-pad"
-                placeholder="e.g. 2"
-                placeholderTextColor={theme.input.placeholder}
                 style={[
                   styles.input,
                   {
@@ -348,135 +376,130 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                     color: theme.input.text,
                   },
                 ]}
+                placeholderTextColor={theme.input.placeholder}
+                keyboardType="number-pad"
+                placeholder="Minimum Qty"
+                value={minimum ? String(minimum) : ''}
+                onChangeText={handleMinimumChange}
+              />
+              {minimumError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{minimumError}</Text>}
+            </View>
+            <View style={styles.minimumUnitField}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
+                placeholderTextColor={theme.input.placeholder}
+                placeholder={
+                  selectedActivity
+                    ? `Unit (default ${selectedActivity.unit})`
+                    : 'Unit'
+                }
+                value={unitOverride ?? ''}
+                onChangeText={handleUnitOverrideChange}
               />
             </View>
-            <View style={styles.customField}>
-              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
-              <View style={styles.unitRow}>
-                {CADENCE_UNIT_OPTIONS.map((unit) => {
-                  const isActive = customUnit === unit && !activePreset;
-                  return (
-                    <TouchableOpacity
-                      key={unit}
-                      style={[
-                        styles.unitButton,
-                        {
-                          borderColor: theme.border.primary,
-                          backgroundColor: isActive ? theme.background.tertiary : 'transparent',
-                        },
-                        isActive && { borderColor: theme.link },
-                      ]}
-                      onPress={() => handleCustomUnitChange(unit)}
-                    >
-                      <Text
+          </View>
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <View style={styles.stepHeader}>
+            <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 3</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Cadence</Text>
+          </View>
+          <View style={styles.pillRow}>{cadencePresetButtons}</View>
+
+          {activePreset === null && (
+            <View style={styles.customCadenceRow}>
+              <View style={styles.customField}>
+                <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Custom interval</Text>
+                <TextInput
+                  value={customIntervalInput}
+                  onChangeText={handleCustomIntervalChange}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 2"
+                  placeholderTextColor={theme.input.placeholder}
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.input.background,
+                      borderColor: theme.input.border,
+                      color: theme.input.text,
+                    },
+                  ]}
+                />
+              </View>
+              <View style={styles.customField}>
+                <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
+                <View style={styles.unitRow}>
+                  {CADENCE_UNIT_OPTIONS.map((unit) => {
+                    const isActive = customUnit === unit;
+                    return (
+                      <TouchableOpacity
+                        key={unit}
                         style={[
-                          styles.unitButtonText,
+                          styles.unitButton,
                           {
-                            color: isActive ? theme.link : theme.text.secondary,
+                            borderColor: theme.border.primary,
+                            backgroundColor: isActive ? theme.background.tertiary : 'transparent',
                           },
+                        isActive && { borderColor: theme.link },
                         ]}
+                        onPress={() => handleCustomUnitChange(unit)}
                       >
-                        {unit}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text
+                          style={[
+                            styles.unitButtonText,
+                            {
+                              color: isActive ? theme.link : theme.text.secondary,
+                            },
+                          ]}
+                        >
+                          {unit}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             </View>
-          </View>
+          )}
           {cadenceError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{cadenceError}</Text>}
         </View>
+        </ScrollView>
 
-        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 3</Text>
-          <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Minimum + unit</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: theme.input.background,
-                borderColor: theme.input.border,
-                color: theme.input.text,
-              },
-            ]}
-            placeholderTextColor={theme.input.placeholder}
-            keyboardType="number-pad"
-            placeholder="Minimum value"
-            value={minimum ? String(minimum) : ''}
-            onChangeText={handleMinimumChange}
-          />
-          {minimumError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{minimumError}</Text>}
-
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: theme.input.background,
-                borderColor: theme.input.border,
-                color: theme.input.text,
-              },
-            ]}
-            placeholderTextColor={theme.input.placeholder}
-            placeholder={
-              selectedActivity
-                ? `Unit (default ${selectedActivity.unit})`
-                : 'Unit override'
-            }
-            value={unitOverride ?? ''}
-            onChangeText={handleUnitOverrideChange}
-          />
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Summary</Text>
-          <View style={[styles.summaryCard, { backgroundColor: theme.primary.dark }]}>
-            <Text style={[styles.summaryLabel, { color: theme.text.inverse }]}>Live preview</Text>
-            <Text style={[styles.summaryValue, { color: theme.text.inverse }]}>
-              {summaryPreview || 'Complete the steps to see summary'}
+        <View style={[styles.stickyFooter, { backgroundColor: theme.background.secondary, borderTopColor: theme.border.secondary, paddingBottom: Math.max(insets.bottom, 16) }]}>
+          {summaryPreview && (
+            <Text style={[styles.stickySummary, { color: theme.text.primary }]}>
+              {summaryPreview}
             </Text>
+          )}
+          {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border.primary }]} onPress={resetForm}>
+              <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>Reset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                { backgroundColor: theme.button.primary.background },
+                saving && styles.primaryButtonDisabled,
+              ]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
+                {saving ? 'Saving…' : 'Save'}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <View style={styles.archiveRow}>
-            <View style={styles.archiveCopyColumn}>
-              <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Archive immediately</Text>
-              <Text style={[styles.archiveCopy, { color: theme.text.tertiary }]}>{archiveMessage}</Text>
-            </View>
-            <Switch
-              value={isArchived}
-              onValueChange={(value) => {
-                setIsArchived(value);
-                trackStandardEvent('standard_archive_toggle', {
-                  archived: value,
-                  activityId: selectedActivity?.id,
-                });
-              }}
-            />
-          </View>
-        </View>
-
-        {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
-
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border.primary }]} onPress={resetForm}>
-            <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>Reset</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.primaryButton,
-              { backgroundColor: theme.button.primary.background },
-              saving && styles.primaryButtonDisabled,
-            ]}
-            onPress={handleSave}
-            disabled={saving}
-          >
-            <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
-              {saving ? 'Saving…' : 'Save Standard'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      </View>
 
       <ActivityLibraryModal
         visible={libraryVisible}
@@ -487,6 +510,12 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         visible={standardsLibraryVisible}
         onClose={() => setStandardsLibraryVisible(false)}
         onSelectStandard={handleStandardSelect}
+      />
+      <ActivityModal
+        visible={activityModalVisible}
+        onClose={() => setActivityModalVisible(false)}
+        onSave={handleActivitySave}
+        onSelect={handleActivityCreate}
       />
     </KeyboardAvoidingView>
   );
@@ -515,9 +544,26 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 64,
   },
+  body: {
+    flex: 1,
+  },
+  form: {
+    flex: 1,
+  },
   content: {
     padding: 16,
     gap: 24,
+  },
+  stickyFooter: {
+    borderTopWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 8,
+  },
+  stickySummary: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   section: {
     borderRadius: 12,
@@ -535,6 +581,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   placeholderText: {
     fontSize: 14,
@@ -556,6 +607,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   primaryButton: {
+    flex: 1,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
@@ -569,7 +621,6 @@ const styles = StyleSheet.create({
   },
   pillRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   pillButton: {
@@ -627,20 +678,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
-  archiveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  archiveCopyColumn: {
-    flex: 1,
-  },
-  archiveCopy: {
-    fontSize: 14,
-    marginTop: 4,
-  },
   buttonRow: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     gap: 12,
   },
   actionsRow: {
@@ -660,5 +699,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
+  },
+  minimumUnitRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  minimumUnitField: {
+    flex: 1,
+    gap: 6,
   },
 });

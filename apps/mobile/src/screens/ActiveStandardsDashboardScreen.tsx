@@ -26,7 +26,7 @@ export function ActiveStandardsDashboardScreen({
   onLaunchBuilder,
   onOpenLogModal,
   onNavigateToDetail,
-  backButtonLabel = '← Back',
+  backButtonLabel,
 }: ActiveStandardsDashboardScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -210,7 +210,7 @@ export function ActiveStandardsDashboardScreen({
             style={[styles.builderButton, { backgroundColor: theme.button.primary.background }]}
             accessibilityRole="button"
           >
-            <Text style={[styles.builderButtonText, { color: theme.button.primary.text }]}>Open Standards Builder</Text>
+            <Text style={[styles.builderButtonText, { color: theme.button.primary.text }]}>Create Standard</Text>
           </TouchableOpacity>
         </View>
       );

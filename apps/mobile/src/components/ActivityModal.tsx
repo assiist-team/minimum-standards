@@ -7,9 +7,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface ActivityModalProps {
   visible: boolean;
@@ -32,6 +36,7 @@ export function ActivityModal({
   onSelect,
 }: ActivityModalProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
@@ -141,7 +146,17 @@ export function ActivityModal({
       onRequestClose={handleClose}
     >
       <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
-        <View style={[styles.modalContent, { backgroundColor: theme.background.modal }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={insets.bottom + 16}
+          style={styles.keyboardAvoider}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.background.modal, paddingBottom: 20 + insets.bottom },
+            ]}
+          >
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {isEditMode ? 'Edit Activity' : 'Add Activity'}
@@ -151,7 +166,12 @@ export function ActivityModal({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.form}>
+          <ScrollView
+            style={styles.formScroll}
+            contentContainerStyle={styles.form}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
             {/* Name field */}
             <View style={styles.field}>
               <Text style={styles.label}>Name</Text>
@@ -227,8 +247,9 @@ export function ActivityModal({
                 <Text style={[styles.saveButtonText, { color: theme.button.primary.text }]}>Save</Text>
               )}
             </TouchableOpacity>
+          </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -239,11 +260,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  keyboardAvoider: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
     maxHeight: '90%',
+    width: '100%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -259,8 +285,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#666',
   },
+  formScroll: {
+    flexGrow: 1,
+  },
   form: {
     gap: 16,
+    paddingBottom: 8,
   },
   field: {
     marginBottom: 16,

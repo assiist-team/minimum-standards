@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useActivities } from '../hooks/useActivities';
 import { ActivityModal } from '../components/ActivityModal';
 import { Activity } from '@minimum-standards/shared-model';
@@ -32,6 +33,7 @@ export function ActivityLibraryScreen({
   onClose,
 }: ActivityLibraryScreenProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const {
     activities,
     recentActivities,
@@ -191,7 +193,7 @@ export function ActivityLibraryScreen({
     <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
       <ErrorBanner error={error} />
 
-      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary, paddingTop: Math.max(insets.top, 16) }]}>
         <View style={styles.searchRow}>
           <TextInput
             style={[

@@ -120,7 +120,7 @@ describe('ActiveStandardsDashboardScreen', () => {
         onLaunchBuilder={onLaunchBuilder}
       />
     );
-    fireEvent.press(getByText('Open Standards Builder'));
+    fireEvent.press(getByText('Create Standard'));
     expect(onLaunchBuilder).toHaveBeenCalled();
   });
 

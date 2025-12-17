@@ -31,7 +31,6 @@ export interface CreateStandardInput {
   minimum: number;
   unit: string;
   cadence: StandardCadence;
-  isArchived: boolean;
 }
 
 function buildDefaultQuickAddValues(params: { minimum: number; unit: string }): number[] | undefined {
@@ -311,7 +310,6 @@ export function useStandards(): UseStandardsResult {
       );
 
       const docRef = doc(standardsCollection);
-      const isArchived = input.isArchived;
       const quickAddValues = buildDefaultQuickAddValues({
         minimum: input.minimum,
         unit: input.unit,
@@ -322,14 +320,14 @@ export function useStandards(): UseStandardsResult {
         minimum: input.minimum,
         unit: input.unit,
         cadence: input.cadence,
-        state: isArchived ? 'archived' : 'active',
+        state: 'active',
         summary: formatStandardSummary(
           input.minimum,
           input.unit,
           input.cadence
         ),
         ...(quickAddValues ? { quickAddValues } : {}),
-        archivedAt: isArchived ? firebaseFirestore.FieldValue.serverTimestamp() : null,
+        archivedAt: null,
         createdAt: firebaseFirestore.FieldValue.serverTimestamp(),
         updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
         deletedAt: null,

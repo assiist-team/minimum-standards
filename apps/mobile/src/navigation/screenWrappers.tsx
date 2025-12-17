@@ -77,11 +77,10 @@ export function ArchivedStandardsScreenWrapper() {
 
 export function ActiveStandardsDashboardScreenWrapper() {
   const navigation = useNavigation<DashboardNavigationProp>();
-  const canGoBack = navigation.canGoBack();
-  // When Dashboard is tab root, don't show back button
+  // Dashboard is always the root screen of DashboardStack, so never show back button
   return (
     <ActiveStandardsDashboardScreen
-      onBack={canGoBack ? () => navigation.goBack() : () => {}}
+      onBack={() => {}}
       onLaunchBuilder={() => {
         // Navigate to StandardsBuilder within the Dashboard stack
         navigation.navigate('StandardsBuilder', {});
@@ -89,7 +88,7 @@ export function ActiveStandardsDashboardScreenWrapper() {
       onNavigateToDetail={(standardId: string) => {
         navigation.navigate('StandardDetail', { standardId });
       }}
-      backButtonLabel={canGoBack ? '← Back' : undefined}
+      backButtonLabel={undefined}
     />
   );
 }

@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { MainStackParamList } from '../navigation/types';
 import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
 
-type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
-
 export function SettingsScreen() {
   const theme = useTheme();
-  const navigation = useNavigation<NavigationProp>();
   const { signOut } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,10 +70,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-  },
-  backButton: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   headerTitle: {
     flex: 1,

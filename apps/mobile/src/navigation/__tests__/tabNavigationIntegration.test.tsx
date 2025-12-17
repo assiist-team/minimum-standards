@@ -101,7 +101,7 @@ jest.mock('../BottomTabNavigator', () => ({
         React.createElement(
           View,
           { testID: 'standards-builder-screen' },
-          React.createElement(Text, null, 'Standards Builder')
+          React.createElement(Text, null, 'Create Standard')
         ),
       currentScreen === 'ActivityLibrary' &&
         React.createElement(
