@@ -91,6 +91,10 @@ export interface ColorTheme {
       background: string;
       text: string;
     };
+    icon: {
+      background: string;
+      icon: string;
+    };
   };
 
   // Input colors
@@ -166,7 +170,7 @@ export const lightTheme: ColorTheme = {
   },
   button: {
     primary: {
-      background: '#000',
+      background: '#987e55',
       text: '#fff',
     },
     secondary: {
@@ -180,6 +184,10 @@ export const lightTheme: ColorTheme = {
     destructive: {
       background: '#c00',
       text: '#fff',
+    },
+    icon: {
+      background: '#F5F3EF',
+      icon: '#987e55',
     },
   },
   input: {
@@ -252,8 +260,8 @@ export const darkTheme: ColorTheme = {
   },
   button: {
     primary: {
-      background: '#fff',
-      text: '#000',
+      background: '#987e55',
+      text: '#fff',
     },
     secondary: {
       background: '#333',
@@ -266,6 +274,10 @@ export const darkTheme: ColorTheme = {
     destructive: {
       background: '#EF5350',
       text: '#fff',
+    },
+    icon: {
+      background: '#3D3224',
+      icon: '#987e55',
     },
   },
   input: {

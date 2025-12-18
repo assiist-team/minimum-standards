@@ -123,13 +123,13 @@ describe('StandardsLibraryScreen', () => {
     expect(getByLabelText('Standards search input')).toBeTruthy();
   });
 
-  test('renders tab navigation with Active and Archived tabs', () => {
+  test('renders tab navigation with Active and Inactive tabs', () => {
     setupHooks();
     const { getByText } = render(
       <StandardsLibraryScreen onBack={mockOnBack} />
     );
     expect(getByText('Active')).toBeTruthy();
-    expect(getByText('Archived')).toBeTruthy();
+    expect(getByText('Inactive')).toBeTruthy();
   });
 
   test('shows active standards by default', () => {
@@ -141,39 +141,39 @@ describe('StandardsLibraryScreen', () => {
     expect(getByText('Sales Calls')).toBeTruthy();
   });
 
-  test('switches to archived tab when clicked', () => {
+  test('switches to inactive tab when clicked', () => {
     setupHooks();
     const { getByText } = render(
       <StandardsLibraryScreen onBack={mockOnBack} />
     );
-    fireEvent.press(getByText('Archived'));
+    fireEvent.press(getByText('Inactive'));
     expect(getByText('50 minutes / day')).toBeTruthy();
   });
 
-  test('shows archive button for active standards', () => {
+  test('shows deactivate button for active standards', () => {
     setupHooks();
-    const { getByText } = render(
+    const { getByLabelText } = render(
       <StandardsLibraryScreen onBack={mockOnBack} />
     );
-    expect(getByText('Archive')).toBeTruthy();
+    expect(getByLabelText(/deactivate/i)).toBeTruthy();
   });
 
-  test('shows activate button for archived standards', () => {
+  test('shows activate button for inactive standards', () => {
     setupHooks();
-    const { getByText } = render(
+    const { getByLabelText, getByText } = render(
       <StandardsLibraryScreen onBack={mockOnBack} />
     );
-    fireEvent.press(getByText('Archived'));
-    expect(getByText('Activate')).toBeTruthy();
+    fireEvent.press(getByText('Inactive'));
+    expect(getByLabelText(/activate/i)).toBeTruthy();
   });
 
-  test('calls archiveStandard when archive button is pressed', async () => {
+  test('calls archiveStandard when deactivate button is pressed', async () => {
     const mockArchiveStandard = jest.fn().mockResolvedValue(undefined);
     setupHooks({ archiveStandard: mockArchiveStandard });
-    const { getByText } = render(
+    const { getByLabelText } = render(
       <StandardsLibraryScreen onBack={mockOnBack} />
     );
-    fireEvent.press(getByText('Archive'));
+    fireEvent.press(getByLabelText(/deactivate/i));
     await waitFor(() => {
       expect(mockArchiveStandard).toHaveBeenCalledWith('1');
     });
@@ -182,11 +182,11 @@ describe('StandardsLibraryScreen', () => {
   test('calls unarchiveStandard when activate button is pressed', async () => {
     const mockUnarchiveStandard = jest.fn().mockResolvedValue(undefined);
     setupHooks({ unarchiveStandard: mockUnarchiveStandard });
-    const { getByText } = render(
+    const { getByText, getByLabelText } = render(
       <StandardsLibraryScreen onBack={mockOnBack} />
     );
-    fireEvent.press(getByText('Archived'));
-    fireEvent.press(getByText('Activate'));
+    fireEvent.press(getByText('Inactive'));
+    fireEvent.press(getByLabelText(/activate/i));
     await waitFor(() => {
       expect(mockUnarchiveStandard).toHaveBeenCalledWith('2');
     });
@@ -220,7 +220,7 @@ describe('StandardsLibraryScreen', () => {
     expect(getByText('No standards match your search')).toBeTruthy();
   });
 
-  test('calls onSelectStandard and onBack when standard is selected', () => {
+  test('calls onSelectStandard when standard is selected', () => {
     const mockOnSelectStandard = jest.fn();
     setupHooks();
     const { getByText } = render(
@@ -231,7 +231,9 @@ describe('StandardsLibraryScreen', () => {
     );
     fireEvent.press(getByText('1000 calls / week'));
     expect(mockOnSelectStandard).toHaveBeenCalledWith(mockStandard1);
-    expect(mockOnBack).toHaveBeenCalledTimes(1);
+    // Note: onBack is not called here - it's handled by the modal wrapper when used as a modal,
+    // and shouldn't be called when used as a main screen (where we navigate forward)
+    expect(mockOnBack).not.toHaveBeenCalled();
   });
 
   test('displays error message when error occurs', () => {

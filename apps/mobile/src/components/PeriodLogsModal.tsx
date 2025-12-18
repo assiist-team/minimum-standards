@@ -70,20 +70,20 @@ function LogItem({
       {canEdit && (
         <View style={styles.logActions}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
+            style={[styles.actionButton, { backgroundColor: theme.button.icon.background }]}
             onPress={onEdit}
             accessibilityLabel="Edit log entry"
             accessibilityRole="button"
           >
-            <MaterialIcons name="edit" size={20} color={theme.primary.main} />
+            <MaterialIcons name="edit" size={20} color={theme.button.icon.icon} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.background.tertiary }]}
+            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.button.icon.background }]}
             onPress={onDelete}
             accessibilityLabel="Delete log entry"
             accessibilityRole="button"
           >
-            <MaterialIcons name="delete" size={20} color={theme.status.missed.text} />
+            <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
           </TouchableOpacity>
         </View>
       )}

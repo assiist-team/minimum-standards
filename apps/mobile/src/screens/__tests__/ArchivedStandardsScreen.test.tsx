@@ -56,30 +56,30 @@ describe('ArchivedStandardsScreen', () => {
     consoleSpy.mockRestore();
   });
 
-  test('renders archived summary and badge', () => {
+  test('renders inactive summary and badge', () => {
     const { getByText } = render(
       <ArchivedStandardsScreen onBack={jest.fn()} />
     );
     expect(getByText('150 calls / week')).toBeTruthy();
-    expect(getByText('Archived')).toBeTruthy();
+    expect(getByText('Inactive')).toBeTruthy();
   });
 
-  test('log button is disabled for archived standards', () => {
+  test('log button is disabled for inactive standards', () => {
     const { getByLabelText } = render(
       <ArchivedStandardsScreen onBack={jest.fn()} />
     );
-    const logButton = getByLabelText('Logging disabled for archives');
+    const logButton = getByLabelText('Logging disabled for inactive standards');
     expect(logButton.props.accessibilityState?.disabled).toBe(true);
   });
 
-  test('unarchive button invokes handler', () => {
+  test('activate button invokes handler', () => {
     const unarchiveStandard = jest.fn();
     setupHook({ unarchiveStandard });
-    const { getByText } = render(
+    const { getByLabelText } = render(
       <ArchivedStandardsScreen onBack={jest.fn()} />
     );
 
-    fireEvent.press(getByText('Unarchive Standard'));
+    fireEvent.press(getByLabelText('Activate standard'));
     expect(unarchiveStandard).toHaveBeenCalledWith('std-1');
   });
 });

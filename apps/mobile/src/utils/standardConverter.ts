@@ -1,5 +1,9 @@
 import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
+import firestoreModule from '@react-native-firebase/firestore';
 import { Standard, standardSchema } from '@minimum-standards/shared-model';
+
+const FieldValue = firestoreModule.FieldValue;
+const Timestamp = firestoreModule.Timestamp;
 
 export type FirestoreStandardData = {
   activityId: string;
@@ -47,4 +51,17 @@ export function fromFirestoreStandard(
     updatedAtMs: data.updatedAt?.toMillis() ?? Date.now(),
     deletedAtMs: data.deletedAt?.toMillis() ?? null,
   });
+}
+
+/**
+ * Converts Standard soft delete to Firestore update format.
+ */
+export function toFirestoreStandardDelete(): {
+  deletedAt: FirebaseFirestoreTypes.Timestamp;
+  updatedAt: FirebaseFirestoreTypes.FieldValue;
+} {
+  return {
+    deletedAt: Timestamp.now(),
+    updatedAt: FieldValue.serverTimestamp(),
+  };
 }

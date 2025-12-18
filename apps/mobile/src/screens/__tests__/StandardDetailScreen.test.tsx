@@ -81,6 +81,8 @@ const mockCurrentPeriodProgress: PeriodHistoryEntry = {
   progressPercent: 10,
   periodStartMs: 1702008000000,
   periodEndMs: 1702612800000,
+  currentSessions: 1,
+  targetSessions: 5,
 };
 
 function setupHooks(
@@ -221,17 +223,17 @@ describe('StandardDetailScreen', () => {
       expect(onEdit).toHaveBeenCalledWith(mockStandard);
     });
 
-    test('Archive/Unarchive button toggles archive state', async () => {
+    test('Deactivate/Activate button toggles archive state', async () => {
       const archiveStandard = jest.fn().mockResolvedValue(undefined);
       const unarchiveStandard = jest.fn().mockResolvedValue(undefined);
       const onArchive = jest.fn();
 
-      // Test Archive button (active standard)
+      // Test Deactivate button (active standard)
       setupHooks(
         { history: [mockCurrentPeriodProgress] },
         { archiveStandard, unarchiveStandard }
       );
-      const { getByText, rerender } = render(
+      const { getByLabelText, rerender } = render(
         <StandardDetailScreen
           standardId={mockStandard.id}
           onBack={jest.fn()}
@@ -240,8 +242,8 @@ describe('StandardDetailScreen', () => {
         />
       );
 
-      const archiveButton = getByText('Archive');
-      fireEvent.press(archiveButton);
+      const deactivateButton = getByLabelText('Deactivate standard');
+      fireEvent.press(deactivateButton);
 
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -249,7 +251,7 @@ describe('StandardDetailScreen', () => {
       expect(archiveStandard).toHaveBeenCalledWith(mockStandard.id);
       expect(onArchive).toHaveBeenCalledWith(mockStandard.id);
 
-      // Test Unarchive button (archived standard)
+      // Test Activate button (archived standard)
       const archivedStandard: Standard = {
         ...mockStandard,
         state: 'archived',
@@ -275,8 +277,8 @@ describe('StandardDetailScreen', () => {
         />
       );
 
-      const unarchiveButton = getByText('Unarchive');
-      fireEvent.press(unarchiveButton);
+      const activateButton = getByLabelText('Activate standard');
+      fireEvent.press(activateButton);
 
       await new Promise((resolve) => setTimeout(resolve, 0));
 
@@ -375,8 +377,8 @@ describe('StandardDetailScreen', () => {
       // Edit button should have accessibility label
       expect(getByLabelText(/edit standard/i)).toBeTruthy();
 
-      // Archive button should have accessibility label
-      expect(getByLabelText(/archive standard/i)).toBeTruthy();
+      // Deactivate button should have accessibility label
+      expect(getByLabelText(/deactivate standard/i)).toBeTruthy();
 
       // Progress bar should have accessibility role (if rendered)
       try {
@@ -464,9 +466,9 @@ describe('StandardDetailScreen', () => {
         activityId: mockStandard.activityId,
       });
 
-      // Test Archive button tap
-      const archiveButton = getByText('Archive');
-      fireEvent.press(archiveButton);
+      // Test Deactivate button tap
+      const deactivateButton = getByLabelText('Deactivate standard');
+      fireEvent.press(deactivateButton);
       expect(trackStandardEvent).toHaveBeenCalledWith('standard_detail_archive_tap', {
         standardId: mockStandard.id,
         activityId: mockStandard.activityId,

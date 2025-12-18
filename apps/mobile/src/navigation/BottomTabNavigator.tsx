@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CommonActions } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { BottomTabParamList, SETTINGS_TAB_ROUTE_NAME } from './types';
 import { DashboardStack } from './DashboardStack';
@@ -51,6 +52,42 @@ export function BottomTabNavigator() {
           ),
           tabBarAccessibilityLabel: 'Active tab',
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            // Get the current state of the tab navigator
+            const state = navigation.getState();
+            const dashboardTab = state.routes.find((r) => r.name === 'Dashboard');
+            
+            // If the Dashboard tab has a nested stack with more than one screen, reset it to root
+            if (dashboardTab?.state && dashboardTab.state.index > 0) {
+              // Prevent default navigation
+              e.preventDefault();
+              
+              // Reset the Dashboard stack by using CommonActions.reset with updated state
+              const dashboardRouteIndex = state.routes.findIndex((r) => r.name === 'Dashboard');
+              
+              navigation.dispatch(
+                CommonActions.reset({
+                  ...state,
+                  routes: state.routes.map((route, index) => {
+                    if (index === dashboardRouteIndex) {
+                      // Reset the Dashboard stack to its root
+                      return {
+                        ...route,
+                        state: {
+                          routes: [{ name: 'ActiveStandardsDashboard' }],
+                          index: 0,
+                        },
+                      };
+                    }
+                    return route;
+                  }),
+                  index: dashboardRouteIndex,
+                })
+              );
+            }
+          },
+        })}
       />
       <Tab.Screen
         name="Standards"

@@ -4,7 +4,7 @@
  * These tests validate end-to-end workflows:
  * - Navigation flow: dashboard card tap → detail screen → period tap → logs modal
  * - Logging from detail screen updates history
- * - Archive/unarchive from detail screen updates state
+ * - Deactivate/activate from detail screen updates state
  * - Period history accuracy across multiple periods
  * - Empty history → log entry → history appears
  * - Error recovery (retry after Firestore failure)
@@ -132,6 +132,8 @@ const mockPeriod1: PeriodHistoryEntry = {
   progressPercent: 10,
   periodStartMs: 1702008000000,
   periodEndMs: 1702612800000,
+  currentSessions: 1,
+  targetSessions: 5,
 };
 
 const mockPeriod2: PeriodHistoryEntry = {
@@ -143,6 +145,8 @@ const mockPeriod2: PeriodHistoryEntry = {
   progressPercent: 95,
   periodStartMs: 1701403200000,
   periodEndMs: 1702008000000,
+  currentSessions: 4,
+  targetSessions: 5,
 };
 
 function setupHooks(
@@ -251,17 +255,17 @@ describe('StandardDetailScreen Integration Tests', () => {
     });
   });
 
-  test('archive/unarchive from detail screen updates state', async () => {
+  test('deactivate/activate from detail screen updates state', async () => {
     const archiveStandard = jest.fn().mockResolvedValue(undefined);
     const unarchiveStandard = jest.fn().mockResolvedValue(undefined);
     const onArchive = jest.fn();
 
-    // Test archive
+    // Test deactivate
     setupHooks(
       { history: [mockPeriod1] },
       { archiveStandard }
     );
-    const { getByText, rerender } = render(
+    const { getByLabelText, rerender } = render(
       <StandardDetailScreen
         standardId={mockStandard.id}
         onBack={jest.fn()}
@@ -270,15 +274,15 @@ describe('StandardDetailScreen Integration Tests', () => {
       />
     );
 
-    const archiveButton = getByText('Archive');
-    fireEvent.press(archiveButton);
+    const deactivateButton = getByLabelText('Deactivate standard');
+    fireEvent.press(deactivateButton);
 
     await waitFor(() => {
       expect(archiveStandard).toHaveBeenCalledWith(mockStandard.id);
       expect(onArchive).toHaveBeenCalledWith(mockStandard.id);
     });
 
-    // Test unarchive
+    // Test activate
     const archivedStandard: Standard = {
       ...mockStandard,
       state: 'archived',
@@ -303,8 +307,8 @@ describe('StandardDetailScreen Integration Tests', () => {
       />
     );
 
-    const unarchiveButton = getByText('Unarchive');
-    fireEvent.press(unarchiveButton);
+    const activateButton = getByLabelText('Activate standard');
+    fireEvent.press(activateButton);
 
     await waitFor(() => {
       expect(unarchiveStandard).toHaveBeenCalledWith(archivedStandard.id);

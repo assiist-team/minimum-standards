@@ -68,6 +68,9 @@ export function StandardsLibraryScreenWrapper() {
       onNavigateToBuilder={() => {
         navigation.navigate('StandardsBuilder', {});
       }}
+      onEditStandard={(standardId) => {
+        navigation.navigate('StandardsBuilder', { standardId });
+      }}
     />
   );
 }
@@ -93,6 +96,9 @@ export function ActiveStandardsDashboardScreenWrapper() {
       }}
       onNavigateToDetail={(standardId: string) => {
         navigation.navigate('StandardDetail', { standardId });
+      }}
+      onEditStandard={(standardId) => {
+        navigation.navigate('StandardsBuilder', { standardId });
       }}
       backButtonLabel={undefined}
     />

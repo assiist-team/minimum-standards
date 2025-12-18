@@ -11,15 +11,14 @@ import type { Standard } from '@minimum-standards/shared-model';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useStandardHistory } from '../hooks/useStandardHistory';
 import { useStandards } from '../hooks/useStandards';
+import { useActivities } from '../hooks/useActivities';
 import { LogEntryModal } from '../components/LogEntryModal';
 import { PeriodLogsModal } from '../components/PeriodLogsModal';
-import { PeriodHistoryList } from '../components/PeriodHistoryList';
+import { StandardProgressCard } from '../components/StandardProgressCard';
 import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
-import { getStatusColors } from '../theme/colors';
-import { typography } from '../theme/typography';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardDetailScreenProps {
@@ -57,6 +56,16 @@ export function StandardDetailScreen({
   );
 
   const { history, loading, error, refresh } = useStandardHistory(standardId);
+  const { activities } = useActivities();
+
+  // Create activity lookup map for efficient name resolution
+  const activityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    activities.forEach((activity) => {
+      map.set(activity.id, activity.name);
+    });
+    return map;
+  }, [activities]);
 
   // Track screen view on mount
   useEffect(() => {
@@ -74,14 +83,42 @@ export function StandardDetailScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [standard?.id, standard?.activityId]);
 
+  // Compute current period window to determine which periods are current
+  const currentPeriodWindow = useMemo(() => {
+    if (!standard) return null;
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+    const nowMs = Date.now();
+    return calculatePeriodWindow(nowMs, standard.cadence, timezone);
+  }, [standard]);
+
   // Compute current period progress
   const currentPeriodProgress = useMemo(() => {
-    if (!standard || history.length === 0) {
+    if (!standard || !currentPeriodWindow) {
       return null;
     }
-    // First entry in history is the current period (most recent)
-    return history[0];
-  }, [standard, history]);
+    // Find the entry that matches the current period window
+    const entry = history.find(
+      (entry) => entry.periodStartMs === currentPeriodWindow.startMs
+    );
+    
+    // If no entry found, create a default one for the current period
+    if (!entry) {
+      return {
+        periodLabel: currentPeriodWindow.label,
+        total: 0,
+        target: standard.minimum,
+        targetSummary: standard.summary,
+        status: 'In Progress' as const,
+        progressPercent: 0,
+        periodStartMs: currentPeriodWindow.startMs,
+        periodEndMs: currentPeriodWindow.endMs,
+        currentSessions: 0,
+        targetSessions: standard.sessionConfig.sessionsPerCadence,
+      };
+    }
+    
+    return entry;
+  }, [standard, history, currentPeriodWindow]);
 
   const handleLogPress = useCallback(() => {
     if (standard) {
@@ -220,24 +257,7 @@ export function StandardDetailScreen({
     );
   }
 
-  const status = currentPeriodProgress?.status ?? 'In Progress';
-  const statusColors = getStatusColors(theme, status as 'Met' | 'In Progress' | 'Missed');
-  const percent = currentPeriodProgress?.progressPercent ?? 0;
-  
-  // Compute period label if not available in currentPeriodProgress
-  const periodLabel = currentPeriodProgress?.periodLabel ?? (() => {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
-    const nowMs = Date.now();
-    const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
-    return window.label;
-  })();
-  
-  const targetSummary = currentPeriodProgress?.targetSummary ?? standard.summary;
-  const currentFormatted = currentPeriodProgress
-    ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(
-        currentPeriodProgress.total
-      )
-    : '—';
+  const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
@@ -246,7 +266,7 @@ export function StandardDetailScreen({
           <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
-          {standard.activityId}
+          {activityName}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -255,48 +275,58 @@ export function StandardDetailScreen({
 
       <ScrollView style={[styles.content, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
         {/* Current Period Summary */}
-        <View style={[styles.currentPeriodCard, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <View style={styles.currentPeriodHeader}>
-            <Text style={[styles.periodLabel, { color: theme.text.secondary }]}>
-              {periodLabel}
-            </Text>
-            <View
-              style={[styles.statusPill, { backgroundColor: statusColors.background }]}
-              accessibilityRole="text"
-            >
-              <Text style={[styles.statusText, { color: statusColors.text }]}>{status}</Text>
-            </View>
-          </View>
-          <Text style={[styles.summaryText, { color: theme.text.primary }]}>
-            {currentFormatted} / {targetSummary}
-          </Text>
-          <View style={styles.progressSection}>
-            <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
-              <View
-                style={[styles.progressFill, { width: `${percent}%`, backgroundColor: statusColors.bar }]}
-                accessibilityRole="progressbar"
-                accessibilityValue={{ now: percent, min: 0, max: 100 }}
-              />
-            </View>
-            <TouchableOpacity
-              onPress={handleLogPress}
-              style={[styles.logButton, { backgroundColor: theme.button.primary.background }]}
-              accessibilityRole="button"
-              accessibilityLabel={`Log progress for ${standard.activityId}`}
-            >
-              <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        {currentPeriodProgress && (
+          <StandardProgressCard
+            standard={standard}
+            activityName={activityName}
+            periodLabel={currentPeriodProgress.periodLabel}
+            currentTotal={currentPeriodProgress.total}
+            currentTotalFormatted={new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(currentPeriodProgress.total)}
+            targetValue={currentPeriodProgress.target}
+            targetValueFormatted={Math.round(currentPeriodProgress.target).toString()}
+            progressPercent={currentPeriodProgress.progressPercent}
+            status={currentPeriodProgress.status}
+            currentSessions={currentPeriodProgress.currentSessions}
+            targetSessions={currentPeriodProgress.targetSessions}
+            sessionLabel={standard.sessionConfig.sessionLabel}
+            unit={standard.unit}
+            showLogButton={true}
+            onLogPress={handleLogPress}
+          />
+        )}
 
         {/* History Section */}
         {history.length > 0 ? (
           <View style={styles.historySection}>
             <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>History</Text>
-            <PeriodHistoryList
-              history={history}
-              onPeriodPress={handlePeriodPress}
-            />
+            <View style={styles.historyList}>
+              {history.map((entry, index) => {
+                const isCurrentPeriod = currentPeriodWindow && entry.periodStartMs === currentPeriodWindow.startMs;
+                // Skip current period in history since it's shown above
+                if (isCurrentPeriod) return null;
+                
+                return (
+                  <StandardProgressCard
+                    key={`${entry.periodStartMs}-${entry.periodEndMs}`}
+                    standard={standard}
+                    activityName={activityName}
+                    periodLabel={entry.periodLabel}
+                    currentTotal={entry.total}
+                    currentTotalFormatted={new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(entry.total)}
+                    targetValue={entry.target}
+                    targetValueFormatted={Math.round(entry.target).toString()}
+                    progressPercent={entry.progressPercent}
+                    status={entry.status}
+                    currentSessions={entry.currentSessions}
+                    targetSessions={entry.targetSessions}
+                    sessionLabel={standard.sessionConfig.sessionLabel}
+                    unit={standard.unit}
+                    showLogButton={false}
+                    onCardPress={() => handlePeriodPress(entry)}
+                  />
+                );
+              })}
+            </View>
           </View>
         ) : (
           <View style={styles.emptyHistoryState}>
@@ -310,24 +340,24 @@ export function StandardDetailScreen({
         <View style={styles.actionsSection}>
           <TouchableOpacity
             onPress={handleEditPress}
-            style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
+            style={[styles.actionButton, { backgroundColor: theme.button.icon.background }]}
             accessibilityRole="button"
             accessibilityLabel="Edit standard"
           >
-            <MaterialIcons name="edit" size={24} color={theme.primary.main} />
+            <MaterialIcons name="edit" size={24} color={theme.button.icon.icon} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleArchivePress}
-            style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
+            style={[styles.actionButton, { backgroundColor: theme.button.icon.background }]}
             accessibilityRole="button"
             accessibilityLabel={
-              standard.state === 'active' ? 'Archive standard' : 'Unarchive standard'
+              standard.state === 'active' ? 'Deactivate standard' : 'Activate standard'
             }
           >
             <MaterialIcons 
-              name={standard.state === 'active' ? 'archive' : 'unarchive'} 
+              name={standard.state === 'active' ? 'toggle-off' : 'toggle-on'} 
               size={24} 
-              color={theme.primary.main} 
+              color={theme.button.icon.icon} 
             />
           </TouchableOpacity>
         </View>
@@ -414,58 +444,6 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 16,
   },
-  currentPeriodCard: {
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  currentPeriodHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  periodLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  summaryText: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  progressSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  progressBar: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
-  },
-  logButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  logButtonText: {
-    // fontSize and fontWeight come from typography.button.primary
-  },
   historySection: {
     gap: 12,
   },
@@ -473,6 +451,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 8,
+  },
+  historyList: {
+    gap: 16,
   },
   emptyHistoryState: {
     padding: 24,

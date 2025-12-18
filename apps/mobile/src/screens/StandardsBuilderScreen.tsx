@@ -370,7 +370,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
             await unarchiveStandard(matchingStandard.id);
             Alert.alert(
               'Standard activated',
-              'An existing archived Standard has been activated.'
+              'An existing inactive Standard has been activated.'
             );
           } else {
             // If duplicate found and active: show error

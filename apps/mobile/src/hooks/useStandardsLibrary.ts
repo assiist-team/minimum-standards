@@ -24,6 +24,8 @@ export interface UseStandardsLibraryResult {
   // Archive/unarchive functions
   archiveStandard: (standardId: string) => Promise<void>;
   unarchiveStandard: (standardId: string) => Promise<void>;
+  // Delete function
+  deleteStandard: (standardId: string) => Promise<void>;
 }
 
 /**
@@ -42,6 +44,7 @@ export function useStandardsLibrary(): UseStandardsLibraryResult {
     error,
     archiveStandard: archiveStandardBase,
     unarchiveStandard: unarchiveStandardBase,
+    deleteStandard: deleteStandardBase,
   } = useStandards();
 
   const [searchQueryInput, setSearchQueryInput] = useState('');
@@ -85,5 +88,6 @@ export function useStandardsLibrary(): UseStandardsLibraryResult {
     error,
     archiveStandard: archiveStandardBase,
     unarchiveStandard: unarchiveStandardBase,
+    deleteStandard: deleteStandardBase,
   };
 }

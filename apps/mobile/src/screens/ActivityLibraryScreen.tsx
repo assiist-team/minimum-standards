@@ -11,11 +11,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useActivities } from '../hooks/useActivities';
+import { useStandards } from '../hooks/useStandards';
 import { ActivityModal } from '../components/ActivityModal';
 import { Activity } from '@minimum-standards/shared-model';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { filterActivitiesByTab } from '../utils/activitiesFilter';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 /**
@@ -28,6 +30,8 @@ export interface ActivityLibraryScreenProps {
   hideDestructiveControls?: boolean; // Hide edit/delete in builder context
   onClose?: () => void; // For modal context - show close button
 }
+
+type Tab = 'active' | 'inactive';
 
 export function ActivityLibraryScreen({
   onSelectActivity,
@@ -49,6 +53,9 @@ export function ActivityLibraryScreen({
     restoreActivity,
   } = useActivities();
 
+  const { activeStandards } = useStandards();
+  const [activeTab, setActiveTab] = useState<Tab>('active');
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [undoActivity, setUndoActivity] = useState<Activity | null>(null);
@@ -57,6 +64,11 @@ export function ActivityLibraryScreen({
 
   const trimmedQuery = searchQuery.trim();
   const hasSearchQuery = trimmedQuery.length > 0;
+
+  // Filter activities by tab (active/inactive) after search filtering
+  const currentActivities = useMemo(() => {
+    return filterActivitiesByTab(activities, activeStandards, activeTab);
+  }, [activities, activeStandards, activeTab]);
 
   useEffect(() => {
     return () => {
@@ -163,20 +175,20 @@ export function ActivityLibraryScreen({
       {!hideDestructiveControls && (
         <View style={styles.activityActions}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
+            style={[styles.actionButton, { backgroundColor: theme.button.icon.background }]}
             onPress={() => handleEditPress(item)}
             accessibilityLabel="Edit activity"
             accessibilityRole="button"
           >
-            <MaterialIcons name="edit" size={20} color={theme.link} />
+            <MaterialIcons name="edit" size={20} color={theme.button.icon.icon} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.archive.background }]}
+            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.button.icon.background }]}
             onPress={() => handleDeletePress(item)}
             accessibilityLabel="Delete activity"
             accessibilityRole="button"
           >
-            <MaterialIcons name="delete" size={20} color={theme.archive.text} />
+            <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
           </TouchableOpacity>
         </View>
       )}
@@ -218,11 +230,47 @@ export function ActivityLibraryScreen({
             <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ Create</Text>
           </TouchableOpacity>
         </View>
-        {hasSearchQuery && activities.length > 0 && (
+        {hasSearchQuery && currentActivities.length > 0 && (
           <Text style={[styles.searchHint, { color: theme.text.secondary }]}>
-            Found {activities.length} {activities.length === 1 ? 'activity' : 'activities'}
+            Found {currentActivities.length} {currentActivities.length === 1 ? 'activity' : 'activities'}
           </Text>
         )}
+      </View>
+
+      {/* Tab Navigation */}
+      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary }]}>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'active' && { borderBottomColor: theme.link },
+          ]}
+          onPress={() => setActiveTab('active')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'active' ? theme.link : theme.text.secondary },
+            ]}
+          >
+            Active
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.tab,
+            activeTab === 'inactive' && { borderBottomColor: theme.link },
+          ]}
+          onPress={() => setActiveTab('inactive')}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              { color: activeTab === 'inactive' ? theme.link : theme.text.secondary },
+            ]}
+          >
+            Inactive
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.listArea}>
@@ -243,15 +291,19 @@ export function ActivityLibraryScreen({
               <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Activity</Text>
             </TouchableOpacity>
           </View>
-        ) : activities.length === 0 ? (
+        ) : currentActivities.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
-              No activities found matching your search
+              {hasSearchQuery
+                ? 'No activities found matching your search'
+                : activeTab === 'active'
+                ? 'No active activities'
+                : 'No inactive activities'}
             </Text>
           </View>
         ) : (
           <FlatList
-            data={activities}
+            data={currentActivities}
             renderItem={renderActivityItem}
             keyExtractor={(item) => item.id}
             style={styles.list}
@@ -318,6 +370,22 @@ const styles = StyleSheet.create({
   searchHint: {
     marginTop: 8,
     fontSize: 12,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   listArea: {
     flex: 1,

@@ -22,6 +22,8 @@ export type PeriodHistoryEntry = {
   progressPercent: number;
   periodStartMs: number;
   periodEndMs: number;
+  currentSessions: number;
+  targetSessions: number;
 };
 
 
@@ -75,6 +77,10 @@ export function computeStandardHistory(
     if (periodLogs.length > 0) {
       // Calculate period total
       const periodTotal = periodLogs.reduce((sum, log) => sum + log.value, 0);
+      
+      // Calculate session counts
+      const currentSessions = periodLogs.length;
+      const targetSessions = standard.sessionConfig.sessionsPerCadence;
 
       // Derive status for this period
       const status = derivePeriodStatus(periodTotal, standard.minimum, nowMs, window.endMs);
@@ -94,6 +100,8 @@ export function computeStandardHistory(
         progressPercent,
         periodStartMs: window.startMs,
         periodEndMs: window.endMs,
+        currentSessions,
+        targetSessions,
       });
     } else if (history.length > 0) {
       // If no logs found and we've already found at least one period with logs, stop

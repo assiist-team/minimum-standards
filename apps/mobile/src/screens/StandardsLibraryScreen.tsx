@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Alert,
+  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Standard } from '@minimum-standards/shared-model';
@@ -21,9 +23,8 @@ export interface StandardsLibraryScreenProps {
   onBack?: () => void; // Optional - not shown on main screen
   onSelectStandard?: (standard: Standard) => void; // For builder context
   onNavigateToBuilder?: () => void; // Navigate to Standards Builder
+  onEditStandard?: (standardId: string) => void; // Navigate to Standards Builder for editing
 }
-
-type Tab = 'active' | 'archived';
 
 const CARD_SPACING = 16;
 
@@ -31,6 +32,7 @@ export function StandardsLibraryScreen({
   onBack,
   onSelectStandard,
   onNavigateToBuilder,
+  onEditStandard,
 }: StandardsLibraryScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -43,10 +45,10 @@ export function StandardsLibraryScreen({
     error,
     archiveStandard,
     unarchiveStandard,
+    deleteStandard,
   } = useStandardsLibrary();
 
   const { activities } = useActivities();
-  const [activeTab, setActiveTab] = useState<Tab>('active');
 
   // Create activity lookup map
   const activityMap = useMemo(() => {
@@ -57,8 +59,10 @@ export function StandardsLibraryScreen({
     return map;
   }, [activities]);
 
-  const currentStandards =
-    activeTab === 'active' ? activeStandards : archivedStandards;
+  // Combine active and archived standards into a single list
+  const allStandards = useMemo(() => {
+    return [...activeStandards, ...archivedStandards];
+  }, [activeStandards, archivedStandards]);
 
   const handleArchive = async (standardId: string) => {
     try {
@@ -78,35 +82,68 @@ export function StandardsLibraryScreen({
     }
   };
 
+  const handleEdit = useCallback((standardId: string) => {
+    if (onEditStandard) {
+      onEditStandard(standardId);
+    }
+  }, [onEditStandard]);
+
+  const handleDelete = useCallback((standardId: string, activityName: string) => {
+    Alert.alert(
+      'Delete Standard',
+      `Are you sure you want to delete "${activityName}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteStandard(standardId);
+            } catch (err) {
+              Alert.alert('Error', 'Failed to delete standard');
+              console.error('Failed to delete standard:', err);
+            }
+          },
+        },
+      ]
+    );
+  }, [deleteStandard]);
+
   const handleSelect = useCallback((standard: Standard) => {
     if (onSelectStandard) {
       onSelectStandard(standard);
-      if (onBack) {
-        onBack();
-      }
+      // Note: onBack() is not called here because:
+      // - When used as a modal (StandardsLibraryModal), the modal wrapper handles closing
+      // - When used as a main screen, we navigate forward and shouldn't go back
     }
-  }, [onSelectStandard, onBack]);
+  }, [onSelectStandard]);
 
   const handleRetry = useCallback(() => {
     // Refresh standards if needed
   }, []);
 
   const renderCard = useCallback(
-    ({ item }: { item: Standard }) => (
-      <StandardCard
-        standard={item}
-        onSelect={() => handleSelect(item)}
-        onArchive={() => handleArchive(item.id)}
-        onActivate={() => handleActivate(item.id)}
-        activityNameMap={activityMap}
-        onSelectStandard={onSelectStandard}
-      />
-    ),
-    [handleSelect, handleArchive, handleActivate, activityMap, onSelectStandard]
+    ({ item }: { item: Standard }) => {
+      const activityName = activityMap.get(item.activityId) ?? item.activityId;
+      return (
+        <StandardCard
+          standard={item}
+          onSelect={() => handleSelect(item)}
+          onArchive={() => handleArchive(item.id)}
+          onActivate={() => handleActivate(item.id)}
+          onEdit={() => handleEdit(item.id)}
+          onDelete={() => handleDelete(item.id, activityName)}
+          activityNameMap={activityMap}
+          onSelectStandard={onSelectStandard}
+        />
+      );
+    },
+    [handleSelect, handleArchive, handleActivate, handleEdit, handleDelete, activityMap, onSelectStandard]
   );
 
   const content = useMemo(() => {
-    if (loading && currentStandards.length === 0) {
+    if (loading && allStandards.length === 0) {
       return (
         <View style={styles.skeletonContainer} testID="library-skeletons">
           {[0, 1, 2].map((key) => (
@@ -119,7 +156,7 @@ export function StandardsLibraryScreen({
       );
     }
 
-    if (currentStandards.length === 0) {
+    if (allStandards.length === 0) {
       return (
         <View style={styles.emptyContainer} testID="library-empty-state">
           <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
@@ -143,7 +180,7 @@ export function StandardsLibraryScreen({
     return (
       <FlatList
         testID="library-list"
-        data={currentStandards}
+        data={allStandards}
         renderItem={renderCard}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
@@ -153,7 +190,7 @@ export function StandardsLibraryScreen({
       />
     );
   }, [
-    currentStandards,
+    allStandards,
     loading,
     onNavigateToBuilder,
     renderCard,
@@ -209,42 +246,6 @@ export function StandardsLibraryScreen({
         />
       </View>
 
-      {/* Tab Navigation */}
-      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary }]}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'active' && { borderBottomColor: theme.link },
-          ]}
-          onPress={() => setActiveTab('active')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              { color: activeTab === 'active' ? theme.link : theme.text.secondary },
-            ]}
-          >
-            Active
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'archived' && { borderBottomColor: theme.link },
-          ]}
-          onPress={() => setActiveTab('archived')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              { color: activeTab === 'archived' ? theme.link : theme.text.secondary },
-            ]}
-          >
-            Archived
-          </Text>
-        </TouchableOpacity>
-      </View>
-
       {content}
     </View>
   );
@@ -255,6 +256,8 @@ function StandardCard({
   onSelect,
   onArchive,
   onActivate,
+  onEdit,
+  onDelete,
   activityNameMap,
   onSelectStandard,
 }: {
@@ -262,10 +265,13 @@ function StandardCard({
   onSelect: () => void;
   onArchive: () => void;
   onActivate: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
   activityNameMap: Map<string, string>;
   onSelectStandard?: (standard: Standard) => void;
 }) {
   const theme = useTheme();
+  const [menuVisible, setMenuVisible] = useState(false);
   const isActive = standard.state === 'active' && standard.archivedAtMs === null;
   
   // Get activity name from map, fallback to activityId if not found
@@ -283,63 +289,152 @@ function StandardCard({
     : `${sessionConfig.sessionLabel}s`;
   const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${standard.unit}`;
 
+  const handleToggle = useCallback((e: any) => {
+    e.stopPropagation();
+    if (isActive) {
+      onArchive();
+    } else {
+      onActivate();
+    }
+  }, [isActive, onArchive, onActivate]);
+
+  const handleMenuPress = useCallback((e: any) => {
+    e.stopPropagation();
+    setMenuVisible(true);
+  }, []);
+
+  const handleEditPress = useCallback(() => {
+    setMenuVisible(false);
+    onEdit();
+  }, [onEdit]);
+
+  const handleDeletePress = useCallback(() => {
+    setMenuVisible(false);
+    onDelete();
+  }, [onDelete]);
+
+  const cardOpacity = isActive ? 1 : 0.6;
+
   return (
-    <TouchableOpacity
-      style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}
-      onPress={onSelectStandard ? onSelect : undefined}
-      activeOpacity={onSelectStandard ? 0.7 : 1}
-      accessibilityRole={onSelectStandard ? 'button' : undefined}
-      accessibilityLabel={onSelectStandard ? `Select ${activityName}` : undefined}
-    >
-      <View style={styles.cardContent}>
-        <View style={styles.cardHeader}>
-          <View style={styles.titleBlock}>
-            <Text
-              style={[styles.activityName, { color: theme.text.primary }]}
-              numberOfLines={1}
-              accessibilityLabel={`Activity ${activityName}`}
-            >
-              {activityName}
-            </Text>
-            <Text
-              style={[styles.volumePeriodText, { color: theme.text.primary }]}
-              numberOfLines={1}
-              accessibilityLabel={`Volume: ${volumePeriodText}`}
-            >
-              {volumePeriodText}
-            </Text>
-            <Text
-              style={[styles.sessionParamsText, { color: theme.text.secondary }]}
-              numberOfLines={1}
-              accessibilityLabel={`Session params: ${sessionParamsText}`}
-            >
-              {sessionParamsText}
-            </Text>
-          </View>
-          <View style={styles.headerActions}>
-            {isActive ? (
-              <TouchableOpacity
-                onPress={onArchive}
-                style={[styles.actionButtonHeader, { backgroundColor: theme.archive.background }]}
-                accessibilityRole="button"
-                accessibilityLabel={`Archive ${activityName}`}
+    <>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.background.card,
+            shadowColor: theme.shadow,
+            opacity: cardOpacity,
+          },
+        ]}
+        onPress={onSelectStandard ? onSelect : undefined}
+        activeOpacity={onSelectStandard ? 0.7 : 1}
+        accessibilityRole={onSelectStandard ? 'button' : undefined}
+        accessibilityLabel={onSelectStandard ? `Select ${activityName}` : undefined}
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleBlock}>
+              <Text
+                style={[styles.activityName, { color: theme.text.primary }]}
+                numberOfLines={1}
+                accessibilityLabel={`Activity ${activityName}`}
               >
-                <MaterialIcons name="archive" size={20} color={theme.archive.text} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                onPress={onActivate}
-                style={[styles.actionButtonHeader, { backgroundColor: theme.button.primary.background }]}
-                accessibilityRole="button"
-                accessibilityLabel={`Activate ${activityName}`}
+                {activityName}
+              </Text>
+              <Text
+                style={[styles.volumePeriodText, { color: theme.text.primary }]}
+                numberOfLines={1}
+                accessibilityLabel={`Volume: ${volumePeriodText}`}
               >
-                <MaterialIcons name="unarchive" size={20} color={theme.button.primary.text} />
-              </TouchableOpacity>
-            )}
+                {volumePeriodText}
+              </Text>
+              <Text
+                style={[styles.sessionParamsText, { color: theme.text.secondary }]}
+                numberOfLines={1}
+                accessibilityLabel={`Session params: ${sessionParamsText}`}
+              >
+                {sessionParamsText}
+              </Text>
+            </View>
+            <View style={styles.headerActions}>
+              <View style={styles.actionButtonsRow}>
+                <TouchableOpacity
+                  onPress={handleToggle}
+                  style={styles.toggleContainer}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: isActive }}
+                  accessibilityLabel={isActive ? `Deactivate ${activityName}` : `Activate ${activityName}`}
+                >
+                  <View
+                    style={[
+                      styles.toggle,
+                      {
+                        backgroundColor: isActive ? theme.button.primary.background : theme.input.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.toggleThumb,
+                        {
+                          backgroundColor: theme.background.primary,
+                          transform: [{ translateX: isActive ? 20 : 0 }],
+                        },
+                      ]}
+                    />
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleMenuPress}
+                  style={[styles.menuButton, { backgroundColor: theme.button.icon.background }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`More options for ${activityName}`}
+                >
+                  <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      <Modal
+        visible={menuVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View
+            style={[styles.menuContainer, { backgroundColor: theme.background.modal }]}
+            onStartShouldSetResponder={() => true}
+          >
+            <TouchableOpacity
+              onPress={handleEditPress}
+              style={[styles.menuItem, { borderBottomColor: theme.border.secondary }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Edit ${activityName}`}
+            >
+              <MaterialIcons name="edit" size={20} color={theme.text.primary} />
+              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Edit</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDeletePress}
+              style={styles.menuItem}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${activityName}`}
+            >
+              <MaterialIcons name="delete" size={20} color={theme.button.destructive.background} />
+              <Text style={[styles.menuItemText, { color: theme.button.destructive.background }]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 }
 
@@ -383,22 +478,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    paddingHorizontal: CARD_SPACING,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '500',
   },
   skeletonContainer: {
     padding: CARD_SPACING,
@@ -474,14 +553,66 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   headerActions: {
-    alignItems: 'flex-start',
+    alignItems: 'flex-end',
     justifyContent: 'flex-start',
   },
-  actionButtonHeader: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  toggleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  menuButton: {
+    padding: 6,
     borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 32,
+    minHeight: 32,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuContainer: {
+    borderRadius: 12,
+    minWidth: 200,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

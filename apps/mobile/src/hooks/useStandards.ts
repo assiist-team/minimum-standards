@@ -17,6 +17,7 @@ import {
 import {
   FirestoreStandardData,
   fromFirestoreStandard,
+  toFirestoreStandardDelete,
 } from '../utils/standardConverter';
 import { normalizeFirebaseError } from '../utils/errors';
 import { retryFirestoreWrite } from '../utils/retry';
@@ -90,6 +91,7 @@ export interface UseStandardsResult {
   updateStandard: (input: UpdateStandardInput) => Promise<Standard>;
   archiveStandard: (standardId: string) => Promise<void>;
   unarchiveStandard: (standardId: string) => Promise<void>;
+  deleteStandard: (standardId: string) => Promise<void>;
   createLogEntry: (input: CreateLogInput) => Promise<void>;
   updateLogEntry: (input: UpdateLogInput) => Promise<void>;
   deleteLogEntry: (logEntryId: string, standardId: string) => Promise<void>;
@@ -311,6 +313,41 @@ export function useStandards(): UseStandardsResult {
     [updateArchiveState]
   );
 
+  const deleteStandard = useCallback(
+    async (standardId: string): Promise<void> => {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const standardRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'standards'),
+        standardId
+      );
+
+      // Optimistic update: remove from list
+      const standardToDelete = standards.find((s) => s.id === standardId);
+      setStandards((prev) => prev.filter((s) => s.id !== standardId));
+
+      try {
+        // Soft delete by setting deletedAt
+        const firestoreData = toFirestoreStandardDelete();
+        await retryFirestoreWrite(async () => {
+          await standardRef.update(firestoreData);
+        });
+      } catch (err) {
+        // Rollback: restore standard
+        if (standardToDelete) {
+          setStandards((prev) => {
+            const updated = [...prev, standardToDelete];
+            return sortByUpdatedAtDesc(updated);
+          });
+        }
+        throw err;
+      }
+    },
+    [userId, standards]
+  );
+
   const canLogStandard = useCallback(
     (standardId: string): boolean => {
       const standard = standards.find((item) => item.id === standardId);
@@ -334,7 +371,7 @@ export function useStandards(): UseStandardsResult {
       }
       if (!canLogStandard(standardId)) {
         throw new Error(
-          'This Standard is archived. Unarchive it to resume logging.'
+          'This Standard is inactive. Activate it to resume logging.'
         );
       }
 
@@ -366,7 +403,7 @@ export function useStandards(): UseStandardsResult {
 
       if (!canLogStandard(standardId)) {
         throw new Error(
-          'This Standard is archived. Unarchive it to edit logs.'
+          'This Standard is inactive. Activate it to edit logs.'
         );
       }
 
@@ -396,7 +433,7 @@ export function useStandards(): UseStandardsResult {
 
       if (!canLogStandard(standardId)) {
         throw new Error(
-          'This Standard is archived. Unarchive it to delete logs.'
+          'This Standard is inactive. Activate it to delete logs.'
         );
       }
 
@@ -423,7 +460,7 @@ export function useStandards(): UseStandardsResult {
 
       if (!canLogStandard(standardId)) {
         throw new Error(
-          'This Standard is archived. Unarchive it to restore logs.'
+          'This Standard is inactive. Activate it to restore logs.'
         );
       }
 
@@ -456,6 +493,7 @@ export function useStandards(): UseStandardsResult {
     updateStandard,
     archiveStandard,
     unarchiveStandard,
+    deleteStandard,
     createLogEntry,
     updateLogEntry,
     deleteLogEntry,

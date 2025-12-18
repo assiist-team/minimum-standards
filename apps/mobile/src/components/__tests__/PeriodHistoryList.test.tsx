@@ -12,6 +12,8 @@ const mockHistoryEntry1: PeriodHistoryEntry = {
   progressPercent: 100,
   periodStartMs: 1702008000000,
   periodEndMs: 1702612800000,
+  currentSessions: 5,
+  targetSessions: 5,
 };
 
 const mockHistoryEntry2: PeriodHistoryEntry = {
@@ -23,6 +25,8 @@ const mockHistoryEntry2: PeriodHistoryEntry = {
   progressPercent: 75,
   periodStartMs: 1701403200000,
   periodEndMs: 1702008000000,
+  currentSessions: 4,
+  targetSessions: 5,
 };
 
 describe('PeriodHistoryList', () => {

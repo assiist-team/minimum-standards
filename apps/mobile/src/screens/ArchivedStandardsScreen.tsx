@@ -58,7 +58,7 @@ export function ArchivedStandardsScreen({
       <View style={styles.cardHeader}>
         <Text style={[styles.activityLabel, { color: theme.text.secondary }]}>Activity ID {item.activityId}</Text>
         <View style={[styles.badge, { backgroundColor: theme.archive.badgeBackground }]}>
-          <Text style={[styles.badgeText, { color: theme.archive.badgeText }]}>Archived</Text>
+          <Text style={[styles.badgeText, { color: theme.archive.badgeText }]}>Inactive</Text>
         </View>
       </View>
       <Text style={[styles.summary, { color: theme.text.primary }]}>{item.summary}</Text>
@@ -70,7 +70,7 @@ export function ArchivedStandardsScreen({
         </Text>
         <CadenceLine standard={item} theme={theme} />
         <Text style={[styles.historyValue, { color: theme.text.secondary }]}>
-          Archived on {formatDate(item.archivedAtMs)}
+          Deactivated on {formatDate(item.archivedAtMs)}
         </Text>
       </View>
 
@@ -78,19 +78,19 @@ export function ArchivedStandardsScreen({
         style={[styles.logButton, { backgroundColor: theme.button.disabled.background }]}
         disabled={true}
         accessibilityRole="button"
-        accessibilityLabel="Logging disabled for archives"
+        accessibilityLabel="Logging disabled for inactive standards"
         accessibilityState={{ disabled: true }}
       >
-        <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.text.disabled }]}>Logging disabled for archives</Text>
+        <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.text.disabled }]}>Logging disabled for inactive standards</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.secondaryButton, { borderColor: theme.link }]}
         onPress={() => handleUnarchive(item)}
         accessibilityRole="button"
-        accessibilityLabel="Unarchive standard"
+        accessibilityLabel="Activate standard"
       >
-        <MaterialIcons name="unarchive" size={24} color={theme.link} />
+        <MaterialIcons name="toggle-on" size={24} color={theme.button.icon.icon} />
       </TouchableOpacity>
     </View>
   );
@@ -101,7 +101,7 @@ export function ArchivedStandardsScreen({
         <TouchableOpacity onPress={onBack}>
           <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Archived Standards</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Inactive Standards</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -109,9 +109,9 @@ export function ArchivedStandardsScreen({
 
       {archivedStandards.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>No archived Standards</Text>
+          <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>No inactive Standards</Text>
           <Text style={[styles.emptySubtitle, { color: theme.text.secondary }]}>
-            Active Standards will appear here when you archive them.
+            Active Standards will appear here when you deactivate them.
           </Text>
         </View>
       ) : (
