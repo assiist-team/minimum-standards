@@ -70,6 +70,15 @@ export interface UpdateLogInput {
   note?: string | null;
 }
 
+export interface UpdateStandardInput {
+  standardId: string;
+  activityId: string;
+  minimum: number;
+  unit: string;
+  cadence: StandardCadence;
+  sessionConfig: StandardSessionConfig;
+}
+
 export interface UseStandardsResult {
   standards: Standard[];
   activeStandards: Standard[];
@@ -78,6 +87,7 @@ export interface UseStandardsResult {
   loading: boolean;
   error: Error | null;
   createStandard: (input: CreateStandardInput) => Promise<Standard>;
+  updateStandard: (input: UpdateStandardInput) => Promise<Standard>;
   archiveStandard: (standardId: string) => Promise<void>;
   unarchiveStandard: (standardId: string) => Promise<void>;
   createLogEntry: (input: CreateLogInput) => Promise<void>;
@@ -216,6 +226,53 @@ export function useStandards(): UseStandardsResult {
         snapshot.data() as FirestoreStandardData
       );
       return created;
+    },
+    [userId]
+  );
+
+  const updateStandard = useCallback(
+    async (input: UpdateStandardInput): Promise<Standard> => {
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+
+      const standardRef = doc(
+        collection(doc(firebaseFirestore, 'users', userId), 'standards'),
+        input.standardId
+      );
+
+      const quickAddValues = buildDefaultQuickAddValues({
+        minimum: input.minimum,
+        unit: input.unit,
+      });
+
+      const payload = {
+        activityId: input.activityId,
+        minimum: input.minimum,
+        unit: input.unit,
+        cadence: input.cadence,
+        summary: formatStandardSummary(
+          input.minimum,
+          input.unit,
+          input.cadence,
+          input.sessionConfig
+        ),
+        sessionConfig: input.sessionConfig,
+        ...(quickAddValues ? { quickAddValues } : {}),
+        updatedAt: serverTimestamp(),
+      };
+
+      await retryFirestoreWrite(async () => {
+        await standardRef.update(payload);
+      });
+      const snapshot = await retryFirestoreWrite(async () => {
+        return await standardRef.get();
+      });
+      const updated = fromFirestoreStandard(
+        snapshot.id,
+        snapshot.data() as FirestoreStandardData
+      );
+      return updated;
     },
     [userId]
   );
@@ -396,6 +453,7 @@ export function useStandards(): UseStandardsResult {
     loading,
     error,
     createStandard,
+    updateStandard,
     archiveStandard,
     unarchiveStandard,
     createLogEntry,

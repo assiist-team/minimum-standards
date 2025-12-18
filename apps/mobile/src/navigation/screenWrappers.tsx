@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Standard } from '@minimum-standards/shared-model';
 import {
@@ -33,18 +33,24 @@ export function ActivityLibraryScreenWrapper() {
 
 export function StandardsBuilderScreenWrapper() {
   const navigation = useNavigation<StandardsNavigationProp>();
+  const route = useRoute();
+  const standardId = (route.params as { standardId?: string })?.standardId;
   return (
     <StandardsBuilderScreen
       onBack={() => navigation.goBack()}
+      standardId={standardId}
     />
   );
 }
 
 export function StandardsBuilderScreenWrapperForDashboard() {
   const navigation = useNavigation<DashboardNavigationProp>();
+  const route = useRoute();
+  const standardId = (route.params as { standardId?: string })?.standardId;
   return (
     <StandardsBuilderScreen
       onBack={() => navigation.goBack()}
+      standardId={standardId}
     />
   );
 }

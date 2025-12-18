@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   actionButtonHeader: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
   },

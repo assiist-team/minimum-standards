@@ -25,6 +25,7 @@ import {
   CadencePreset,
   getCadencePreset,
   validateCadence,
+  isPresetCadence,
 } from '../utils/cadenceUtils';
 import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
@@ -37,11 +38,12 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardsBuilderScreenProps {
   onBack: () => void;
+  standardId?: string;
 }
 
 const CADENCE_UNIT_OPTIONS: CadenceUnit[] = ['day', 'week', 'month'];
 
-export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) {
+export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const {
@@ -66,7 +68,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     reset,
   } = useStandardsBuilderStore();
 
-  const { createStandard, standards, unarchiveStandard } = useStandards();
+  const { createStandard, updateStandard, standards, unarchiveStandard } = useStandards();
   const { activities, createActivity } = useActivities();
   const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
@@ -83,6 +85,60 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   const dropdownButtonRef = useRef<RNView>(null);
 
   const summaryPreview = getSummaryPreview();
+  const isEditMode = !!standardId;
+  const standardToEdit = standardId ? standards.find((s) => s.id === standardId) : null;
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (!standardId || !standardToEdit) {
+      return;
+    }
+
+    // Find the activity by activityId
+    const activity = activities.find((a) => a.id === standardToEdit.activityId);
+    if (activity) {
+      setSelectedActivity(activity);
+    }
+    setCadence(standardToEdit.cadence);
+    setUnitOverride(standardToEdit.unit ? standardToEdit.unit.toLowerCase() : null);
+    
+    // Set cadence preset if it matches
+    let matchedPreset: CadencePreset | null = null;
+    if (isPresetCadence(standardToEdit.cadence, 'daily')) {
+      matchedPreset = 'daily';
+    } else if (isPresetCadence(standardToEdit.cadence, 'weekly')) {
+      matchedPreset = 'weekly';
+    } else if (isPresetCadence(standardToEdit.cadence, 'monthly')) {
+      matchedPreset = 'monthly';
+    }
+    
+    if (matchedPreset) {
+      setActivePreset(matchedPreset);
+      setCustomIntervalInput(String(standardToEdit.cadence.interval));
+      setCustomUnit(standardToEdit.cadence.unit);
+    } else {
+      setActivePreset(null);
+      setCustomIntervalInput(String(standardToEdit.cadence.interval));
+      setCustomUnit(standardToEdit.cadence.unit);
+    }
+    
+    // Populate session config
+    const sessionConfig = standardToEdit.sessionConfig;
+    setSessionLabel(sessionConfig.sessionLabel);
+    
+    if (sessionConfig.sessionsPerCadence > 1) {
+      // Session-based mode
+      setBreakdownEnabled(true);
+      setSessionsPerCadence(sessionConfig.sessionsPerCadence);
+      setVolumePerSession(sessionConfig.volumePerSession);
+      setGoalTotal(standardToEdit.minimum); // Show total for reference
+    } else {
+      // Direct minimum mode
+      setBreakdownEnabled(false);
+      setGoalTotal(standardToEdit.minimum);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [standardId]); // Only re-run when standardId changes
 
   useEffect(() => {
     if (goalTotal !== null && goalTotal > 0 && goalTotalError) {
@@ -280,45 +336,60 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       return;
     }
 
-    // Check for duplicate Standard
-    const matchingStandard = findMatchingStandard(
-      standards,
-      payload.activityId,
-      payload.cadence,
-      payload.minimum,
-      payload.unit
-    );
-
     setSaving(true);
     try {
-      if (matchingStandard) {
-        // If duplicate found and archived: unarchive it
-        if (
-          matchingStandard.state === 'archived' ||
-          matchingStandard.archivedAtMs !== null
-        ) {
-          await unarchiveStandard(matchingStandard.id);
-          Alert.alert(
-            'Standard activated',
-            'An existing archived Standard has been activated.'
-          );
-        } else {
-          // If duplicate found and active: show error
-          setSaveError('A Standard with these values already exists');
-          setSaving(false);
-          return;
-        }
-      } else {
-        // No duplicate found: create new Standard
-        await createStandard(payload);
-        trackStandardEvent('standard_create', {
+      if (isEditMode && standardId) {
+        // Update existing standard
+        await updateStandard({
+          standardId,
+          ...payload,
+        });
+        trackStandardEvent('standard_edit', {
+          standardId,
           activityId: payload.activityId,
-          archived: false,
           cadence: payload.cadence,
         });
-        Alert.alert('Standard saved', 'Your Standard has been saved successfully.');
+        Alert.alert('Standard updated', 'Your Standard has been updated successfully.');
+        onBack();
+      } else {
+        // Check for duplicate Standard when creating
+        const matchingStandard = findMatchingStandard(
+          standards,
+          payload.activityId,
+          payload.cadence,
+          payload.minimum,
+          payload.unit
+        );
+
+        if (matchingStandard) {
+          // If duplicate found and archived: unarchive it
+          if (
+            matchingStandard.state === 'archived' ||
+            matchingStandard.archivedAtMs !== null
+          ) {
+            await unarchiveStandard(matchingStandard.id);
+            Alert.alert(
+              'Standard activated',
+              'An existing archived Standard has been activated.'
+            );
+          } else {
+            // If duplicate found and active: show error
+            setSaveError('A Standard with these values already exists');
+            setSaving(false);
+            return;
+          }
+        } else {
+          // No duplicate found: create new Standard
+          await createStandard(payload);
+          trackStandardEvent('standard_create', {
+            activityId: payload.activityId,
+            archived: false,
+            cadence: payload.cadence,
+          });
+          Alert.alert('Standard saved', 'Your Standard has been saved successfully.');
+        }
+        resetForm();
       }
-      resetForm();
     } catch (err) {
       setSaveError(
         err instanceof Error ? err.message : 'Failed to save Standard'
@@ -405,7 +476,9 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         <TouchableOpacity onPress={onBack}>
           <Text style={[styles.backButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Create Standard</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
+          {isEditMode ? 'Edit Standard' : 'Create Standard'}
+        </Text>
         <View style={styles.headerSpacer} />
       </View>
 
