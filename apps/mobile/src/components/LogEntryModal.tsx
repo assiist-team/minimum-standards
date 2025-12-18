@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -29,6 +29,7 @@ export interface LogEntryModalProps {
   onClose: () => void;
   onSave: (standardId: string, value: number, occurredAtMs: number, note?: string | null, logEntryId?: string) => Promise<void>;
   onCreateStandard?: () => void; // Callback to create a new standard from empty state
+  resolveActivityName?: (activityId: string) => string | undefined;
 }
 
 export function LogEntryModal({
@@ -38,6 +39,7 @@ export function LogEntryModal({
   onClose,
   onSave,
   onCreateStandard,
+  resolveActivityName,
 }: LogEntryModalProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -57,6 +59,27 @@ export function LogEntryModal({
   // Determine if we should show the picker (when standard prop is null/undefined and no standard has been selected)
   const showPicker = (standard === null || standard === undefined) && selectedStandard === null;
 
+  const isSessionBased = !!selectedStandard && selectedStandard.sessionConfig.sessionsPerCadence > 1;
+  const sessionLabel = selectedStandard?.sessionConfig.sessionLabel ?? 'session';
+  const sessionLabelPlural = useMemo(() => {
+    if (!selectedStandard) {
+      return 'sessions';
+    }
+    const count = selectedStandard.sessionConfig.sessionsPerCadence;
+    if (count === 1) {
+      return sessionLabel;
+    }
+    return `${sessionLabel}s`;
+  }, [selectedStandard, sessionLabel]);
+
+  const activityName = useMemo(() => {
+    if (!selectedStandard || showPicker) {
+      return null;
+    }
+    const resolved = resolveActivityName?.(selectedStandard.activityId);
+    return resolved ?? selectedStandard.activityId;
+  }, [resolveActivityName, selectedStandard, showPicker]);
+
   useEffect(() => {
     if (visible) {
       if (logEntry) {
@@ -64,7 +87,8 @@ export function LogEntryModal({
         setValue(String(logEntry.value));
         setNote(logEntry.note || '');
         setShowNote(!!logEntry.note);
-        setShowWhen(true);
+        // Keep date visible, but don't force the picker open.
+        setShowWhen(false);
         setSelectedDate(new Date(logEntry.occurredAtMs));
         setSelectedStandard(standard || null);
       } else {
@@ -204,6 +228,26 @@ export function LogEntryModal({
     setSelectedDate(new Date());
   };
 
+  const handleToggleNote = () => {
+    if (saving) {
+      return;
+    }
+    setShowNote((prev) => {
+      const next = !prev;
+      if (!next) {
+        setNote('');
+      }
+      return next;
+    });
+  };
+
+  const handleToggleWhen = () => {
+    if (saving) {
+      return;
+    }
+    setShowWhen((prev) => !prev);
+  };
+
   const renderStandardPicker = () => {
     if (standardsLoading) {
       return (
@@ -254,6 +298,7 @@ export function LogEntryModal({
           </TouchableOpacity>
         )}
         style={styles.standardsList}
+        contentContainerStyle={styles.standardsListContent}
       />
     );
   };
@@ -266,7 +311,14 @@ export function LogEntryModal({
     return (
       <>
         <View style={styles.field}>
-          <Text style={[styles.label, { color: theme.text.primary }]}>Value ({selectedStandard.unit})</Text>
+          <View style={styles.valueHeaderRow}>
+            <Text style={[styles.label, { color: theme.text.primary }]}>{selectedStandard.unit}</Text>
+            {isSessionBased && (
+              <Text style={[styles.helperText, { color: theme.text.secondary }]} numberOfLines={1}>
+                {`${selectedStandard.sessionConfig.sessionsPerCadence} ${sessionLabelPlural} • ${selectedStandard.sessionConfig.volumePerSession} ${selectedStandard.unit} each`}
+              </Text>
+            )}
+          </View>
           {quickAddValues && quickAddValues.length > 0 && (
             <View style={styles.quickAddRow}>
               {quickAddValues.map((quickValue) => (
@@ -302,69 +354,63 @@ export function LogEntryModal({
             keyboardType="numeric"
             editable={!saving}
             autoFocus={true}
-            accessibilityLabel={`Enter value in ${selectedStandard.unit}`}
+            accessibilityLabel={`Enter ${selectedStandard.unit}`}
           />
           {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
         </View>
 
-        {!showNote && (
+        <View style={styles.metaRow}>
           <TouchableOpacity
-            onPress={() => setShowNote(true)}
-            style={styles.addNoteButton}
+            onPress={handleToggleNote}
+            style={[styles.metaChip, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}
             disabled={saving}
-            accessibilityLabel="Add optional note"
+            accessibilityLabel={showNote ? 'Hide note' : 'Add a note'}
             accessibilityRole="button"
           >
-            <Text style={[styles.addNoteText, { color: theme.primary.main }]}>+ Add note (optional)</Text>
+            <Text style={[styles.metaChipTitle, { color: theme.text.primary }]}>Note</Text>
+            <Text
+              style={[styles.metaChipValue, { color: note ? theme.text.primary : theme.text.secondary }]}
+              numberOfLines={1}
+            >
+              {note ? note : 'Optional'}
+            </Text>
           </TouchableOpacity>
-        )}
+
+          <TouchableOpacity
+            onPress={handleToggleWhen}
+            style={[styles.metaChip, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}
+            disabled={saving}
+            accessibilityLabel={showWhen ? 'Hide date picker' : 'Change when this occurred'}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.metaChipTitle, { color: theme.text.primary }]}>When</Text>
+            <Text style={[styles.metaChipValue, { color: theme.text.primary }]} numberOfLines={1}>
+              {formatDate(selectedDate)}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {showNote && (
           <View style={styles.field}>
-            <Text style={[styles.label, { color: theme.text.primary }]}>Note (optional)</Text>
             <TextInput
               style={[styles.input, styles.noteInput, { backgroundColor: theme.input.background, borderColor: theme.input.border, color: theme.input.text }]}
               value={note}
               onChangeText={setNote}
-              placeholder="e.g., Morning session"
+              placeholder={isSessionBased ? `e.g., ${sessionLabel} notes` : 'Optional note'}
               placeholderTextColor={theme.input.placeholder}
               multiline
-              numberOfLines={3}
+              numberOfLines={2}
               maxLength={500}
               editable={!saving}
               accessibilityLabel="Enter optional note"
             />
-            <TouchableOpacity
-              onPress={() => {
-                setShowNote(false);
-                setNote('');
-              }}
-              style={styles.removeNoteButton}
-              disabled={saving}
-              accessibilityLabel="Remove note"
-              accessibilityRole="button"
-            >
-              <Text style={[styles.removeNoteText, { color: theme.text.secondary }]}>Remove note</Text>
-            </TouchableOpacity>
           </View>
-        )}
-
-        {!showWhen && (
-          <TouchableOpacity
-            onPress={() => setShowWhen(true)}
-            style={styles.addNoteButton}
-            disabled={saving}
-            accessibilityLabel="Select when this activity occurred"
-            accessibilityRole="button"
-          >
-            <Text style={[styles.addNoteText, { color: theme.primary.main }]}>+ When?</Text>
-          </TouchableOpacity>
         )}
 
         {showWhen && (
           <View style={styles.field}>
             <View style={styles.whenHeader}>
-              <Text style={[styles.label, { color: theme.text.primary }]}>When?</Text>
+              <Text style={[styles.label, { color: theme.text.primary }]}>When</Text>
               <TouchableOpacity
                 onPress={handleNowPress}
                 style={[styles.nowButton, { backgroundColor: theme.button.secondary.background }]}
@@ -375,54 +421,61 @@ export function LogEntryModal({
                 <Text style={[styles.nowButtonText, { color: theme.primary.main }]}>Now</Text>
               </TouchableOpacity>
             </View>
-            <Text style={[styles.selectedDateText, { color: theme.text.secondary }]}>{formatDate(selectedDate)}</Text>
-            {Platform.OS === 'ios' ? (
-              <DateTimePicker
-                value={selectedDate}
-                mode="datetime"
-                display="spinner"
-                onChange={(event, date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                  }
-                }}
-                style={styles.datePicker}
-                accessibilityLabel="Select date and time"
-              />
-            ) : (
-              <DateTimePicker
-                value={selectedDate}
-                mode="datetime"
-                display="default"
-                onChange={(event, date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                  }
-                  if (event.type === 'set') {
-                    setShowWhen(false);
-                  }
-                }}
-                accessibilityLabel="Select date and time"
-              />
-            )}
+            <DateTimePicker
+              value={selectedDate}
+              mode="datetime"
+              display={Platform.OS === 'ios' ? 'compact' : 'default'}
+              onChange={(event, date) => {
+                if (date) {
+                  setSelectedDate(date);
+                }
+                if (Platform.OS !== 'ios' && event.type === 'set') {
+                  setShowWhen(false);
+                }
+              }}
+              accessibilityLabel="Select date and time"
+            />
             {Platform.OS === 'ios' && (
               <TouchableOpacity
                 onPress={() => setShowWhen(false)}
-                style={styles.removeNoteButton}
+                style={styles.doneButton}
                 disabled={saving}
-                accessibilityLabel="Collapse date picker"
+                accessibilityLabel="Done"
                 accessibilityRole="button"
               >
-                <Text style={[styles.removeNoteText, { color: theme.text.secondary }]}>Done</Text>
+                <Text style={[styles.doneButtonText, { color: theme.primary.main }]}>Done</Text>
               </TouchableOpacity>
             )}
           </View>
         )}
+      </>
+    );
+  };
 
+  const handleOverlayPress = () => {
+    Keyboard.dismiss();
+  };
+
+  const renderFooter = () => {
+    if (showPicker || !selectedStandard) {
+      return null;
+    }
+
+    return (
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: theme.background.modal,
+            borderTopColor: theme.border.secondary,
+            paddingBottom: 12 + insets.bottom,
+          },
+        ]}
+      >
         <TouchableOpacity
           style={[
             styles.saveButton,
-            { backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background }
+            { backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background },
           ]}
           onPress={handleSave}
           disabled={saving || !value.trim()}
@@ -435,12 +488,8 @@ export function LogEntryModal({
             <Text style={[styles.saveButtonText, { color: theme.button.primary.text }]}>Save</Text>
           )}
         </TouchableOpacity>
-      </>
+      </View>
     );
-  };
-
-  const handleOverlayPress = () => {
-    Keyboard.dismiss();
   };
 
   return (
@@ -457,15 +506,15 @@ export function LogEntryModal({
           onPress={handleOverlayPress}
         />
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={insets.bottom + 16}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={insets.bottom}
           style={styles.keyboardAvoider}
         >
           <View
             onStartShouldSetResponder={() => true}
             style={[
               styles.modalContent,
-              { backgroundColor: theme.background.modal, paddingBottom: 20 + insets.bottom },
+              { backgroundColor: theme.background.modal },
             ]}
           >
             <View style={styles.modalHeader}>
@@ -474,8 +523,8 @@ export function LogEntryModal({
                   {showPicker
                     ? 'Select Standard'
                     : isEditMode
-                    ? 'Edit Log'
-                    : 'Log Activity'}
+                    ? `Edit ${activityName ?? 'Activity'}`
+                    : `Log ${activityName ?? 'Activity'}`}
                 </Text>
                 {selectedStandard && !showPicker && (
                   <Text style={[styles.standardSummary, { color: theme.text.secondary }]} numberOfLines={1}>
@@ -493,14 +542,23 @@ export function LogEntryModal({
               </TouchableOpacity>
             </View>
 
-            <ScrollView
-              style={styles.formScroll}
-              contentContainerStyle={styles.form}
-              keyboardShouldPersistTaps="handled"
-              bounces={false}
-            >
-              {showPicker ? renderStandardPicker() : renderLoggingForm()}
-            </ScrollView>
+            {showPicker ? (
+              <View style={styles.pickerContainer}>
+                {renderStandardPicker()}
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.formScroll}
+                contentContainerStyle={styles.form}
+                keyboardShouldPersistTaps="handled"
+                bounces={false}
+                showsVerticalScrollIndicator={true}
+              >
+                {renderLoggingForm()}
+              </ScrollView>
+            )}
+
+            {renderFooter()}
           </View>
         </KeyboardAvoidingView>
       </View>
@@ -520,8 +578,14 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 0,
     maxHeight: '90%',
+    width: '100%',
+  },
+  pickerContainer: {
+    maxHeight: 420,
   },
   formScroll: {
     flexGrow: 0,
@@ -549,6 +613,7 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 16,
+    paddingBottom: 16,
   },
   field: {
     marginBottom: 16,
@@ -556,7 +621,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 0,
+  },
+  valueHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 12,
     marginBottom: 8,
+  },
+  helperText: {
+    fontSize: 12,
+    flex: 1,
+    textAlign: 'right',
   },
   input: {
     borderWidth: 1,
@@ -586,7 +663,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   noteInput: {
-    minHeight: 80,
+    minHeight: 56,
     textAlignVertical: 'top',
   },
   inputError: {},
@@ -594,28 +671,39 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 4,
   },
-  addNoteButton: {
-    paddingVertical: 12,
+  metaRow: {
+    flexDirection: 'row',
+    gap: 12,
   },
-  addNoteText: {
-    fontSize: 14,
+  metaChip: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+    minHeight: 56,
   },
-  removeNoteButton: {
-    marginTop: 8,
-    paddingVertical: 8,
+  metaChipTitle: {
+    fontSize: 12,
+    fontWeight: '700',
   },
-  removeNoteText: {
-    fontSize: 14,
+  metaChipValue: {
+    fontSize: 13,
   },
   saveButton: {
     padding: 16,
     borderRadius: BUTTON_BORDER_RADIUS,
     alignItems: 'center',
-    marginTop: 8,
   },
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  footer: {
+    borderTopWidth: 1,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   loadingContainer: {
     padding: 40,
@@ -648,7 +736,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   standardsList: {
-    maxHeight: 400,
+    flexGrow: 1,
+  },
+  standardsListContent: {
+    paddingVertical: 8,
   },
   standardItem: {
     padding: 16,
@@ -674,11 +765,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  selectedDateText: {
-    fontSize: 14,
-    marginBottom: 12,
+  doneButton: {
+    marginTop: 10,
+    alignSelf: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
-  datePicker: {
-    height: 200,
+  doneButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

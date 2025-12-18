@@ -229,8 +229,8 @@ describe('PeriodLogsModal', () => {
       fireEvent.press(editButtons[0]);
 
       await waitFor(() => {
-        // LogEntryModal should be visible with "Edit Log" title
-        expect(getByText('Edit Log')).toBeTruthy();
+        // LogEntryModal should be visible with edit title
+        expect(getByText(/edit/i)).toBeTruthy();
       });
     });
 

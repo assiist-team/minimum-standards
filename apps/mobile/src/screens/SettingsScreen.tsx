@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
@@ -9,6 +10,7 @@ import { typography } from '../theme/typography';
 
 export function SettingsScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const { signOut } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,7 @@ export function SettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Settings</Text>
         <TouchableOpacity
@@ -62,7 +64,8 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
     borderBottomWidth: 1,
   },
   headerTitle: {

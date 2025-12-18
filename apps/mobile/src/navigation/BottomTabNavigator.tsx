@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BottomTabBar, type BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { ActivitiesStack } from './ActivitiesStack';
 import { SettingsStack } from './SettingsStack';
 import { useTheme } from '../theme/useTheme';
 import { useStandards } from '../hooks/useStandards';
+import { useActivities } from '../hooks/useActivities';
 import { StickyLogButton } from '../components/StickyLogButton';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
@@ -18,6 +19,15 @@ const Tab = createBottomTabNavigator<BottomTabParamList>();
 function TabBarWithStickyLogButton(props: BottomTabBarProps) {
   const theme = useTheme();
   const { createLogEntry, updateLogEntry } = useStandards();
+  const { allActivities } = useActivities();
+
+  const activityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    allActivities.forEach((activity) => {
+      map.set(activity.id, activity.name);
+    });
+    return map;
+  }, [allActivities]);
 
   return (
     <View
@@ -26,7 +36,11 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
         { backgroundColor: theme.tabBar.background, borderTopColor: theme.tabBar.border },
       ]}
     >
-      <StickyLogButton onCreateLogEntry={createLogEntry} onUpdateLogEntry={updateLogEntry} />
+      <StickyLogButton
+        onCreateLogEntry={createLogEntry}
+        onUpdateLogEntry={updateLogEntry}
+        resolveActivityName={(activityId) => activityNameMap.get(activityId)}
+      />
       <BottomTabBar {...props} />
     </View>
   );

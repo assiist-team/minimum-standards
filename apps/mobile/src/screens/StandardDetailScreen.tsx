@@ -378,6 +378,7 @@ export function StandardDetailScreen({
         standard={standard}
         onClose={handleLogModalClose}
         onSave={handleLogSave}
+        resolveActivityName={(activityId) => activityNameMap.get(activityId)}
       />
 
       {selectedPeriod && (

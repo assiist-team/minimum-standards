@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Alert,
   Platform,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useActivities } from '../hooks/useActivities';
@@ -19,7 +21,6 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
-import { filterActivitiesByTab } from '../utils/activitiesFilter';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 /**
@@ -33,7 +34,7 @@ export interface ActivityLibraryScreenProps {
   onClose?: () => void; // For modal context - show close button
 }
 
-type Tab = 'active' | 'inactive';
+const CARD_SPACING = 16;
 
 export function ActivityLibraryScreen({
   onSelectActivity,
@@ -56,7 +57,6 @@ export function ActivityLibraryScreen({
   } = useActivities();
 
   const { activeStandards, createLogEntry, updateLogEntry } = useStandards();
-  const [activeTab, setActiveTab] = useState<Tab>('active');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
@@ -67,10 +67,31 @@ export function ActivityLibraryScreen({
   const trimmedQuery = searchQuery.trim();
   const hasSearchQuery = trimmedQuery.length > 0;
 
-  // Filter activities by tab (active/inactive) after search filtering
-  const currentActivities = useMemo(() => {
-    return filterActivitiesByTab(activities, activeStandards, activeTab);
-  }, [activities, activeStandards, activeTab]);
+  // Create a set of activity IDs that are referenced by active standards
+  const activeActivityIds = useMemo(() => {
+    const ids = new Set<string>();
+    activeStandards.forEach((standard) => {
+      if (standard.archivedAtMs === null && standard.state === 'active') {
+        ids.add(standard.activityId);
+      }
+    });
+    return ids;
+  }, [activeStandards]);
+
+  // Sort activities: those part of activated standards first, then others
+  // Maintain alphabetical order within each group
+  // Activities part of activated standards should have muted appearance
+  const sortedActivities = useMemo(() => {
+    const sorted = [...activities].sort((a, b) => {
+      const aIsActive = activeActivityIds.has(a.id);
+      const bIsActive = activeActivityIds.has(b.id);
+      if (aIsActive && !bIsActive) return -1;
+      if (!aIsActive && bIsActive) return 1;
+      // If both are in the same group, sort alphabetically
+      return a.name.localeCompare(b.name);
+    });
+    return sorted;
+  }, [activities, activeActivityIds]);
 
   useEffect(() => {
     return () => {
@@ -162,48 +183,23 @@ export function ActivityLibraryScreen({
     }
   };
 
-  const renderActivityItem = ({ item }: { item: Activity }) => (
-    <View
-      style={[
-        styles.activityItem,
-        {
-          borderBottomColor: theme.border.secondary,
-          backgroundColor: theme.background.card,
-        },
-      ]}
-    >
-      <TouchableOpacity
-        style={styles.activityContent}
-        onPress={() => handleSelect(item)}
-        disabled={!onSelectActivity}
-      >
-        <View style={styles.activityInfo}>
-          <Text style={[styles.activityName, { color: theme.text.primary }]}>{item.name}</Text>
-          <Text style={[styles.activityUnit, { color: theme.text.secondary }]}>{item.unit}</Text>
-        </View>
-      </TouchableOpacity>
-      {!hideDestructiveControls && (
-        <View style={styles.activityActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: theme.button.icon.background }]}
-            onPress={() => handleEditPress(item)}
-            accessibilityLabel="Edit activity"
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="edit" size={20} color={theme.button.icon.icon} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.button.icon.background }]}
-            onPress={() => handleDeletePress(item)}
-            accessibilityLabel="Delete activity"
-            accessibilityRole="button"
-          >
-            <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
-  );
+  const renderActivityItem = ({ item }: { item: Activity }) => {
+    const isPartOfActivatedStandard = activeActivityIds.has(item.id);
+    const cardOpacity = isPartOfActivatedStandard ? 0.6 : 1;
+    
+    return (
+      <ActivityCard
+        activity={item}
+        isPartOfActivatedStandard={isPartOfActivatedStandard}
+        cardOpacity={cardOpacity}
+        onSelect={handleSelect}
+        onEdit={handleEditPress}
+        onDelete={handleDeletePress}
+        hideDestructiveControls={hideDestructiveControls}
+        onSelectActivity={onSelectActivity}
+      />
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
@@ -240,47 +236,11 @@ export function ActivityLibraryScreen({
             <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ Create</Text>
           </TouchableOpacity>
         </View>
-        {hasSearchQuery && currentActivities.length > 0 && (
+        {hasSearchQuery && sortedActivities.length > 0 && (
           <Text style={[styles.searchHint, { color: theme.text.secondary }]}>
-            Found {currentActivities.length} {currentActivities.length === 1 ? 'activity' : 'activities'}
+            Found {sortedActivities.length} {sortedActivities.length === 1 ? 'activity' : 'activities'}
           </Text>
         )}
-      </View>
-
-      {/* Tab Navigation */}
-      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome }]}>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'active' && { borderBottomColor: theme.link },
-          ]}
-          onPress={() => setActiveTab('active')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              { color: activeTab === 'active' ? theme.link : theme.text.secondary },
-            ]}
-          >
-            Active
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.tab,
-            activeTab === 'inactive' && { borderBottomColor: theme.link },
-          ]}
-          onPress={() => setActiveTab('inactive')}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              { color: activeTab === 'inactive' ? theme.link : theme.text.secondary },
-            ]}
-          >
-            Inactive
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.listArea}>
@@ -301,19 +261,17 @@ export function ActivityLibraryScreen({
               <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Activity</Text>
             </TouchableOpacity>
           </View>
-        ) : currentActivities.length === 0 ? (
+        ) : sortedActivities.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
               {hasSearchQuery
                 ? 'No activities found matching your search'
-                : activeTab === 'active'
-                ? 'No active activities'
-                : 'No inactive activities'}
+                : 'No activities'}
             </Text>
           </View>
         ) : (
           <FlatList
-            data={currentActivities}
+            data={sortedActivities}
             renderItem={renderActivityItem}
             keyExtractor={(item) => item.id}
             style={styles.list}
@@ -350,6 +308,162 @@ export function ActivityLibraryScreen({
   );
 }
 
+function ActivityCard({
+  activity,
+  isPartOfActivatedStandard,
+  cardOpacity,
+  onSelect,
+  onEdit,
+  onDelete,
+  hideDestructiveControls,
+  onSelectActivity,
+}: {
+  activity: Activity;
+  isPartOfActivatedStandard: boolean;
+  cardOpacity: number;
+  onSelect: (activity: Activity) => void;
+  onEdit: (activity: Activity) => void;
+  onDelete: (activity: Activity) => void;
+  hideDestructiveControls: boolean;
+  onSelectActivity?: (activity: Activity) => void;
+}) {
+  const theme = useTheme();
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuButtonLayout, setMenuButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const menuButtonRef = useRef<View>(null);
+
+  const handleMenuPress = (e: any) => {
+    e.stopPropagation();
+    // Measure button position when opening menu
+    menuButtonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      setMenuButtonLayout({ x, y, width, height });
+      setMenuVisible(true);
+    });
+  };
+
+  const handleEditPress = () => {
+    setMenuVisible(false);
+    onEdit(activity);
+  };
+
+  const handleDeletePress = () => {
+    setMenuVisible(false);
+    onDelete(activity);
+  };
+
+  return (
+    <>
+      <TouchableOpacity
+        style={[
+          styles.card,
+          {
+            backgroundColor: theme.background.card,
+            shadowColor: theme.shadow,
+            opacity: cardOpacity,
+          },
+        ]}
+        onPress={onSelectActivity ? () => onSelect(activity) : undefined}
+        activeOpacity={onSelectActivity ? 0.7 : 1}
+        accessibilityRole={onSelectActivity ? 'button' : undefined}
+        accessibilityLabel={onSelectActivity ? `Select ${activity.name}` : undefined}
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <View style={styles.titleBlock}>
+              <Text
+                style={[styles.activityName, { color: theme.text.primary }]}
+                numberOfLines={1}
+                accessibilityLabel={`Activity ${activity.name}`}
+              >
+                {activity.name}
+              </Text>
+              <Text
+                style={[styles.activityUnit, { color: theme.text.secondary }]}
+                numberOfLines={1}
+                accessibilityLabel={`Unit: ${activity.unit}`}
+              >
+                {activity.unit}
+              </Text>
+            </View>
+            {!hideDestructiveControls && (
+              <View style={styles.headerActions}>
+                <View ref={menuButtonRef}>
+                  <TouchableOpacity
+                    onPress={handleMenuPress}
+                    style={styles.menuButton}
+                    accessibilityRole="button"
+                    accessibilityLabel={`More options for ${activity.name}`}
+                  >
+                    <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      {!hideDestructiveControls && (
+        <Modal
+          visible={menuVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={() => setMenuVisible(false)}
+          >
+            {menuButtonLayout && (() => {
+              const screenWidth = Dimensions.get('window').width;
+              const menuWidth = 200;
+              const buttonRightEdge = menuButtonLayout.x + menuButtonLayout.width;
+              // Align menu's right edge with button's right edge
+              let menuLeft = buttonRightEdge - menuWidth;
+              // Ensure menu doesn't go off the left or right edge of screen
+              menuLeft = Math.max(16, Math.min(menuLeft, screenWidth - menuWidth - 16));
+              
+              return (
+                <View
+                  style={[
+                    styles.menuContainer,
+                    {
+                      backgroundColor: theme.background.modal,
+                      top: menuButtonLayout.y + menuButtonLayout.height + 4,
+                      left: menuLeft,
+                    },
+                  ]}
+                  onStartShouldSetResponder={() => true}
+                >
+                  <TouchableOpacity
+                    onPress={handleEditPress}
+                    style={[styles.menuItem, { borderBottomColor: theme.border.secondary }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Edit ${activity.name}`}
+                  >
+                    <MaterialIcons name="edit" size={20} color={theme.button.icon.icon} />
+                    <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Edit</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={handleDeletePress}
+                    style={styles.menuItem}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${activity.name}`}
+                  >
+                    <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
+                    <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })()}
+          </TouchableOpacity>
+        </Modal>
+      )}
+    </>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -382,22 +496,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    paddingHorizontal: 16,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  tabText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
   listArea: {
     flex: 1,
   },
@@ -429,44 +527,73 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    padding: 16,
+    padding: CARD_SPACING,
+    gap: CARD_SPACING,
   },
-  activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
+  card: {
+    borderRadius: 16,
+    padding: 0,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
   },
-  activityContent: {
-    flex: 1,
+  cardContent: {
+    gap: 0,
+  },
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 12,
+    padding: 16,
   },
-  activityInfo: {
+  titleBlock: {
     flex: 1,
+    gap: 4,
   },
   activityName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
   },
   activityUnit: {
     fontSize: 14,
   },
-  activityActions: {
-    flexDirection: 'row',
-    gap: 8,
-    marginLeft: 16,
+  headerActions: {
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
   },
-  actionButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: BUTTON_BORDER_RADIUS,
+  menuButton: {
+    padding: 6,
     alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 32,
+    minHeight: 32,
   },
-  deleteButton: {},
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  menuContainer: {
+    position: 'absolute',
+    borderRadius: 12,
+    minWidth: 200,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+    borderBottomWidth: 1,
+  },
+  menuItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
   snackbar: {
     position: 'absolute',
     left: 16,

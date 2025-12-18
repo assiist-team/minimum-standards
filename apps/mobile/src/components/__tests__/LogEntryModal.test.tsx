@@ -18,11 +18,19 @@ const mockStandard: Standard = {
   unit: 'calls',
   cadence: { interval: 1, unit: 'week' },
   summary: '1000 calls / week',
+  sessionConfig: { sessionLabel: 'session', sessionsPerCadence: 1, volumePerSession: 1000 },
   state: 'active',
   createdAtMs: 1000,
   updatedAtMs: 2000,
   archivedAtMs: null,
   deletedAtMs: null,
+};
+
+const resolveActivityName = (activityId: string) => {
+  if (activityId === 'act1') {
+    return 'Sales Calls';
+  }
+  return undefined;
 };
 
 describe('LogEntryModal', () => {
@@ -42,6 +50,7 @@ describe('LogEntryModal', () => {
           standard={null}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -58,10 +67,11 @@ describe('LogEntryModal', () => {
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
-      expect(getByText('Log Progress')).toBeTruthy();
+      expect(getByText('Log Sales Calls')).toBeTruthy();
       expect(getByText(mockStandard.summary)).toBeTruthy();
     });
   });
@@ -82,6 +92,7 @@ describe('LogEntryModal', () => {
           standard={null}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -93,7 +104,7 @@ describe('LogEntryModal', () => {
 
       // Should now show the logging form
       await waitFor(() => {
-        expect(getByText('Log Progress')).toBeTruthy();
+        expect(getByText('Log Sales Calls')).toBeTruthy();
       });
     });
   });
@@ -109,6 +120,7 @@ describe('LogEntryModal', () => {
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -118,6 +130,7 @@ describe('LogEntryModal', () => {
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -229,6 +242,7 @@ describe('LogEntryModal', () => {
           standard={standardWithChips}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -257,17 +271,18 @@ describe('LogEntryModal', () => {
       const onClose = jest.fn();
       const onSave = jest.fn().mockResolvedValue(undefined);
 
-      const { getByPlaceholderText, getByText } = render(
+      const { getByPlaceholderText, getByLabelText, getByText } = render(
         <LogEntryModal
           visible={true}
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
       // Expand the date picker
-      const whenButton = getByText('+ When?');
+      const whenButton = getByLabelText('Change when this occurred');
       fireEvent.press(whenButton);
 
       // Set zero value
@@ -294,33 +309,35 @@ describe('LogEntryModal', () => {
       const onClose = jest.fn();
       const onSave = jest.fn();
 
-      const { getByText } = render(
+      const { getByLabelText } = render(
         <LogEntryModal
           visible={true}
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
-      // "+ When?" button should be visible when collapsed
-      expect(getByText('+ When?')).toBeTruthy();
+      // When chip should be visible when collapsed
+      expect(getByLabelText('Change when this occurred')).toBeTruthy();
     });
 
     test('expand/collapse toggle works', () => {
       const onClose = jest.fn();
       const onSave = jest.fn();
 
-      const { getByText } = render(
+      const { getByLabelText, getByText } = render(
         <LogEntryModal
           visible={true}
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
-      const whenButton = getByText('+ When?');
+      const whenButton = getByLabelText('Change when this occurred');
       fireEvent.press(whenButton);
 
       // Should show "Now" button and date picker
@@ -331,16 +348,17 @@ describe('LogEntryModal', () => {
       const onClose = jest.fn();
       const onSave = jest.fn();
 
-      const { getByText } = render(
+      const { getByLabelText, getByText } = render(
         <LogEntryModal
           visible={true}
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
-      const whenButton = getByText('+ When?');
+      const whenButton = getByLabelText('Change when this occurred');
       fireEvent.press(whenButton);
 
       const nowButton = getByText('Now');
@@ -412,9 +430,9 @@ describe('LogEntryModal', () => {
         />
       );
 
-      expect(getByLabelText(/enter value/i)).toBeTruthy();
-      expect(getByLabelText(/add optional note/i)).toBeTruthy();
-      expect(getByLabelText(/select when/i)).toBeTruthy();
+      expect(getByLabelText(/enter/i)).toBeTruthy();
+      expect(getByLabelText('Add a note')).toBeTruthy();
+      expect(getByLabelText('Change when this occurred')).toBeTruthy();
     });
   });
 
@@ -442,11 +460,11 @@ describe('LogEntryModal', () => {
           logEntry={mockLogEntry}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
-      // Should show "Edit Log" title
-      expect(getByText('Edit Log')).toBeTruthy();
+      expect(getByText('Edit Sales Calls')).toBeTruthy();
       
       // Form should be pre-filled
       expect(getByDisplayValue('50')).toBeTruthy();
@@ -464,6 +482,7 @@ describe('LogEntryModal', () => {
           logEntry={mockLogEntry}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -476,7 +495,7 @@ describe('LogEntryModal', () => {
       expect(noteInput).toBeTruthy();
     });
 
-    test('shows "Log Activity" title in create mode', () => {
+    test('shows "Log {ActivityName}" title in create mode', () => {
       const onClose = jest.fn();
       const onSave = jest.fn();
 
@@ -486,10 +505,11 @@ describe('LogEntryModal', () => {
           standard={mockStandard}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
-      expect(getByText('Log Activity')).toBeTruthy();
+      expect(getByText('Log Sales Calls')).toBeTruthy();
     });
 
     test('calls onSave with logEntryId in edit mode', async () => {
@@ -503,6 +523,7 @@ describe('LogEntryModal', () => {
           logEntry={mockLogEntry}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 

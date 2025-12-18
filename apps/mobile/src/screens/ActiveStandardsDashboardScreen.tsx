@@ -215,6 +215,7 @@ export function ActiveStandardsDashboardScreen({
         standard={selectedStandard}
         onClose={handleLogModalClose}
         onSave={handleLogSave}
+        resolveActivityName={(activityId) => activityNameMap.get(activityId)}
       />
     </View>
   );

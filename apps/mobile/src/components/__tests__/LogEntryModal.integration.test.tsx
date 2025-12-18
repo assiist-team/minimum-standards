@@ -13,6 +13,7 @@ const mockActiveStandards: Standard[] = [
     unit: 'calls',
     cadence: { interval: 1, unit: 'week' },
     summary: '1000 calls / week',
+    sessionConfig: { sessionLabel: 'session', sessionsPerCadence: 1, volumePerSession: 1000 },
     state: 'active',
     createdAtMs: 1000,
     updatedAtMs: 2000,
@@ -26,6 +27,7 @@ const mockActiveStandards: Standard[] = [
     unit: 'emails',
     cadence: { interval: 1, unit: 'day' },
     summary: '50 emails / day',
+    sessionConfig: { sessionLabel: 'session', sessionsPerCadence: 1, volumePerSession: 50 },
     state: 'active',
     createdAtMs: 2000,
     updatedAtMs: 3000,
@@ -33,6 +35,12 @@ const mockActiveStandards: Standard[] = [
     deletedAtMs: null,
   },
 ];
+
+const resolveActivityName = (activityId: string) => {
+  if (activityId === 'act1') return 'Sales Calls';
+  if (activityId === 'act2') return 'Emails';
+  return undefined;
+};
 
 jest.mock('../../hooks/useStandards', () => ({
   useStandards: jest.fn(() => ({
@@ -58,6 +66,7 @@ describe('LogEntryModal Integration Tests', () => {
           standard={mockActiveStandards[0]}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -91,6 +100,7 @@ describe('LogEntryModal Integration Tests', () => {
           standard={null}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
@@ -103,14 +113,12 @@ describe('LogEntryModal Integration Tests', () => {
 
       // Should now show form
       await waitFor(() => {
-        expect(getByText('Log Progress')).toBeTruthy();
+        expect(getByText('Log Sales Calls')).toBeTruthy();
       });
 
       // Enter value and save
-      const input = getByText('Value (calls)').parent?.parent?.findByType('TextInput');
-      if (input) {
-        fireEvent.changeText(input, '200');
-      }
+      const input = getByPlaceholderText('0');
+      fireEvent.changeText(input, '200');
 
       const saveButton = getByText('Save');
       fireEvent.press(saveButton);
@@ -135,11 +143,12 @@ describe('LogEntryModal Integration Tests', () => {
           standard={mockActiveStandards[0]}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 
       // Expand "When?" section
-      const whenButton = getByText('+ When?');
+      const whenButton = getByText('When');
       fireEvent.press(whenButton);
 
       // Verify date picker is shown
@@ -179,6 +188,7 @@ describe('LogEntryModal Integration Tests', () => {
           standard={mockActiveStandards[0]}
           onClose={onClose}
           onSave={onSave}
+          resolveActivityName={resolveActivityName}
         />
       );
 

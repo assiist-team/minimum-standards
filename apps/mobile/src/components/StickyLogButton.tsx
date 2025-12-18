@@ -23,11 +23,13 @@ export interface StickyLogButtonProps {
     occurredAtMs: number;
     note?: string | null;
   }) => Promise<void>;
+  resolveActivityName?: (activityId: string) => string | undefined;
 }
 
 export function StickyLogButton({
   onCreateLogEntry,
   onUpdateLogEntry,
+  resolveActivityName,
 }: StickyLogButtonProps) {
   const theme = useTheme();
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
@@ -101,6 +103,7 @@ export function StickyLogButton({
         standard={selectedStandard}
         onClose={handleLogModalClose}
         onSave={handleLogSave}
+        resolveActivityName={resolveActivityName}
       />
     </>
   );
