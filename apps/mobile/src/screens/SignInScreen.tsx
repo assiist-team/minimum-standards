@@ -158,7 +158,7 @@ export function SignInScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background.screen }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text.primary }]}>Sign In</Text>
         <Text style={[styles.subtitle, { color: theme.text.secondary }]}>Welcome back</Text>

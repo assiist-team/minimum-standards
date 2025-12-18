@@ -15,6 +15,7 @@ import { LogEntryModal } from './LogEntryModal';
 import { useStandards } from '../hooks/useStandards';
 import type { ActivityLog } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface PeriodLogsModalProps {
@@ -50,7 +51,7 @@ function LogItem({
   };
 
   return (
-    <View style={[styles.logItem, { backgroundColor: theme.background.primary }]}>
+    <View style={[styles.logItem, { backgroundColor: theme.background.tertiary }]}>
       <View style={styles.logHeader}>
         <Text style={[styles.logValue, { color: theme.text.primary }]}>{item.value}</Text>
         <View style={styles.dateContainer}>
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: BUTTON_BORDER_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
   },

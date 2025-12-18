@@ -11,11 +11,16 @@ import {
   ToastAndroid,
   Alert,
   FlatList,
+  KeyboardAvoidingView,
+  ScrollView,
+  Keyboard,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard, ActivityLog } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface LogEntryModalProps {
   visible: boolean;
@@ -35,6 +40,7 @@ export function LogEntryModal({
   onCreateStandard,
 }: LogEntryModalProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   const [value, setValue] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
@@ -433,6 +439,10 @@ export function LogEntryModal({
     );
   };
 
+  const handleOverlayPress = () => {
+    Keyboard.dismiss();
+  };
+
   return (
     <Modal
       visible={visible}
@@ -441,36 +451,58 @@ export function LogEntryModal({
       onRequestClose={handleClose}
     >
       <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
-        <View style={[styles.modalContent, { backgroundColor: theme.background.modal }]}>
-          <View style={styles.modalHeader}>
-            <View style={styles.headerContent}>
-              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
-                {showPicker
-                  ? 'Select Standard'
-                  : isEditMode
-                  ? 'Edit Log'
-                  : 'Log Activity'}
-              </Text>
-              {selectedStandard && !showPicker && (
-                <Text style={[styles.standardSummary, { color: theme.text.secondary }]} numberOfLines={1}>
-                  {selectedStandard.summary}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={handleOverlayPress}
+        />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={insets.bottom + 16}
+          style={styles.keyboardAvoider}
+        >
+          <View
+            onStartShouldSetResponder={() => true}
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.background.modal, paddingBottom: 20 + insets.bottom },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <View style={styles.headerContent}>
+                <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
+                  {showPicker
+                    ? 'Select Standard'
+                    : isEditMode
+                    ? 'Edit Log'
+                    : 'Log Activity'}
                 </Text>
-              )}
+                {selectedStandard && !showPicker && (
+                  <Text style={[styles.standardSummary, { color: theme.text.secondary }]} numberOfLines={1}>
+                    {selectedStandard.summary}
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity 
+                onPress={handleClose} 
+                disabled={saving}
+                accessibilityLabel="Close modal"
+                accessibilityRole="button"
+              >
+                <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              onPress={handleClose} 
-              disabled={saving}
-              accessibilityLabel="Close modal"
-              accessibilityRole="button"
-            >
-              <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.form}>
-            {showPicker ? renderStandardPicker() : renderLoggingForm()}
+            <ScrollView
+              style={styles.formScroll}
+              contentContainerStyle={styles.form}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {showPicker ? renderStandardPicker() : renderLoggingForm()}
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
@@ -481,11 +513,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  keyboardAvoider: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   modalContent: {
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
     maxHeight: '90%',
+  },
+  formScroll: {
+    flexGrow: 0,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -570,7 +609,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     padding: 16,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
     alignItems: 'center',
     marginTop: 8,
   },
@@ -601,7 +640,7 @@ const styles = StyleSheet.create({
   createStandardButton: {
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
     marginTop: 8,
   },
   createStandardButtonText: {
@@ -629,7 +668,7 @@ const styles = StyleSheet.create({
   nowButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: BUTTON_BORDER_RADIUS,
   },
   nowButtonText: {
     fontSize: 14,

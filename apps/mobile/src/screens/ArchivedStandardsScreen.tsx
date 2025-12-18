@@ -96,8 +96,8 @@ export function ArchivedStandardsScreen({
   );
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack}>
           <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
         </TouchableOpacity>

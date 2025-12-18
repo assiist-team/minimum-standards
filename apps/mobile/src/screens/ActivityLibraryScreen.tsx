@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useActivities } from '../hooks/useActivities';
@@ -17,6 +18,7 @@ import { Activity } from '@minimum-standards/shared-model';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import { filterActivitiesByTab } from '../utils/activitiesFilter';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -53,7 +55,7 @@ export function ActivityLibraryScreen({
     restoreActivity,
   } = useActivities();
 
-  const { activeStandards } = useStandards();
+  const { activeStandards, createLogEntry, updateLogEntry } = useStandards();
   const [activeTab, setActiveTab] = useState<Tab>('active');
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -161,7 +163,15 @@ export function ActivityLibraryScreen({
   };
 
   const renderActivityItem = ({ item }: { item: Activity }) => (
-    <View style={[styles.activityItem, { borderBottomColor: theme.border.secondary }]}>
+    <View
+      style={[
+        styles.activityItem,
+        {
+          borderBottomColor: theme.border.secondary,
+          backgroundColor: theme.background.card,
+        },
+      ]}
+    >
       <TouchableOpacity
         style={styles.activityContent}
         onPress={() => handleSelect(item)}
@@ -196,10 +206,10 @@ export function ActivityLibraryScreen({
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
+    <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
       <ErrorBanner error={error} />
 
-      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary, paddingTop: Math.max(insets.top, 16) }]}>
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome, paddingTop: Math.max(insets.top, 16) }]}>
         <View style={styles.searchRow}>
           <TextInput
             style={[
@@ -238,7 +248,7 @@ export function ActivityLibraryScreen({
       </View>
 
       {/* Tab Navigation */}
-      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary }]}>
+      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome }]}>
         <TouchableOpacity
           style={[
             styles.tab,
@@ -335,6 +345,7 @@ export function ActivityLibraryScreen({
           </TouchableOpacity>
         </View>
       )}
+
     </View>
   );
 }
@@ -362,7 +373,7 @@ const styles = StyleSheet.create({
   inlineCreateButton: {
     paddingHorizontal: 14,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
   },
   inlineCreateButtonText: {
     // fontSize and fontWeight come from typography.button.primary
@@ -409,7 +420,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
   },
   createButtonText: {
     // fontSize and fontWeight come from typography.button.primary
@@ -451,7 +462,7 @@ const styles = StyleSheet.create({
   actionButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: BUTTON_BORDER_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
   },

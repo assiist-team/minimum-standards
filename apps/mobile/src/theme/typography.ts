@@ -22,8 +22,7 @@ type FontWeight =
   | 'semibold'
   | 'demibold'
   | 'extrabold'
-  | 'black'
-  | number;
+  | 'black';
 
 export interface TypographyTheme {
   // Button typography

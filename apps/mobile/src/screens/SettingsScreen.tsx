@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
@@ -28,36 +29,28 @@ export function SettingsScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
+    <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary }]}>
         <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Settings</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-        {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
         <TouchableOpacity
-          style={[
-            styles.signOutButton,
-            { backgroundColor: theme.button.destructive.background },
-            loading && styles.buttonDisabled,
-          ]}
+          style={styles.signOutIconContainer}
           onPress={handleSignOut}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={theme.button.destructive.text} />
+            <ActivityIndicator size="small" color={theme.button.primary.background} />
           ) : (
-            <Text style={[styles.signOutButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.destructive.text }]}>Sign Out</Text>
+            <MaterialIcons name="logout" size={24} color={theme.button.primary.background} />
           )}
         </TouchableOpacity>
       </View>
+
+      {error && (
+        <View style={[styles.errorContainer, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -81,7 +74,13 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 60,
   },
-  card: {
+  signOutIconContainer: {
+    width: 60,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: 4,
+  },
+  errorContainer: {
     borderRadius: 12,
     padding: 24,
     margin: 24,
@@ -89,25 +88,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
-  errorContainer: {
-    backgroundColor: '#fee',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
   errorText: {
     color: '#c00',
     fontSize: 14,
-  },
-  signOutButton: {
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  signOutButtonText: {
-    // fontSize and fontWeight come from typography.button.primary
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 });

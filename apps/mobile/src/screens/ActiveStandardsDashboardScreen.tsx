@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   Alert,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Standard } from '@minimum-standards/shared-model';
@@ -21,6 +22,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { StandardProgressCard } from '../components/StandardProgressCard';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 
 const CARD_SPACING = 16;
 
@@ -45,10 +47,10 @@ export function ActiveStandardsDashboardScreen({
     createLogEntry,
     updateLogEntry,
     refreshStandards,
+    archiveStandard,
   } = useActiveStandardsDashboard();
 
   const { activities } = useActivities();
-  const { deleteStandard } = useStandards();
 
   // Create activity lookup map for efficient name resolution
   const activityNameMap = useMemo(() => {
@@ -108,31 +110,17 @@ export function ActiveStandardsDashboardScreen({
     }
   }, [onEditStandard]);
 
-  const handleDelete = useCallback((standardId: string, activityName: string) => {
-    Alert.alert(
-      'Delete Standard',
-      `Are you sure you want to delete "${activityName}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteStandard(standardId);
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete standard');
-              console.error('Failed to delete standard:', err);
-            }
-          },
-        },
-      ]
-    );
-  }, [deleteStandard]);
+  const handleDeactivate = useCallback(async (standardId: string) => {
+    try {
+      await archiveStandard(standardId);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to deactivate standard');
+      console.error('Failed to deactivate standard:', err);
+    }
+  }, [archiveStandard]);
 
   const renderCard = useCallback(
     ({ item }: { item: DashboardStandard }) => {
-      const activityName = activityNameMap.get(item.standard.activityId) ?? item.standard.activityId;
       return (
         <StandardCard
           entry={item}
@@ -143,12 +131,12 @@ export function ActiveStandardsDashboardScreen({
             }
           }}
           onEdit={() => handleEdit(item.standard.id)}
-          onDelete={() => handleDelete(item.standard.id, activityName)}
+          onDeactivate={() => handleDeactivate(item.standard.id)}
           activityNameMap={activityNameMap}
         />
       );
     },
-    [handleLogPress, handleEdit, handleDelete, onNavigateToDetail, activityNameMap]
+    [handleLogPress, handleEdit, handleDeactivate, onNavigateToDetail, activityNameMap]
   );
 
   const content = useMemo(() => {
@@ -205,8 +193,8 @@ export function ActiveStandardsDashboardScreen({
   ]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         {backButtonLabel ? (
           <TouchableOpacity onPress={onBack} accessibilityRole="button">
             <Text style={[styles.backButton, { color: theme.primary.main }]}>{backButtonLabel}</Text>
@@ -237,14 +225,14 @@ function StandardCard({
   onLogPress,
   onCardPress,
   onEdit,
-  onDelete,
+  onDeactivate,
   activityNameMap,
 }: {
   entry: DashboardStandard;
   onLogPress: () => void;
   onCardPress?: () => void;
   onEdit?: () => void;
-  onDelete?: () => void;
+  onDeactivate?: () => void;
   activityNameMap: Map<string, string>;
 }) {
   const { standard, progress } = entry;
@@ -290,7 +278,7 @@ function StandardCard({
       onLogPress={onLogPress}
       onCardPress={onCardPress}
       onEdit={onEdit}
-      onDelete={onDelete}
+      onDeactivate={onDeactivate}
     />
   );
 }
@@ -354,7 +342,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
   },
   builderButtonText: {
     // fontSize and fontWeight come from typography.button.primary

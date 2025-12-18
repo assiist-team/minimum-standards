@@ -117,7 +117,7 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
   const userMessage = normalizedError?.message || 'Something went wrong. Please try again.';
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
+    <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
       <View style={[styles.content, { backgroundColor: theme.background.card }]}>
         <Text style={[styles.title, { color: theme.text.primary }]}>Something went wrong</Text>
         <Text style={[styles.message, { color: theme.text.secondary }]}>

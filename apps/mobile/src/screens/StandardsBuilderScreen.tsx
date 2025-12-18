@@ -15,7 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import type { View as RNView } from 'react-native';
+import type { View as RNView, TextStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
 import { ActivityModal } from '../components/ActivityModal';
@@ -34,6 +34,7 @@ import { trackStandardEvent } from '../utils/analytics';
 import { Standard } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardsBuilderScreenProps {
@@ -424,7 +425,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                 styles.pillButtonText,
                 {
                   fontSize: typography.button.pill.fontSize,
-                  fontWeight: typography.button.pill.fontWeight,
+                  fontWeight: typography.button.pill.fontWeight as TextStyle['fontWeight'],
                   color: isActive ? theme.button.primary.text : theme.text.secondary,
                 },
               ]}
@@ -452,7 +453,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               styles.pillButtonText,
               {
                 fontSize: typography.button.pill.fontSize,
-                fontWeight: typography.button.pill.fontWeight,
+                fontWeight: typography.button.pill.fontWeight as TextStyle['fontWeight'],
                 color: isCustomActive ? theme.button.primary.text : theme.text.secondary,
               },
             ]}
@@ -470,11 +471,11 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={[styles.fullScreen, { backgroundColor: theme.background.primary }]}
+      style={[styles.fullScreen, { backgroundColor: theme.background.screen }]}
     >
-      <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+      <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.chrome, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack}>
-          <Text style={[styles.backButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.link }]}>← Back</Text>
+          <Text style={[styles.backButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
           {isEditMode ? 'Edit Standard' : 'Create Standard'}
@@ -547,7 +548,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               style={[styles.createActivityButton, { backgroundColor: theme.button.primary.background }]}
               onPress={() => setActivityModalVisible(true)}
             >
-              <Text style={[styles.createActivityButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
+              <Text style={[styles.createActivityButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.button.primary.text }]}>
                 Create
               </Text>
             </TouchableOpacity>
@@ -604,7 +605,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                             styles.unitButtonText,
                             {
                               fontSize: typography.button.secondary.fontSize,
-                              fontWeight: typography.button.secondary.fontWeight,
+                              fontWeight: typography.button.secondary.fontWeight as TextStyle['fontWeight'],
                               color: isActive ? theme.link : theme.text.secondary,
                             },
                           ]}
@@ -802,7 +803,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
         </View>
         </ScrollView>
 
-        <View style={[styles.stickyFooter, { backgroundColor: theme.background.secondary, borderTopColor: theme.border.secondary, paddingBottom: Math.max(insets.bottom, 16) }]}>
+        <View style={[styles.stickyFooter, { backgroundColor: theme.background.chrome, borderTopColor: theme.border.secondary, paddingBottom: Math.max(insets.bottom, 16) }]}>
           {summaryPreview && (
             <Text style={[styles.stickySummary, { color: theme.text.primary }]}>
               {summaryPreview}
@@ -811,7 +812,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
           {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border.primary }]} onPress={resetForm}>
-              <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight, color: theme.text.primary }]}>Reset</Text>
+              <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight as TextStyle['fontWeight'], color: theme.text.primary }]}>Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -822,7 +823,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
+              <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.button.primary.text }]}>
                 {saving ? 'Saving…' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -990,7 +991,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: BUTTON_BORDER_RADIUS,
     alignItems: 'center',
   },
   primaryButtonDisabled: {
@@ -1071,7 +1072,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     flex: 1,
     paddingVertical: 14,
-    borderRadius: 10,
+    borderRadius: BUTTON_BORDER_RADIUS,
     borderWidth: 1,
     alignItems: 'center',
   },

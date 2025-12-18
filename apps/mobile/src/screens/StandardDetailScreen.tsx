@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Standard } from '@minimum-standards/shared-model';
@@ -19,6 +20,7 @@ import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardDetailScreenProps {
@@ -221,8 +223,8 @@ export function StandardDetailScreen({
 
   if (loading && history.length === 0) {
     return (
-      <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-        <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
+      <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+        <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary }]}>
           <TouchableOpacity onPress={onBack} accessibilityRole="button">
             <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
           </TouchableOpacity>
@@ -242,8 +244,8 @@ export function StandardDetailScreen({
 
   if (!standard) {
     return (
-      <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-        <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary }]}>
+      <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+        <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary }]}>
           <TouchableOpacity onPress={onBack} accessibilityRole="button">
             <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
           </TouchableOpacity>
@@ -260,8 +262,8 @@ export function StandardDetailScreen({
   const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack} accessibilityRole="button">
           <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
         </TouchableOpacity>
@@ -273,7 +275,15 @@ export function StandardDetailScreen({
 
       <ErrorBanner error={error} onRetry={handleRetry} />
 
-      <ScrollView style={[styles.content, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={[styles.content, { backgroundColor: theme.background.screen }]}
+        contentContainerStyle={[
+          styles.contentContainer,
+          {
+            paddingBottom: 16,
+          },
+        ]}
+      >
         {/* Current Period Summary */}
         {currentPeriodProgress && (
           <StandardProgressCard
@@ -472,7 +482,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
   },

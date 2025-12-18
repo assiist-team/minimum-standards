@@ -1,6 +1,6 @@
 import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform } from 'react-native';
+import { BottomTabBar, type BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -10,8 +10,27 @@ import { StandardsStack } from './StandardsStack';
 import { ActivitiesStack } from './ActivitiesStack';
 import { SettingsStack } from './SettingsStack';
 import { useTheme } from '../theme/useTheme';
+import { useStandards } from '../hooks/useStandards';
+import { StickyLogButton } from '../components/StickyLogButton';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
+
+function TabBarWithStickyLogButton(props: BottomTabBarProps) {
+  const theme = useTheme();
+  const { createLogEntry, updateLogEntry } = useStandards();
+
+  return (
+    <View
+      style={[
+        styles.tabBarShell,
+        { backgroundColor: theme.tabBar.background, borderTopColor: theme.tabBar.border },
+      ]}
+    >
+      <StickyLogButton onCreateLogEntry={createLogEntry} onUpdateLogEntry={updateLogEntry} />
+      <BottomTabBar {...props} />
+    </View>
+  );
+}
 
 export function BottomTabNavigator() {
   const theme = useTheme();
@@ -20,13 +39,14 @@ export function BottomTabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
+      tabBar={(props) => <TabBarWithStickyLogButton {...props} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.tabBar.activeTint,
         tabBarInactiveTintColor: theme.tabBar.inactiveTint,
         tabBarStyle: {
-          backgroundColor: theme.tabBar.background,
-          borderTopColor: theme.tabBar.border,
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
           paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8),
           paddingTop: 8,
           paddingLeft: Math.max(insets.left, 16),
@@ -125,3 +145,9 @@ export function BottomTabNavigator() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBarShell: {
+    borderTopWidth: 1,
+  },
+});

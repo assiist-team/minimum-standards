@@ -41,6 +41,24 @@ export interface ColorTheme {
 
   // Background colors
   background: {
+    /**
+     * Screen-level background behind main content (darkest surface in dark mode).
+     * Use for the primary "page" container.
+     */
+    screen: string;
+    /**
+     * App chrome background (headers, toolbars, bottom tab bar).
+     * In dark mode, should match the screen background for a unified chrome.
+     */
+    chrome: string;
+    /**
+     * Default surface for contained areas (e.g. sections). Often used as a base for cards.
+     */
+    surface: string;
+
+    /**
+     * Backwards-compatible aliases (prefer screen/chrome/surface going forward).
+     */
     primary: string;
     secondary: string;
     tertiary: string;
@@ -143,6 +161,9 @@ export const lightTheme: ColorTheme = {
     dark: '#111',
   },
   background: {
+    screen: '#f7f8fa',
+    chrome: '#fff',
+    surface: '#fff',
     primary: '#f7f8fa',
     secondary: '#fff',
     tertiary: '#fafafa',
@@ -233,6 +254,9 @@ export const darkTheme: ColorTheme = {
     dark: '#000',
   },
   background: {
+    screen: '#1E1E1E',
+    chrome: '#1E1E1E',
+    surface: '#2E2E2E',
     primary: '#1E1E1E',
     secondary: '#2E2E2E',
     tertiary: '#323232',
@@ -253,7 +277,8 @@ export const darkTheme: ColorTheme = {
     focus: '#fff',
   },
   tabBar: {
-    background: '#1C1C1E',
+    // Keep chrome aligned with the primary screen container in dark mode
+    background: '#1E1E1E',
     activeTint: '#987e55',
     inactiveTint: '#888',
     border: '#38383A',

@@ -61,7 +61,7 @@ export function PasswordResetScreen() {
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background.primary }]} contentContainerStyle={styles.contentContainer}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background.screen }]} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text.primary }]}>Reset Password</Text>
         <Text style={[styles.subtitle, { color: theme.text.secondary }]}>Enter your email to receive a reset link</Text>

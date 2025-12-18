@@ -6,7 +6,7 @@ import { useTheme } from '../theme/useTheme';
 export function LoadingScreen() {
   const theme = useTheme();
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background.primary }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background.screen }]}>
       <View style={styles.content}>
         <ActivityIndicator size="large" color={theme.activityIndicator} />
       </View>

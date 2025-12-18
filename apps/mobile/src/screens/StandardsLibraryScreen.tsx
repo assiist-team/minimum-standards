@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   RefreshControl,
   Alert,
   Modal,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Standard } from '@minimum-standards/shared-model';
@@ -17,6 +19,8 @@ import { useActivities } from '../hooks/useActivities';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { useStandards } from '../hooks/useStandards';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardsLibraryScreenProps {
@@ -49,6 +53,7 @@ export function StandardsLibraryScreen({
   } = useStandardsLibrary();
 
   const { activities } = useActivities();
+  const { createLogEntry, updateLogEntry } = useStandards();
 
   // Create activity lookup map
   const activityMap = useMemo(() => {
@@ -200,8 +205,8 @@ export function StandardsLibraryScreen({
   ]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         {onBack ? (
           <TouchableOpacity onPress={onBack} accessibilityRole="button">
             <Text style={[styles.backButton, { color: theme.primary.main }]}>Back</Text>
@@ -226,7 +231,7 @@ export function StandardsLibraryScreen({
       <ErrorBanner error={error} onRetry={handleRetry} />
 
       {/* Search Input */}
-      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary }]}>
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome }]}>
         <TextInput
           style={[
             styles.searchInput,
@@ -247,6 +252,7 @@ export function StandardsLibraryScreen({
       </View>
 
       {content}
+
     </View>
   );
 }
@@ -272,6 +278,8 @@ function StandardCard({
 }) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
+  const [menuButtonLayout, setMenuButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const menuButtonRef = useRef<View>(null);
   const isActive = standard.state === 'active' && standard.archivedAtMs === null;
   
   // Get activity name from map, fallback to activityId if not found
@@ -300,7 +308,11 @@ function StandardCard({
 
   const handleMenuPress = useCallback((e: any) => {
     e.stopPropagation();
-    setMenuVisible(true);
+    // Measure button position when opening menu
+    menuButtonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      setMenuButtonLayout({ x, y, width, height });
+      setMenuVisible(true);
+    });
   }, []);
 
   const handleEditPress = useCallback(() => {
@@ -384,14 +396,16 @@ function StandardCard({
                     />
                   </View>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={handleMenuPress}
-                  style={[styles.menuButton, { backgroundColor: theme.button.icon.background }]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`More options for ${activityName}`}
-                >
-                  <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
-                </TouchableOpacity>
+                <View ref={menuButtonRef}>
+                  <TouchableOpacity
+                    onPress={handleMenuPress}
+                    style={styles.menuButton}
+                    accessibilityRole="button"
+                    accessibilityLabel={`More options for ${activityName}`}
+                  >
+                    <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </View>
@@ -409,29 +423,48 @@ function StandardCard({
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View
-            style={[styles.menuContainer, { backgroundColor: theme.background.modal }]}
-            onStartShouldSetResponder={() => true}
-          >
-            <TouchableOpacity
-              onPress={handleEditPress}
-              style={[styles.menuItem, { borderBottomColor: theme.border.secondary }]}
-              accessibilityRole="button"
-              accessibilityLabel={`Edit ${activityName}`}
-            >
-              <MaterialIcons name="edit" size={20} color={theme.text.primary} />
-              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleDeletePress}
-              style={styles.menuItem}
-              accessibilityRole="button"
-              accessibilityLabel={`Delete ${activityName}`}
-            >
-              <MaterialIcons name="delete" size={20} color={theme.button.destructive.background} />
-              <Text style={[styles.menuItemText, { color: theme.button.destructive.background }]}>Delete</Text>
-            </TouchableOpacity>
-          </View>
+          {menuButtonLayout && (() => {
+            const screenWidth = Dimensions.get('window').width;
+            const menuWidth = 200;
+            const buttonRightEdge = menuButtonLayout.x + menuButtonLayout.width;
+            // Align menu's right edge with button's right edge
+            let menuLeft = buttonRightEdge - menuWidth;
+            // Ensure menu doesn't go off the left or right edge of screen
+            menuLeft = Math.max(16, Math.min(menuLeft, screenWidth - menuWidth - 16));
+            
+            return (
+              <View
+                style={[
+                  styles.menuContainer,
+                  {
+                    backgroundColor: theme.background.modal,
+                    top: menuButtonLayout.y + menuButtonLayout.height + 4,
+                    left: menuLeft,
+                  },
+                ]}
+                onStartShouldSetResponder={() => true}
+              >
+              <TouchableOpacity
+                onPress={handleEditPress}
+                style={[styles.menuItem, { borderBottomColor: theme.border.secondary }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Edit ${activityName}`}
+              >
+                <MaterialIcons name="edit" size={20} color={theme.button.icon.icon} />
+                <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleDeletePress}
+                style={styles.menuItem}
+                accessibilityRole="button"
+                accessibilityLabel={`Delete ${activityName}`}
+              >
+                <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
+                <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Delete</Text>
+              </TouchableOpacity>
+              </View>
+            );
+          })()}
         </TouchableOpacity>
       </Modal>
     </>
@@ -464,7 +497,7 @@ const styles = StyleSheet.create({
   headerButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: BUTTON_BORDER_RADIUS,
   },
   headerButtonText: {
     // fontSize and fontWeight come from typography.button.primary
@@ -511,7 +544,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
   },
   builderButtonText: {
     // fontSize and fontWeight come from typography.button.primary
@@ -583,7 +616,6 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     padding: 6,
-    borderRadius: 4,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 32,
@@ -591,11 +623,10 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   menuContainer: {
+    position: 'absolute',
     borderRadius: 12,
     minWidth: 200,
     shadowOpacity: 0.2,
