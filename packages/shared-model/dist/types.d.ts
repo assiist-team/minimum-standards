@@ -5,6 +5,11 @@ export type StandardCadence = {
     unit: CadenceUnit;
 };
 export type StandardState = 'active' | 'archived';
+export type StandardSessionConfig = {
+    sessionLabel: string;
+    sessionsPerCadence: number;
+    volumePerSession: number;
+};
 export type SoftDelete = {
     deletedAtMs: TimestampMs | null;
 };
@@ -16,6 +21,7 @@ export type Activity = SoftDelete & AuditTimestamps & {
     id: string;
     name: string;
     unit: string;
+    notes: string | null;
 };
 export type Standard = SoftDelete & AuditTimestamps & {
     id: string;
@@ -27,6 +33,7 @@ export type Standard = SoftDelete & AuditTimestamps & {
     summary: string;
     archivedAtMs: TimestampMs | null;
     quickAddValues?: number[];
+    sessionConfig: StandardSessionConfig;
 };
 export type ActivityLog = SoftDelete & AuditTimestamps & {
     id: string;

@@ -181,6 +181,10 @@ describe('standardsBuilderStore', () => {
       result.current.setSessionLabel('session');
     });
 
+    expect(result.current.breakdownEnabled).toBe(true);
+    expect(result.current.sessionsPerCadence).toBe(5);
+    expect(result.current.volumePerSession).toBe(15);
+
     const payload = result.current.generatePayload();
     expect(payload).toEqual({
       activityId: 'activity-1',
@@ -207,8 +211,42 @@ describe('standardsBuilderStore', () => {
       result.current.setVolumePerSession(15);
     });
 
+    expect(result.current.breakdownEnabled).toBe(true);
+    expect(result.current.sessionsPerCadence).toBe(5);
+    expect(result.current.volumePerSession).toBe(15);
+
     const summary = result.current.getSummaryPreview();
     expect(summary).toBe('5 sessions × 15 calls = 75 calls / week');
+  });
+
+  test('goalTotal auto-calculates when session params are provided', () => {
+    const { result } = renderHook(() => useStandardsBuilderStore());
+
+    act(() => {
+      result.current.setBreakdownEnabled(true);
+      result.current.setSessionsPerCadence(4);
+      result.current.setVolumePerSession(10);
+    });
+
+    expect(result.current.goalTotal).toBe(40);
+  });
+
+  test('goalTotal resets to null when session params become incomplete', () => {
+    const { result } = renderHook(() => useStandardsBuilderStore());
+
+    act(() => {
+      result.current.setBreakdownEnabled(true);
+      result.current.setSessionsPerCadence(4);
+      result.current.setVolumePerSession(10);
+    });
+
+    expect(result.current.goalTotal).toBe(40);
+
+    act(() => {
+      result.current.setVolumePerSession(null);
+    });
+
+    expect(result.current.goalTotal).toBeNull();
   });
 
   test('reset clears all state', () => {

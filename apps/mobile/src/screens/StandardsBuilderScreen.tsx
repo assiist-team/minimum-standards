@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
   Activity,
   CadenceUnit,
@@ -83,6 +83,12 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
 
   const summaryPreview = getSummaryPreview();
 
+  useEffect(() => {
+    if (goalTotal !== null && goalTotal > 0 && goalTotalError) {
+      setGoalTotalError(null);
+    }
+  }, [goalTotal, goalTotalError]);
+
   const handleActivitySelect = (activity: Activity) => {
     setSelectedActivity(activity);
     setActivityDropdownVisible(false);
@@ -145,7 +151,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
 
     const numeric = Number(value);
     if (!value) {
-      setCadenceError('Interval required for custom cadence');
+      setCadenceError('Interval required for custom period');
       setCadence(null);
       return;
     }
@@ -253,7 +259,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       return;
     }
     if (!cadence) {
-      setCadenceError('Pick a cadence');
+      setCadenceError('Pick a period');
       return;
     }
     if (breakdownEnabled) {
@@ -477,181 +483,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
           <View style={styles.stepHeader}>
             <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 2</Text>
-            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Goal</Text>
-          </View>
-          <Text style={[styles.helperText, { color: theme.text.secondary }]}>
-            Set your total target for the period.
-          </Text>
-          <View style={styles.minimumUnitRow}>
-            <View style={styles.minimumUnitField}>
-              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
-                Total per {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.input.background,
-                    borderColor: theme.input.border,
-                    color: theme.input.text,
-                  },
-                ]}
-                placeholderTextColor={theme.input.placeholder}
-                keyboardType="number-pad"
-                placeholder="e.g. 75"
-                value={goalTotal ? String(goalTotal) : ''}
-                onChangeText={handleGoalTotalChange}
-              />
-              {goalTotalError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{goalTotalError}</Text>}
-            </View>
-            <View style={styles.minimumUnitField}>
-              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.input.background,
-                    borderColor: theme.input.border,
-                    color: theme.input.text,
-                  },
-                ]}
-                placeholderTextColor={theme.input.placeholder}
-                placeholder={
-                  selectedActivity
-                    ? `Default: ${selectedActivity.unit}`
-                    : 'Unit'
-                }
-                value={unitOverride ?? ''}
-                onChangeText={handleUnitOverrideChange}
-              />
-            </View>
-          </View>
-
-          <View style={styles.breakdownSection}>
-            <TouchableOpacity
-              style={styles.toggleRow}
-              onPress={() => setBreakdownEnabled(!breakdownEnabled)}
-            >
-              <Text style={[styles.toggleLabel, { color: theme.text.primary }]}>
-                Break this goal into sessions
-              </Text>
-              <View
-                style={[
-                  styles.toggle,
-                  {
-                    backgroundColor: breakdownEnabled ? theme.button.primary.background : theme.input.border,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.toggleThumb,
-                    {
-                      backgroundColor: theme.background.primary,
-                      transform: [{ translateX: breakdownEnabled ? 20 : 0 }],
-                    },
-                  ]}
-                />
-              </View>
-            </TouchableOpacity>
-            {breakdownEnabled && (
-              <Text style={[styles.helperText, { color: theme.text.secondary }]}>
-                Recommended for habits you do multiple times per period. You'll see progress like '3 of 5 sessions done'.
-              </Text>
-            )}
-          </View>
-
-          {breakdownEnabled && (
-            <View style={[styles.sessionConfigSection, { borderTopColor: theme.border.secondary }]}>
-              <View style={styles.sessionConfigRow}>
-                <View style={styles.sessionConfigField}>
-                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Call it a</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: theme.input.background,
-                        borderColor: theme.input.border,
-                        color: theme.input.text,
-                      },
-                    ]}
-                    placeholderTextColor={theme.input.placeholder}
-                    placeholder="session"
-                    value={sessionLabel}
-                    onChangeText={handleSessionLabelChange}
-                  />
-                </View>
-                <View style={styles.sessionConfigField}>
-                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
-                    {sessionLabel || 'session'}s per {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: theme.input.background,
-                        borderColor: theme.input.border,
-                        color: theme.input.text,
-                      },
-                    ]}
-                    placeholderTextColor={theme.input.placeholder}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 5"
-                    value={sessionsPerCadence ? String(sessionsPerCadence) : ''}
-                    onChangeText={handleSessionsPerCadenceChange}
-                  />
-                </View>
-              </View>
-              <View style={styles.sessionConfigRow}>
-                <View style={styles.sessionConfigField}>
-                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
-                    Each {sessionLabel || 'session'} is
-                  </Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      {
-                        backgroundColor: theme.input.background,
-                        borderColor: theme.input.border,
-                        color: theme.input.text,
-                      },
-                    ]}
-                    placeholderTextColor={theme.input.placeholder}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 15"
-                    value={volumePerSession ? String(volumePerSession) : ''}
-                    onChangeText={handleVolumePerSessionChange}
-                  />
-                  {unitOverride && (
-                    <Text style={[styles.unitHint, { color: theme.text.tertiary }]}>
-                      {unitOverride}
-                    </Text>
-                  )}
-                  {!unitOverride && selectedActivity && (
-                    <Text style={[styles.unitHint, { color: theme.text.tertiary }]}>
-                      {selectedActivity.unit}
-                    </Text>
-                  )}
-                </View>
-              </View>
-              {sessionConfigError && (
-                <Text style={[styles.errorText, { color: theme.input.borderError }]}>
-                  {sessionConfigError}
-                </Text>
-              )}
-              {sessionsPerCadence !== null && volumePerSession !== null && sessionsPerCadence > 0 && volumePerSession > 0 && (
-                <Text style={[styles.previewText, { color: theme.text.secondary }]}>
-                  {sessionsPerCadence} {sessionLabel || 'session'}{sessionsPerCadence !== 1 ? 's' : ''} × {volumePerSession} {unitOverride || selectedActivity?.unit || 'units'} = {sessionsPerCadence * volumePerSession} {unitOverride || selectedActivity?.unit || 'units'} / {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
-                </Text>
-              )}
-            </View>
-          )}
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <View style={styles.stepHeader}>
-            <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 3</Text>
-            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Cadence</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Period</Text>
           </View>
           <View style={styles.pillRow}>{cadencePresetButtons}</View>
 
@@ -713,6 +545,191 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
             </View>
           )}
           {cadenceError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{cadenceError}</Text>}
+        </View>
+
+        <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+          <View style={styles.stepHeader}>
+            <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 3</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Goal</Text>
+          </View>
+
+          {!breakdownEnabled && (
+            <>
+              <Text style={[styles.helperText, { color: theme.text.secondary }]}>
+                Set your total target for the period.
+              </Text>
+              <View style={styles.minimumUnitRow}>
+                <View style={styles.minimumUnitField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
+                    Total per {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 75"
+                    value={goalTotal ? String(goalTotal) : ''}
+                    onChangeText={handleGoalTotalChange}
+                  />
+                  {goalTotalError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{goalTotalError}</Text>}
+                </View>
+                <View style={styles.minimumUnitField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    placeholder={
+                      selectedActivity
+                        ? `Default: ${selectedActivity.unit}`
+                        : 'Unit'
+                    }
+                    value={unitOverride ?? ''}
+                    onChangeText={handleUnitOverrideChange}
+                  />
+                </View>
+              </View>
+            </>
+          )}
+
+          <View style={styles.breakdownSection}>
+            <TouchableOpacity
+              style={styles.toggleRow}
+              onPress={() => setBreakdownEnabled(!breakdownEnabled)}
+            >
+              <Text style={[styles.toggleLabel, { color: theme.text.primary }]}>
+                Break this goal into sessions
+              </Text>
+              <View
+                style={[
+                  styles.toggle,
+                  {
+                    backgroundColor: breakdownEnabled ? theme.button.primary.background : theme.input.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleThumb,
+                    {
+                      backgroundColor: theme.background.primary,
+                      transform: [{ translateX: breakdownEnabled ? 20 : 0 }],
+                    },
+                  ]}
+                />
+              </View>
+            </TouchableOpacity>
+            {breakdownEnabled && (
+              <Text style={[styles.helperText, { color: theme.text.secondary }]}>
+                Recommended for habits you do multiple times per period. You'll see progress like '3 of 5 sessions done'.
+              </Text>
+            )}
+          </View>
+
+          {breakdownEnabled && (
+            <View style={styles.sessionConfigSection}>
+              <View style={styles.sessionConfigRow}>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Call it a</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    placeholder="session"
+                    value={sessionLabel}
+                    onChangeText={handleSessionLabelChange}
+                  />
+                </View>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
+                    {sessionLabel || 'session'}s per {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 5"
+                    value={sessionsPerCadence ? String(sessionsPerCadence) : ''}
+                    onChangeText={handleSessionsPerCadenceChange}
+                  />
+                </View>
+              </View>
+              <View style={styles.sessionConfigRow}>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
+                    Each {sessionLabel || 'session'} is
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 15"
+                    value={volumePerSession ? String(volumePerSession) : ''}
+                    onChangeText={handleVolumePerSessionChange}
+                  />
+                </View>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    placeholder={
+                      selectedActivity
+                        ? `Default: ${selectedActivity.unit}`
+                        : 'Unit'
+                    }
+                    value={unitOverride ?? ''}
+                    onChangeText={handleUnitOverrideChange}
+                  />
+                </View>
+              </View>
+              {sessionConfigError && (
+                <Text style={[styles.errorText, { color: theme.input.borderError }]}>
+                  {sessionConfigError}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
         </ScrollView>
 
@@ -856,8 +873,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   stickySummary: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 14,
+    fontStyle: 'italic',
     textAlign: 'center',
   },
   section: {
@@ -1141,9 +1158,6 @@ const styles = StyleSheet.create({
   sessionConfigSection: {
     marginTop: 16,
     gap: 12,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)',
   },
   sessionConfigRow: {
     flexDirection: 'row',
@@ -1156,10 +1170,5 @@ const styles = StyleSheet.create({
   unitHint: {
     fontSize: 12,
     marginTop: 4,
-  },
-  previewText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    marginTop: 8,
   },
 });

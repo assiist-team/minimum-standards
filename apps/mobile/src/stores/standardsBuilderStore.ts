@@ -62,8 +62,39 @@ const initialState = {
   volumePerSession: null,
 };
 
-export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get) => ({
-  ...initialState,
+type SessionGoalInputs = Pick<
+  StandardsBuilderState,
+  'breakdownEnabled' | 'sessionsPerCadence' | 'volumePerSession'
+>;
+
+export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get) => {
+  const recalculateGoalTotal = (overrides: Partial<SessionGoalInputs> = {}) => {
+    const currentState = get();
+    const breakdownEnabled =
+      overrides.breakdownEnabled ?? currentState.breakdownEnabled;
+    const sessionsPerCadence =
+      overrides.sessionsPerCadence ?? currentState.sessionsPerCadence;
+    const volumePerSession =
+      overrides.volumePerSession ?? currentState.volumePerSession;
+
+    if (!breakdownEnabled) {
+      return;
+    }
+
+    if (
+      sessionsPerCadence !== null &&
+      volumePerSession !== null &&
+      sessionsPerCadence > 0 &&
+      volumePerSession > 0
+    ) {
+      set({ goalTotal: sessionsPerCadence * volumePerSession });
+    } else {
+      set({ goalTotal: null });
+    }
+  };
+
+  return {
+    ...initialState,
 
   setSelectedActivity: (activity) => {
     set({ selectedActivity: activity });
@@ -85,21 +116,24 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
     set({ unitOverride });
   },
 
-  setBreakdownEnabled: (enabled) => {
-    set({ breakdownEnabled: enabled });
-  },
+    setBreakdownEnabled: (enabled) => {
+      set({ breakdownEnabled: enabled });
+      recalculateGoalTotal({ breakdownEnabled: enabled });
+    },
 
   setSessionLabel: (label) => {
     set({ sessionLabel: label.trim() || 'session' });
   },
 
-  setSessionsPerCadence: (sessions) => {
-    set({ sessionsPerCadence: sessions });
-  },
+    setSessionsPerCadence: (sessions) => {
+      set({ sessionsPerCadence: sessions });
+      recalculateGoalTotal({ sessionsPerCadence: sessions });
+    },
 
-  setVolumePerSession: (volume) => {
-    set({ volumePerSession: volume });
-  },
+    setVolumePerSession: (volume) => {
+      set({ volumePerSession: volume });
+      recalculateGoalTotal({ volumePerSession: volume });
+    },
 
   getEffectiveUnit: () => {
     const state = get();
@@ -206,7 +240,8 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
     };
   },
 
-  reset: () => {
-    set(initialState);
-  },
-}));
+    reset: () => {
+      set(initialState);
+    },
+  };
+});

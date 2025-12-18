@@ -12,10 +12,24 @@ export declare const standardCadenceSchema: z.ZodObject<{
 }>;
 export declare const legacyStandardCadenceSchema: z.ZodUnion<[z.ZodLiteral<"daily">, z.ZodLiteral<"weekly">, z.ZodLiteral<"monthly">]>;
 export declare const standardStateSchema: z.ZodUnion<[z.ZodLiteral<"active">, z.ZodLiteral<"archived">]>;
+export declare const standardSessionConfigSchema: z.ZodObject<{
+    sessionLabel: z.ZodString;
+    sessionsPerCadence: z.ZodNumber;
+    volumePerSession: z.ZodNumber;
+}, "strip", z.ZodTypeAny, {
+    sessionLabel: string;
+    sessionsPerCadence: number;
+    volumePerSession: number;
+}, {
+    sessionLabel: string;
+    sessionsPerCadence: number;
+    volumePerSession: number;
+}>;
 export declare const activitySchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodString;
     unit: z.ZodEffects<z.ZodString, string, string>;
+    notes: z.ZodDefault<z.ZodNullable<z.ZodString>>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
@@ -23,6 +37,7 @@ export declare const activitySchema: z.ZodObject<{
     unit: string;
     id: string;
     name: string;
+    notes: string | null;
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
@@ -33,8 +48,9 @@ export declare const activitySchema: z.ZodObject<{
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
+    notes?: string | null | undefined;
 }>;
-export declare const standardSchema: z.ZodObject<{
+export declare const standardSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
     activityId: z.ZodString;
     minimum: z.ZodNumber;
@@ -53,6 +69,19 @@ export declare const standardSchema: z.ZodObject<{
     summary: z.ZodString;
     archivedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
     quickAddValues: z.ZodOptional<z.ZodArray<z.ZodNumber, "many">>;
+    sessionConfig: z.ZodObject<{
+        sessionLabel: z.ZodString;
+        sessionsPerCadence: z.ZodNumber;
+        volumePerSession: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    }, {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    }>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
@@ -71,6 +100,11 @@ export declare const standardSchema: z.ZodObject<{
     state: "active" | "archived";
     summary: string;
     archivedAtMs: number | null;
+    sessionConfig: {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    };
     quickAddValues?: number[] | undefined;
 }, {
     unit: string;
@@ -87,6 +121,53 @@ export declare const standardSchema: z.ZodObject<{
     state: "active" | "archived";
     summary: string;
     archivedAtMs: number | null;
+    sessionConfig: {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    };
+    quickAddValues?: number[] | undefined;
+}>, {
+    unit: string;
+    minimum: number;
+    id: string;
+    createdAtMs: number;
+    updatedAtMs: number;
+    deletedAtMs: number | null;
+    activityId: string;
+    cadence: {
+        interval: number;
+        unit: "day" | "week" | "month";
+    };
+    state: "active" | "archived";
+    summary: string;
+    archivedAtMs: number | null;
+    sessionConfig: {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    };
+    quickAddValues?: number[] | undefined;
+}, {
+    unit: string;
+    minimum: number;
+    id: string;
+    createdAtMs: number;
+    updatedAtMs: number;
+    deletedAtMs: number | null;
+    activityId: string;
+    cadence: {
+        interval: number;
+        unit: "day" | "week" | "month";
+    };
+    state: "active" | "archived";
+    summary: string;
+    archivedAtMs: number | null;
+    sessionConfig: {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    };
     quickAddValues?: number[] | undefined;
 }>;
 export declare const activityLogSchema: z.ZodObject<{
