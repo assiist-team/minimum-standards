@@ -30,6 +30,24 @@ service cloud.firestore {
         request.resource.data[fieldName] is string;
     }
 
+    function validSessionConfig() {
+      return ('sessionConfig' in request.resource.data)
+        && request.resource.data.sessionConfig is map
+        && request.resource.data.sessionConfig.keys().hasOnly([
+          'sessionLabel',
+          'sessionsPerCadence',
+          'volumePerSession'
+        ])
+        && request.resource.data.sessionConfig.sessionLabel is string
+        && request.resource.data.sessionConfig.sessionLabel.size() >= 1
+        && request.resource.data.sessionConfig.sessionLabel.size() <= 60
+        && request.resource.data.sessionConfig.sessionsPerCadence is int
+        && request.resource.data.sessionConfig.sessionsPerCadence >= 1
+        && request.resource.data.sessionConfig.sessionsPerCadence <= 1000
+        && request.resource.data.sessionConfig.volumePerSession is number
+        && request.resource.data.sessionConfig.volumePerSession > 0;
+    }
+
     function isCreateWithServerTimestamps() {
       // Enforces client use of serverTimestamp(); in rules it resolves to request.time.
       return request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
@@ -68,6 +86,7 @@ service cloud.firestore {
         'cadence',
         'state',
         'summary',
+        'sessionConfig',
         'quickAddValues',
         'archivedAt',
         'createdAt',
@@ -98,6 +117,7 @@ service cloud.firestore {
       && request.resource.data.summary is string
       && request.resource.data.summary.size() >= 1
       && request.resource.data.summary.size() <= 200
+      && validSessionConfig()
       && isTimestamp(request.resource.data.createdAt)
       && isTimestamp(request.resource.data.updatedAt)
       && isOptionalTimestampField('deletedAt')

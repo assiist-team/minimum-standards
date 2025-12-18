@@ -72,9 +72,7 @@ function setupHook(
     standards: [],
     activeStandards: [],
     archivedStandards: [],
-    pinnedStandards: [],
     orderedActiveStandards: [],
-    pinOrder: [],
     loading: false,
     error: null,
     createStandard: jest.fn().mockResolvedValue(mockStandard),
@@ -85,9 +83,6 @@ function setupHook(
     deleteLogEntry: jest.fn(),
     restoreLogEntry: jest.fn(),
     canLogStandard: jest.fn().mockReturnValue(true),
-    pinStandard: jest.fn(),
-    unpinStandard: jest.fn(),
-    movePinnedStandard: jest.fn(),
     ...overrides,
   };
 

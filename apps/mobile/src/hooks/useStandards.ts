@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  FirebaseFirestoreTypes,
   collection,
   doc,
   query,
@@ -13,19 +12,12 @@ import {
   Standard,
   StandardCadence,
   StandardSessionConfig,
-  DashboardPins,
   formatStandardSummary,
 } from '@minimum-standards/shared-model';
 import {
   FirestoreStandardData,
   fromFirestoreStandard,
 } from '../utils/standardConverter';
-import {
-  buildOrderedStandards,
-  movePinToIndex,
-  sanitizePinOrder,
-  togglePin,
-} from '../utils/dashboardPins';
 import { normalizeFirebaseError } from '../utils/errors';
 import { retryFirestoreWrite } from '../utils/retry';
 
@@ -82,9 +74,7 @@ export interface UseStandardsResult {
   standards: Standard[];
   activeStandards: Standard[];
   archivedStandards: Standard[];
-  pinnedStandards: Standard[];
   orderedActiveStandards: Standard[];
-  pinOrder: string[];
   loading: boolean;
   error: Error | null;
   createStandard: (input: CreateStandardInput) => Promise<Standard>;
@@ -95,56 +85,17 @@ export interface UseStandardsResult {
   deleteLogEntry: (logEntryId: string, standardId: string) => Promise<void>;
   restoreLogEntry: (logEntryId: string, standardId: string) => Promise<void>;
   canLogStandard: (standardId: string) => boolean;
-  pinStandard: (standardId: string) => Promise<void>;
-  unpinStandard: (standardId: string) => Promise<void>;
-  movePinnedStandard: (standardId: string, targetIndex: number) => Promise<void>;
 }
 
 function sortByUpdatedAtDesc(list: Standard[]): Standard[] {
   return [...list].sort((a, b) => b.updatedAtMs - a.updatedAtMs);
 }
 
-type DashboardPinsState = Pick<DashboardPins, 'pinnedStandardIds'> & {
-  updatedAtMs: number;
-};
-
-type DashboardPinsDoc = {
-  pinnedStandardIds?: string[];
-  updatedAt?: FirebaseFirestoreTypes.Timestamp | null;
-};
-
-const DASHBOARD_PINS_DOC_ID = 'dashboardPins';
-const EMPTY_PINS_STATE: DashboardPinsState = {
-  pinnedStandardIds: [],
-  updatedAtMs: 0,
-};
-
 export function useStandards(): UseStandardsResult {
   const [standards, setStandards] = useState<Standard[]>([]);
   const [standardsLoading, setStandardsLoading] = useState(true);
   const [standardsError, setStandardsError] = useState<Error | null>(null);
-  const [pinState, setPinState] = useState<DashboardPinsState>({
-    pinnedStandardIds: [],
-    updatedAtMs: Date.now(),
-  });
-  const pinStateRef = useRef(pinState);
-  const [pinsLoading, setPinsLoading] = useState(true);
-  const [pinsError, setPinsError] = useState<Error | null>(null);
   const userId = firebaseAuth.currentUser?.uid;
-
-  useEffect(() => {
-    pinStateRef.current = pinState;
-  }, [pinState]);
-
-  const dashboardPinsRef = useMemo(() => {
-    if (!userId) {
-      return null;
-    }
-    return doc(
-      collection(doc(firebaseFirestore, 'users', userId), 'preferences'),
-      DASHBOARD_PINS_DOC_ID
-    );
-  }, [userId]);
 
   useEffect(() => {
     if (!userId) {
@@ -201,59 +152,6 @@ export function useStandards(): UseStandardsResult {
     return () => unsubscribe();
   }, [userId]);
 
-  useEffect(() => {
-    if (!dashboardPinsRef) {
-      console.warn('[useStandards] No dashboardPinsRef available - cannot subscribe to dashboardPins');
-      setPinsLoading(false);
-      setPinState(EMPTY_PINS_STATE);
-      return;
-    }
-
-    console.log('[useStandards] Subscribing to dashboardPins for user:', userId);
-    setPinsLoading(true);
-    setPinsError(null);
-
-    const unsubscribe = dashboardPinsRef.onSnapshot(
-      (snapshot) => {
-        if (!snapshot.exists) {
-          dashboardPinsRef
-            .set({
-              pinnedStandardIds: [],
-              updatedAt: serverTimestamp(),
-            })
-            .catch((err) => {
-              const normalizedError = normalizeFirebaseError(err);
-              setPinsError(normalizedError);
-            })
-            .finally(() => setPinsLoading(false));
-          return;
-        }
-
-        const data = snapshot.data() as DashboardPinsDoc | undefined;
-        if (!data) {
-          setPinState(EMPTY_PINS_STATE);
-          setPinsLoading(false);
-          return;
-        }
-        setPinState({
-          pinnedStandardIds: Array.isArray(data.pinnedStandardIds)
-            ? data.pinnedStandardIds.filter(
-                (id): id is string => typeof id === 'string'
-              )
-            : [],
-          updatedAtMs: data.updatedAt?.toMillis() ?? Date.now(),
-        });
-        setPinsLoading(false);
-      },
-      (err) => {
-        const normalizedError = normalizeFirebaseError(err);
-        setPinsError(normalizedError);
-        setPinsLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, [dashboardPinsRef]);
 
   const activeStandards = useMemo(
     () => standards.filter((standard) => standard.state === 'active'),
@@ -265,42 +163,10 @@ export function useStandards(): UseStandardsResult {
     [standards]
   );
 
-  const { pinnedStandards, orderedActiveStandards } = useMemo(
-    () => buildOrderedStandards(activeStandards, pinState?.pinnedStandardIds ?? []),
-    [activeStandards, pinState?.pinnedStandardIds]
+  const orderedActiveStandards = useMemo(
+    () => sortByUpdatedAtDesc(activeStandards),
+    [activeStandards]
   );
-
-  useEffect(() => {
-    if (
-      !dashboardPinsRef ||
-      !pinState ||
-      pinState.pinnedStandardIds.length === 0 ||
-      activeStandards.length === 0
-    ) {
-      return;
-    }
-
-    const sanitized = sanitizePinOrder(
-      pinState.pinnedStandardIds,
-      activeStandards
-    );
-    if (sanitized.length === pinState.pinnedStandardIds.length) {
-      return;
-    }
-
-    dashboardPinsRef
-      .set(
-        {
-          pinnedStandardIds: sanitized,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      )
-      .catch((err) => {
-        const normalizedError = normalizeFirebaseError(err);
-        setPinsError(normalizedError);
-      });
-  }, [dashboardPinsRef, pinState.pinnedStandardIds, activeStandards]);
 
   const createStandard = useCallback(
     async (input: CreateStandardInput): Promise<Standard> => {
@@ -519,106 +385,14 @@ export function useStandards(): UseStandardsResult {
     [userId, canLogStandard]
   );
 
-  const persistPins = useCallback(
-    async (nextOrder: string[]) => {
-      if (!dashboardPinsRef) {
-        throw new Error('User not authenticated');
-      }
-      await retryFirestoreWrite(async () => {
-        await dashboardPinsRef.set(
-          {
-            pinnedStandardIds: nextOrder,
-            updatedAt: serverTimestamp(),
-          },
-          { merge: true }
-        );
-      });
-    },
-    [dashboardPinsRef]
-  );
-
-  const pinStandard = useCallback(
-    async (standardId: string) => {
-      if (!dashboardPinsRef) {
-        throw new Error('User not authenticated');
-      }
-
-      let nextOrder: string[] = pinStateRef.current?.pinnedStandardIds ?? [];
-      setPinState((prev) => {
-        const currentPins = prev?.pinnedStandardIds ?? [];
-        nextOrder = togglePin(currentPins, standardId, true);
-        return { pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
-      });
-
-      try {
-        await persistPins(nextOrder);
-      } catch (err) {
-        const normalizedError = normalizeFirebaseError(err);
-        setPinsError(normalizedError);
-        throw normalizedError;
-      }
-    },
-    [dashboardPinsRef, persistPins]
-  );
-
-  const unpinStandard = useCallback(
-    async (standardId: string) => {
-      if (!dashboardPinsRef) {
-        throw new Error('User not authenticated');
-      }
-
-      let nextOrder: string[] = pinStateRef.current?.pinnedStandardIds ?? [];
-      setPinState((prev) => {
-        const currentPins = prev?.pinnedStandardIds ?? [];
-        nextOrder = togglePin(currentPins, standardId, false);
-        return { pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
-      });
-
-      try {
-        await persistPins(nextOrder);
-      } catch (err) {
-        const normalizedError = normalizeFirebaseError(err);
-        setPinsError(normalizedError);
-        throw normalizedError;
-      }
-    },
-    [dashboardPinsRef, persistPins]
-  );
-
-  const movePinnedStandard = useCallback(
-    async (standardId: string, targetIndex: number) => {
-      if (!dashboardPinsRef) {
-        throw new Error('User not authenticated');
-      }
-
-      let nextOrder: string[] = pinStateRef.current?.pinnedStandardIds ?? [];
-      setPinState((prev) => {
-        const currentPins = prev?.pinnedStandardIds ?? [];
-        nextOrder = movePinToIndex(currentPins, standardId, targetIndex);
-        return { pinnedStandardIds: nextOrder, updatedAtMs: Date.now() };
-      });
-
-      try {
-        await persistPins(nextOrder);
-      } catch (err) {
-        const normalizedError = normalizeFirebaseError(err);
-        setPinsError(normalizedError);
-        throw normalizedError;
-      }
-    },
-    [dashboardPinsRef, persistPins]
-  );
-
-  const loading = standardsLoading || pinsLoading;
-  const error = standardsError ?? pinsError;
+  const loading = standardsLoading;
+  const error = standardsError;
 
   return {
     standards,
     activeStandards,
     archivedStandards,
-    pinnedStandards,
     orderedActiveStandards,
-    pinOrder: pinState?.pinnedStandardIds ?? [],
     loading,
     error,
     createStandard,
@@ -629,8 +403,5 @@ export function useStandards(): UseStandardsResult {
     deleteLogEntry,
     restoreLogEntry,
     canLogStandard,
-    pinStandard,
-    unpinStandard,
-    movePinnedStandard,
   };
 }

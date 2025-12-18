@@ -10,12 +10,6 @@ export type PeriodWindow = {
   label: string;
 };
 
-const LABEL_LOCALE = 'en-US';
-
-function formatLabel(dt: DateTime, format: string): string {
-  return dt.setLocale(LABEL_LOCALE).toFormat(format);
-}
-
 /**
  * Calculates the period window for a given timestamp, cadence, and timezone.
  * 
@@ -41,13 +35,14 @@ export function calculatePeriodWindow(
     // For daily cadence, align to day start
     const start = zoned.startOf('day');
     const end = start.plus({ days: interval });
+    const endDate = end.minus({ days: 1 });
     return {
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
       label: interval === 1 
-        ? formatLabel(start, 'MMMM d, yyyy')
-        : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
+        ? `${start.month}/${start.day}/${start.year}`
+        : `${start.month}/${start.day}/${start.year}-${endDate.month}/${endDate.day}/${endDate.year}`
     };
   }
 
@@ -58,13 +53,12 @@ export function calculatePeriodWindow(
     const daysToMonday = weekday === 1 ? 0 : weekday === 7 ? 6 : weekday - 1;
     const start = zoned.minus({ days: daysToMonday }).startOf('day');
     const end = start.plus({ weeks: interval });
+    const endDate = end.minus({ days: 1 });
     return {
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
-      label: interval === 1
-        ? `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
-        : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
+      label: `${start.month}/${start.day}/${start.year}-${endDate.month}/${endDate.day}/${endDate.year}`
     };
   }
 
@@ -72,13 +66,14 @@ export function calculatePeriodWindow(
   if (unit === 'month') {
     const monthStart = zoned.startOf('month');
     const monthEnd = monthStart.plus({ months: interval });
+    const endDate = monthEnd.minus({ days: 1 });
     return {
       startMs: monthStart.toMillis(),
       endMs: monthEnd.toMillis(),
       periodKey: monthStart.toFormat('yyyy-LL'),
       label: interval === 1
-        ? formatLabel(monthStart, 'MMMM yyyy')
-        : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(monthEnd.minus({ days: 1 }), 'MMMM yyyy')}`
+        ? `${monthStart.month}/${monthStart.day}/${monthStart.year}-${endDate.month}/${endDate.day}/${endDate.year}`
+        : `${monthStart.month}/${monthStart.day}/${monthStart.year}-${endDate.month}/${endDate.day}/${endDate.year}`
     };
   }
 

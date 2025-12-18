@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -13,6 +12,7 @@ import type { Standard } from '@minimum-standards/shared-model';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboard';
 import type { DashboardStandard } from '../hooks/useActiveStandardsDashboard';
+import { useActivities } from '../hooks/useActivities';
 import { trackStandardEvent } from '../utils/analytics';
 import { LogEntryModal } from '../components/LogEntryModal';
 import { ErrorBanner } from '../components/ErrorBanner';
@@ -39,21 +39,27 @@ export function ActiveStandardsDashboardScreen({
     loading,
     error,
     refreshProgress,
-    pinStandard,
-    unpinStandard,
-    movePinnedStandard,
-    pinOrder,
     createLogEntry,
     updateLogEntry,
     refreshStandards,
   } = useActiveStandardsDashboard();
+
+  const { activities } = useActivities();
+
+  // Create activity lookup map for efficient name resolution
+  const activityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    activities.forEach((activity) => {
+      map.set(activity.id, activity.name);
+    });
+    return map;
+  }, [activities]);
 
   const handleLogPress = useCallback(
     (entry: DashboardStandard) => {
       trackStandardEvent('dashboard_log_tap', {
         standardId: entry.standard.id,
         activityId: entry.standard.activityId,
-        pinned: entry.pinned,
       });
 
       if (onOpenLogModal) {
@@ -92,96 +98,21 @@ export function ActiveStandardsDashboardScreen({
     }
   }, [refreshProgress, refreshStandards]);
 
-  const handlePinToggle = useCallback(
-    async (entry: DashboardStandard) => {
-      const handler = entry.pinned ? unpinStandard : pinStandard;
-      const wasPinned = entry.pinned;
-      try {
-        await handler(entry.standard.id);
-        trackStandardEvent(
-          wasPinned ? 'dashboard_unpin_standard' : 'dashboard_pin_standard',
-          {
-            standardId: entry.standard.id,
-            activityId: entry.standard.activityId,
-            pinned: !wasPinned,
-          }
-        );
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Unable to update pinned order';
-        Alert.alert('Pin update failed', message);
-      }
-    },
-    [pinStandard, unpinStandard]
-  );
-
-  const handleReorder = useCallback(
-    async (entry: DashboardStandard, targetIndex: number) => {
-      try {
-        await movePinnedStandard(entry.standard.id, targetIndex);
-        trackStandardEvent('dashboard_pin_standard', {
-          standardId: entry.standard.id,
-          activityId: entry.standard.activityId,
-          action: 'reorder',
-          targetIndex,
-        });
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Unable to reorder pins';
-        Alert.alert('Reorder failed', message);
-      }
-    },
-    [movePinnedStandard]
-  );
-
-  const handlePinLongPress = useCallback(
-    (entry: DashboardStandard) => {
-      const title = entry.pinned ? 'Pinned Standard' : 'Pin options';
-      Alert.alert(title, entry.standard.summary, [
-        {
-          text: entry.pinned ? 'Unpin' : 'Pin to top',
-          onPress: () => {
-            if (entry.pinned) {
-              handlePinToggle(entry).catch(() => undefined);
-            } else {
-              pinStandard(entry.standard.id).catch(() => undefined);
-            }
-          },
-        },
-        {
-          text: 'Move to top',
-          onPress: () => handleReorder(entry, 0),
-        },
-        {
-          text: 'Move to bottom',
-          onPress: () =>
-            handleReorder(entry, Math.max(pinOrder.length - 1, 0)),
-          style: 'default',
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ]);
-    },
-    [handlePinToggle, handleReorder, pinOrder.length, pinStandard]
-  );
 
   const renderCard = useCallback(
     ({ item }: { item: DashboardStandard }) => (
       <StandardCard
         entry={item}
         onLogPress={() => handleLogPress(item)}
-        onPinPress={() => handlePinToggle(item)}
-        onPinLongPress={() => handlePinLongPress(item)}
         onCardPress={() => {
           if (onNavigateToDetail) {
             onNavigateToDetail(item.standard.id);
           }
         }}
+        activityNameMap={activityNameMap}
       />
     ),
-    [handleLogPress, handlePinLongPress, handlePinToggle, onNavigateToDetail]
+    [handleLogPress, onNavigateToDetail, activityNameMap]
   );
 
   const content = useMemo(() => {
@@ -268,33 +199,33 @@ export function ActiveStandardsDashboardScreen({
 function StandardCard({
   entry,
   onLogPress,
-  onPinPress,
-  onPinLongPress,
   onCardPress,
+  activityNameMap,
 }: {
   entry: DashboardStandard;
   onLogPress: () => void;
-  onPinPress: () => void;
-  onPinLongPress: () => void;
   onCardPress?: () => void;
+  activityNameMap: Map<string, string>;
 }) {
   const theme = useTheme();
-  const { standard, pinned, progress } = entry;
+  const { standard, progress } = entry;
   const status = progress?.status ?? 'In Progress';
   const statusColors = getStatusColors(theme, status as 'Met' | 'In Progress' | 'Missed');
   const percent = progress?.progressPercent ?? 0;
   
-  // Compute period label if not available in progress
-  const periodLabel = progress?.periodLabel ?? (() => {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
-    const nowMs = Date.now();
-    const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
-    return window.label;
-  })();
+  // Get activity name from map, fallback to activityId if not found
+  const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
+  
+  // Compute period window and ensure numeric date format
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+  const nowMs = Date.now();
+  const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+  // Use the numeric date format from calculatePeriodWindow (already numeric)
+  const periodLabel = progress?.periodLabel ?? window.label;
   
   const targetSummary = progress?.targetSummary ?? standard.summary;
   const currentFormatted = progress?.currentTotalFormatted ?? '—';
-  const detailLine = `${periodLabel} · ${currentFormatted} / ${targetSummary}`;
+  const dateLine = periodLabel;
 
   return (
     <TouchableOpacity
@@ -302,60 +233,67 @@ function StandardCard({
       onPress={onCardPress}
       activeOpacity={onCardPress ? 0.7 : 1}
       accessibilityRole={onCardPress ? 'button' : undefined}
-      accessibilityLabel={onCardPress ? `View details for ${standard.activityId}` : undefined}
+      accessibilityLabel={onCardPress ? `View details for ${activityName}` : undefined}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.titleBlock}>
-          <Text
-            style={[styles.activityName, { color: theme.text.primary }]}
-            numberOfLines={1}
-            accessibilityLabel={`Standard for activity ${standard.activityId}`}
-          >
-            {standard.activityId}
-          </Text>
-          <Text style={[styles.periodText, { color: theme.text.secondary }]} numberOfLines={2}>
-            {detailLine}
-          </Text>
-        </View>
-        <View style={styles.headerActions}>
-          <View
-            style={[styles.statusPill, { backgroundColor: statusColors.background }]}
-            accessibilityRole="text"
-          >
-            <Text style={[styles.statusText, { color: statusColors.text }]}>
-              {status}
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleBlock}>
+            <Text
+              style={[styles.activityName, { color: theme.text.primary }]}
+              numberOfLines={1}
+              accessibilityLabel={`Activity ${activityName}`}
+            >
+              {activityName}
+            </Text>
+            <Text
+              style={[styles.standardSummary, { color: theme.text.primary }]}
+              numberOfLines={1}
+              accessibilityLabel={`Standard: ${targetSummary}`}
+            >
+              {targetSummary}
+            </Text>
+            <Text 
+              style={[styles.dateLine, { color: theme.text.secondary }]} 
+              numberOfLines={1}
+              accessibilityLabel={`Period: ${dateLine}`}
+            >
+              {dateLine}
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={onPinPress}
-            onLongPress={onPinLongPress}
-            accessibilityRole="button"
-            accessibilityLabel={
-              pinned ? 'Unpin standard from dashboard' : 'Pin standard to top'
-            }
-            style={styles.pinHandle}
-          >
-            <Text style={styles.pinHandleText}>{pinned ? '📌' : '⋮'}</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <View
+              style={[styles.statusPill, { backgroundColor: statusColors.background }]}
+              accessibilityRole="text"
+            >
+              <Text style={[styles.statusText, { color: statusColors.text }]}>
+                {status}
+              </Text>
+            </View>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.progressSection}>
-        <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
-          <View
-            style={[styles.progressFill, { width: `${percent}%`, backgroundColor: statusColors.bar }]}
-            accessibilityRole="progressbar"
-            accessibilityValue={{ now: percent, min: 0, max: 100 }}
-          />
+        <View style={[styles.progressContainer, { backgroundColor: theme.background.secondary, borderTopColor: theme.border.secondary }]}>
+          <View style={styles.progressSection}>
+            <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
+              <View
+                style={[styles.progressFill, { width: `${percent}%`, backgroundColor: statusColors.bar }]}
+                accessibilityRole="progressbar"
+                accessibilityValue={{ now: percent, min: 0, max: 100 }}
+              />
+            </View>
+            <TouchableOpacity
+              onPress={onLogPress}
+              style={[styles.logButton, { backgroundColor: theme.button.primary.background }]}
+              accessibilityRole="button"
+              accessibilityLabel={`Log progress for ${activityName}`}
+            >
+              <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={[styles.progressText, { color: theme.text.secondary }]}>
+            {currentFormatted} / {targetSummary}
+          </Text>
         </View>
-        <TouchableOpacity
-          onPress={onLogPress}
-          style={[styles.logButton, { backgroundColor: theme.button.primary.background }]}
-          accessibilityRole="button"
-          accessibilityLabel={`Log progress for ${standard.activityId}`}
-        >
-          <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
-        </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
@@ -431,30 +369,38 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 16,
-    padding: 16,
-    gap: 12,
+    padding: 0,
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
+    overflow: 'hidden',
+  },
+  cardContent: {
+    gap: 0,
   },
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 12,
+    padding: 16,
   },
   titleBlock: {
     flex: 1,
-    gap: 4,
+    gap: 6,
   },
   activityName: {
     fontSize: 16,
     fontWeight: '600',
   },
-  periodText: {
+  standardSummary: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  dateLine: {
+    fontSize: 13,
   },
   headerActions: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     gap: 8,
   },
   statusPill: {
@@ -466,11 +412,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 12,
   },
-  pinHandle: {
-    padding: 4,
-  },
-  pinHandleText: {
-    fontSize: 18,
+  progressContainer: {
+    padding: 16,
+    borderTopWidth: 1,
+    gap: 8,
   },
   progressSection: {
     flexDirection: 'row',
@@ -485,6 +430,10 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    textAlign: 'center',
   },
   logButton: {
     paddingHorizontal: 16,

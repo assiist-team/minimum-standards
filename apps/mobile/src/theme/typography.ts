@@ -3,24 +3,46 @@
  * All font sizes and weights should be defined here and referenced throughout the app.
  */
 
+type FontWeight =
+  | 'normal'
+  | 'bold'
+  | '100'
+  | '200'
+  | '300'
+  | '400'
+  | '500'
+  | '600'
+  | '700'
+  | '800'
+  | '900'
+  | 'ultralight'
+  | 'thin'
+  | 'light'
+  | 'medium'
+  | 'semibold'
+  | 'demibold'
+  | 'extrabold'
+  | 'black'
+  | number;
+
 export interface TypographyTheme {
   // Button typography
   button: {
     primary: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     secondary: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     small: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     pill: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
   };
 
@@ -28,19 +50,19 @@ export interface TypographyTheme {
   text: {
     large: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     body: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     small: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     tiny: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
   };
 
@@ -48,28 +70,28 @@ export interface TypographyTheme {
   header: {
     large: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     medium: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
     small: {
       fontSize: number;
-      fontWeight: string;
+      fontWeight: FontWeight;
     };
   };
 
   // Input typography
   input: {
     fontSize: number;
-    fontWeight: string;
+    fontWeight: FontWeight;
   };
 
   // Label typography
   label: {
     fontSize: number;
-    fontWeight: string;
+    fontWeight: FontWeight;
   };
 }
 

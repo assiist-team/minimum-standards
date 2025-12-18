@@ -21,7 +21,6 @@ import {
 
 export type DashboardStandard = {
   standard: Standard;
-  pinned: boolean;
   progress: DashboardProgress | null;
 };
 
@@ -44,7 +43,6 @@ export function useActiveStandardsDashboard() {
   const standardsResult = useStandards();
   const {
     orderedActiveStandards,
-    pinOrder,
     loading: standardsLoading,
     error: standardsError,
     createLogEntry,
@@ -135,10 +133,9 @@ export function useActiveStandardsDashboard() {
     () =>
       orderedActiveStandards.map((standard) => ({
         standard,
-        pinned: pinOrder.includes(standard.id),
         progress: progressMap[standard.id] ?? null,
       })),
-    [orderedActiveStandards, progressMap, pinOrder]
+    [orderedActiveStandards, progressMap]
   );
 
   const refreshProgress = useCallback(() => {

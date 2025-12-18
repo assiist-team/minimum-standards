@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import type { View as RNView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
 import { ActivityModal } from '../components/ActivityModal';
@@ -79,7 +80,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dropdownButtonLayout, setDropdownButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const dropdownButtonRef = useRef<TouchableOpacity>(null);
+  const dropdownButtonRef = useRef<RNView>(null);
 
   const summaryPreview = getSummaryPreview();
 
@@ -429,13 +430,13 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                 ]}
                 onLayout={() => {
                   // Measure button position relative to window
-                  dropdownButtonRef.current?.measureInWindow((x, y, width, height) => {
+                  dropdownButtonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
                     setDropdownButtonLayout({ x, y, width, height });
                   });
                 }}
                 onPress={() => {
                   // Measure position when opening dropdown
-                  dropdownButtonRef.current?.measureInWindow((x, y, width, height) => {
+                  dropdownButtonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
                     setDropdownButtonLayout({ x, y, width, height });
                   });
                   setActivityDropdownVisible(!activityDropdownVisible);
@@ -550,7 +551,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
           <View style={styles.stepHeader}>
             <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 3</Text>
-            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Goal</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Volume</Text>
           </View>
 
           {!breakdownEnabled && (
@@ -611,7 +612,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
               onPress={() => setBreakdownEnabled(!breakdownEnabled)}
             >
               <Text style={[styles.toggleLabel, { color: theme.text.primary }]}>
-                Break this goal into sessions
+                Break this volume into sessions
               </Text>
               <View
                 style={[
@@ -632,11 +633,6 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                 />
               </View>
             </TouchableOpacity>
-            {breakdownEnabled && (
-              <Text style={[styles.helperText, { color: theme.text.secondary }]}>
-                Recommended for habits you do multiple times per period. You'll see progress like '3 of 5 sessions done'.
-              </Text>
-            )}
           </View>
 
           {breakdownEnabled && (

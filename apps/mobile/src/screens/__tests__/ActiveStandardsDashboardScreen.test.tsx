@@ -35,7 +35,6 @@ const baseStandard: DashboardStandard = {
     updatedAtMs: 1,
     deletedAtMs: null,
   },
-  pinned: false,
   progress: {
     standardId: 'std-1',
     periodLabel: 'Week of Dec 8',
@@ -57,17 +56,10 @@ function setupHook(
     error: null,
     refreshProgress: jest.fn(),
     refreshStandards: jest.fn(),
-    pinStandard: jest.fn().mockResolvedValue(undefined),
-    unpinStandard: jest.fn().mockResolvedValue(undefined),
-    movePinnedStandard: jest
-      .fn()
-      .mockResolvedValue(undefined),
-    pinOrder: [],
     // Fields from useStandards that are spread into hook result (unused but provided for completeness)
     standards: [],
     activeStandards: [],
     archivedStandards: [],
-    pinnedStandards: [],
     orderedActiveStandards: [],
     createStandard: jest.fn(),
     archiveStandard: jest.fn(),
@@ -159,7 +151,6 @@ describe('ActiveStandardsDashboardScreen', () => {
         updatedAtMs: 1,
         deletedAtMs: null,
       },
-      pinned: false,
       progress: null, // No progress data
     };
 
@@ -178,11 +169,11 @@ describe('ActiveStandardsDashboardScreen', () => {
     expect(() => getByText('Current period')).toThrow();
   });
 
-  test('renders standards in provided order with pinned indicator', () => {
+  test('renders standards in provided order', () => {
     setupHook({
       dashboardStandards: [
-        { ...baseStandard, standard: { ...baseStandard.standard, activityId: 'Pinned', id: 'pinned-1' }, pinned: true },
-        { ...baseStandard, standard: { ...baseStandard.standard, activityId: 'Recent', id: 'recent-1' } },
+        { ...baseStandard, standard: { ...baseStandard.standard, activityId: 'First', id: 'first-1' } },
+        { ...baseStandard, standard: { ...baseStandard.standard, activityId: 'Second', id: 'second-1' } },
       ],
     });
     const { getAllByText } = render(
@@ -191,8 +182,8 @@ describe('ActiveStandardsDashboardScreen', () => {
         onLaunchBuilder={jest.fn()}
       />
     );
-    const activityLabels = getAllByText(/Pinned|Recent/);
-    expect(activityLabels[0].props.children).toBe('Pinned');
+    const activityLabels = getAllByText(/First|Second/);
+    expect(activityLabels[0].props.children).toBe('First');
   });
 
   test('invokes log modal when tapping Log', () => {
@@ -210,76 +201,6 @@ describe('ActiveStandardsDashboardScreen', () => {
     expect(trackStandardEvent).toHaveBeenCalledWith('dashboard_log_tap', {
       standardId: baseStandard.standard.id,
       activityId: baseStandard.standard.activityId,
-      pinned: false,
-    });
-  });
-
-  test('pinning emits analytics event with pinned boolean', async () => {
-    const pinStandard = jest.fn().mockResolvedValue(undefined);
-    setupHook({
-      dashboardStandards: [baseStandard],
-      pinStandard,
-    });
-    const { getByLabelText } = render(
-      <ActiveStandardsDashboardScreen
-        onBack={jest.fn()}
-        onLaunchBuilder={jest.fn()}
-      />
-    );
-    fireEvent.press(getByLabelText('Pin standard to top'));
-    await waitFor(() => expect(pinStandard).toHaveBeenCalled());
-    expect(trackStandardEvent).toHaveBeenCalledWith('dashboard_pin_standard', {
-      standardId: baseStandard.standard.id,
-      activityId: baseStandard.standard.activityId,
-      pinned: true,
-    });
-  });
-
-  test('unpinning emits analytics event with pinned boolean', async () => {
-    const unpinStandard = jest.fn().mockResolvedValue(undefined);
-    const pinnedStandard = { ...baseStandard, pinned: true };
-    setupHook({
-      dashboardStandards: [pinnedStandard],
-      unpinStandard,
-    });
-    const { getByLabelText } = render(
-      <ActiveStandardsDashboardScreen
-        onBack={jest.fn()}
-        onLaunchBuilder={jest.fn()}
-      />
-    );
-    fireEvent.press(getByLabelText('Unpin standard from dashboard'));
-    await waitFor(() => expect(unpinStandard).toHaveBeenCalled());
-    expect(trackStandardEvent).toHaveBeenCalledWith('dashboard_unpin_standard', {
-      standardId: baseStandard.standard.id,
-      activityId: baseStandard.standard.activityId,
-      pinned: false,
-    });
-  });
-
-  test('reordering pins emits analytics event', async () => {
-    const movePinnedStandard = jest.fn().mockResolvedValue(undefined);
-    const pinnedStandard = { ...baseStandard, pinned: true };
-    setupHook({
-      dashboardStandards: [pinnedStandard],
-      pinOrder: [baseStandard.standard.id],
-      movePinnedStandard,
-    });
-    const { getByLabelText } = render(
-      <ActiveStandardsDashboardScreen
-        onBack={jest.fn()}
-        onLaunchBuilder={jest.fn()}
-      />
-    );
-    // Long press to open pin options menu
-    fireEvent(getByLabelText('Unpin standard from dashboard'), 'longPress');
-    // Note: In a real test, we'd need to interact with the Alert, but for now
-    // we'll test the reorder handler directly by calling handleReorder
-    // This is a simplified test - in practice you'd mock Alert.alert
-    await waitFor(() => {
-      // Verify analytics was called when reorder happens
-      // Since we can't easily test Alert interactions, we verify the function exists
-      expect(movePinnedStandard).toBeDefined();
     });
   });
 
@@ -297,7 +218,6 @@ describe('ActiveStandardsDashboardScreen', () => {
     expect(trackStandardEvent).toHaveBeenCalledWith('dashboard_log_tap', {
       standardId: baseStandard.standard.id,
       activityId: baseStandard.standard.activityId,
-      pinned: false,
     });
   });
 

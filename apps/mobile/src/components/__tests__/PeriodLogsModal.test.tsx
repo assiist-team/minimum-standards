@@ -68,9 +68,7 @@ function setupStandardsHook(overrides: Partial<ReturnType<typeof useStandards>> 
     standards: [standard],
     activeStandards: standard.state === 'active' ? [standard] : [],
     archivedStandards: standard.state === 'archived' ? [standard] : [],
-    pinnedStandards: [],
     orderedActiveStandards: standard.state === 'active' ? [standard] : [],
-    pinOrder: [],
     loading: false,
     error: null,
     createStandard: jest.fn(),
@@ -81,9 +79,6 @@ function setupStandardsHook(overrides: Partial<ReturnType<typeof useStandards>> 
     deleteLogEntry: jest.fn().mockResolvedValue(undefined),
     restoreLogEntry: jest.fn().mockResolvedValue(undefined),
     canLogStandard: jest.fn((id: string) => id === standard.id && standard.state === 'active' && !standard.archivedAtMs),
-    pinStandard: jest.fn(),
-    unpinStandard: jest.fn(),
-    movePinnedStandard: jest.fn(),
     ...overrides,
   } as ReturnType<typeof useStandards>);
 }

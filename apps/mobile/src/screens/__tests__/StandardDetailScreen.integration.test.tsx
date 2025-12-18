@@ -161,9 +161,7 @@ function setupHooks(
     standards: [mockStandard],
     activeStandards: [mockStandard],
     archivedStandards: [],
-    pinnedStandards: [],
     orderedActiveStandards: [mockStandard],
-    pinOrder: [],
     loading: false,
     error: null,
     createStandard: jest.fn(),
@@ -171,9 +169,6 @@ function setupHooks(
     unarchiveStandard: jest.fn().mockResolvedValue(undefined),
     createLogEntry: jest.fn().mockResolvedValue(undefined),
     canLogStandard: jest.fn(() => true),
-    pinStandard: jest.fn(),
-    unpinStandard: jest.fn(),
-    movePinnedStandard: jest.fn(),
     ...standardsOverrides,
   } as ReturnType<typeof useStandards>);
 }

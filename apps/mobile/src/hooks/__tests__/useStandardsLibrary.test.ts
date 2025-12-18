@@ -65,9 +65,7 @@ describe('useStandardsLibrary', () => {
       standards: [mockStandard1, mockStandard2, mockStandard3],
       activeStandards: [mockStandard1, mockStandard3],
       archivedStandards: [mockStandard2],
-      pinnedStandards: [],
       orderedActiveStandards: [],
-      pinOrder: [],
       loading: false,
       error: null,
       createStandard: jest.fn(),
@@ -78,9 +76,6 @@ describe('useStandardsLibrary', () => {
       deleteLogEntry: jest.fn(),
       restoreLogEntry: jest.fn(),
       canLogStandard: jest.fn(),
-      pinStandard: jest.fn(),
-      unpinStandard: jest.fn(),
-      movePinnedStandard: jest.fn(),
     });
 
     const { result } = renderHook(() => useStandardsLibrary());
@@ -102,9 +97,7 @@ describe('useStandardsLibrary', () => {
       standards: [mockStandard1, mockStandard2, mockStandard3],
       activeStandards: [],
       archivedStandards: [],
-      pinnedStandards: [],
       orderedActiveStandards: [],
-      pinOrder: [],
       loading: false,
       error: null,
       createStandard: jest.fn(),
@@ -115,9 +108,6 @@ describe('useStandardsLibrary', () => {
       deleteLogEntry: jest.fn(),
       restoreLogEntry: jest.fn(),
       canLogStandard: jest.fn(),
-      pinStandard: jest.fn(),
-      unpinStandard: jest.fn(),
-      movePinnedStandard: jest.fn(),
     });
 
     const { result } = renderHook(() => useStandardsLibrary());
@@ -152,9 +142,7 @@ describe('useStandardsLibrary', () => {
       standards: [mockStandard1, mockStandard2, mockStandard3],
       activeStandards: [],
       archivedStandards: [],
-      pinnedStandards: [],
       orderedActiveStandards: [],
-      pinOrder: [],
       loading: false,
       error: null,
       createStandard: jest.fn(),
@@ -165,9 +153,6 @@ describe('useStandardsLibrary', () => {
       deleteLogEntry: jest.fn(),
       restoreLogEntry: jest.fn(),
       canLogStandard: jest.fn(),
-      pinStandard: jest.fn(),
-      unpinStandard: jest.fn(),
-      movePinnedStandard: jest.fn(),
     });
 
     const { result } = renderHook(() => useStandardsLibrary());
@@ -189,9 +174,7 @@ describe('useStandardsLibrary', () => {
       standards: [mockStandard1, mockStandard2, mockStandard3],
       activeStandards: [],
       archivedStandards: [],
-      pinnedStandards: [],
       orderedActiveStandards: [],
-      pinOrder: [],
       loading: false,
       error: null,
       createStandard: jest.fn(),
@@ -202,9 +185,6 @@ describe('useStandardsLibrary', () => {
       deleteLogEntry: jest.fn(),
       restoreLogEntry: jest.fn(),
       canLogStandard: jest.fn(),
-      pinStandard: jest.fn(),
-      unpinStandard: jest.fn(),
-      movePinnedStandard: jest.fn(),
     });
 
     const { result } = renderHook(() => useStandardsLibrary());
@@ -224,9 +204,7 @@ describe('useStandardsLibrary', () => {
       standards: [mockStandard1],
       activeStandards: [],
       archivedStandards: [],
-      pinnedStandards: [],
       orderedActiveStandards: [],
-      pinOrder: [],
       loading: false,
       error: null,
       createStandard: jest.fn(),
@@ -237,9 +215,6 @@ describe('useStandardsLibrary', () => {
       deleteLogEntry: jest.fn(),
       restoreLogEntry: jest.fn(),
       canLogStandard: jest.fn(),
-      pinStandard: jest.fn(),
-      unpinStandard: jest.fn(),
-      movePinnedStandard: jest.fn(),
     });
 
     const { result } = renderHook(() => useStandardsLibrary());
@@ -256,9 +231,7 @@ describe('useStandardsLibrary', () => {
       standards: [],
       activeStandards: [],
       archivedStandards: [],
-      pinnedStandards: [],
       orderedActiveStandards: [],
-      pinOrder: [],
       loading: true,
       error: new Error('Test error'),
       createStandard: jest.fn(),
@@ -269,9 +242,6 @@ describe('useStandardsLibrary', () => {
       deleteLogEntry: jest.fn(),
       restoreLogEntry: jest.fn(),
       canLogStandard: jest.fn(),
-      pinStandard: jest.fn(),
-      unpinStandard: jest.fn(),
-      movePinnedStandard: jest.fn(),
     });
 
     const { result } = renderHook(() => useStandardsLibrary());

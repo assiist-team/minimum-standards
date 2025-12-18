@@ -31,9 +31,7 @@ function setupHook(overrides: Partial<ReturnType<typeof useStandards>> = {}) {
     standards: [],
     activeStandards: [],
     archivedStandards: [archivedStandard],
-    pinnedStandards: [],
     orderedActiveStandards: [],
-    pinOrder: [],
     loading: false,
     error: null,
     createStandard: jest.fn(),
@@ -41,9 +39,6 @@ function setupHook(overrides: Partial<ReturnType<typeof useStandards>> = {}) {
     unarchiveStandard: jest.fn(),
     createLogEntry: jest.fn(),
     canLogStandard: jest.fn(),
-    pinStandard: jest.fn(),
-    unpinStandard: jest.fn(),
-    movePinnedStandard: jest.fn(),
     ...overrides,
   });
 }
