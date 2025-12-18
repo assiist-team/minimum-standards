@@ -45,11 +45,11 @@ export function BottomTabNavigator() {
         name="Dashboard"
         component={DashboardStack}
         options={{
-          tabBarLabel: 'Dashboard',
+          tabBarLabel: 'Active',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="dashboard" size={size || 24} color={color} />
+            <MaterialIcons name="star" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Dashboard tab',
+          tabBarAccessibilityLabel: 'Active tab',
         }}
       />
       <Tab.Screen
@@ -58,7 +58,7 @@ export function BottomTabNavigator() {
         options={{
           tabBarLabel: 'Standards',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="list" size={size || 24} color={color} />
+            <MaterialIcons name="pending-actions" size={size || 24} color={color} />
           ),
           tabBarAccessibilityLabel: 'Standards tab',
         }}
@@ -69,7 +69,7 @@ export function BottomTabNavigator() {
         options={{
           tabBarLabel: 'Activities',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="star" size={size || 24} color={color} />
+            <MaterialIcons name="task-alt" size={size || 24} color={color} />
           ),
           tabBarAccessibilityLabel: 'Activities tab',
         }}

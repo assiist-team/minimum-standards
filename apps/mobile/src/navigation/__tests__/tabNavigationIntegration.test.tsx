@@ -37,7 +37,7 @@ jest.mock('../BottomTabNavigator', () => ({
       React.createElement(
         TouchableOpacity,
         { testID: 'dashboard-tab', onPress: () => handleTabPress('Dashboard') },
-        React.createElement(Text, null, 'Dashboard')
+        React.createElement(Text, null, 'Active')
       ),
       React.createElement(
         TouchableOpacity,

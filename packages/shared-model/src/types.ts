@@ -21,6 +21,7 @@ export type Activity = SoftDelete &
     id: string;
     name: string;
     unit: string;
+    notes: string | null;
   };
 
 export type Standard = SoftDelete &

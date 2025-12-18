@@ -46,6 +46,7 @@ export const activitySchema = z.object({
         ]);
       }
     }),
+  notes: z.string().max(1000).nullable().default(null),
   createdAtMs: timestampMsSchema,
   updatedAtMs: timestampMsSchema,
   deletedAtMs: timestampMsSchema.nullable()

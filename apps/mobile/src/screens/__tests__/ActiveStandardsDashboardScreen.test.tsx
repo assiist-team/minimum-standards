@@ -108,7 +108,7 @@ describe('ActiveStandardsDashboardScreen', () => {
       />
     );
     expect(getByTestId('dashboard-empty-state')).toBeTruthy();
-    expect(getByText('No active standards yet')).toBeTruthy();
+    expect(getByText('No active standards')).toBeTruthy();
   });
 
   test('empty state CTA routes to builder', () => {

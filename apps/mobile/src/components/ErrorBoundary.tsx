@@ -1,7 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { normalizeFirebaseError } from '../utils/errors';
 import { firebaseAuth } from '../firebase/firebaseApp';
+import { useTheme } from '../theme/useTheme';
 
 // Conditionally import Crashlytics if available
 let crashlytics: any = null;
@@ -111,24 +112,24 @@ interface ErrorFallbackProps {
 }
 
 function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
-  const isDark = useColorScheme() === 'dark';
+  const theme = useTheme();
   const normalizedError = error ? normalizeFirebaseError(error) : null;
   const userMessage = normalizedError?.message || 'Something went wrong. Please try again.';
 
   return (
-    <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={[styles.content, isDark && styles.contentDark]}>
-        <Text style={[styles.title, isDark && styles.titleDark]}>Something went wrong</Text>
-        <Text style={[styles.message, isDark && styles.messageDark]}>
+    <View style={[styles.container, { backgroundColor: theme.background.primary }]}>
+      <View style={[styles.content, { backgroundColor: theme.background.card }]}>
+        <Text style={[styles.title, { color: theme.text.primary }]}>Something went wrong</Text>
+        <Text style={[styles.message, { color: theme.text.secondary }]}>
           {userMessage}
         </Text>
         <TouchableOpacity
-          style={[styles.retryButton, isDark && styles.retryButtonDark]}
+          style={[styles.retryButton, { backgroundColor: theme.button.primary.background }]}
           onPress={onRetry}
           accessibilityRole="button"
           accessibilityLabel="Retry"
         >
-          <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={[styles.retryButtonText, { color: theme.button.primary.text }]}>Retry</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -138,55 +139,34 @@ function ErrorFallback({ error, onRetry }: ErrorFallbackProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  containerDark: {
-    backgroundColor: '#1E1E1E',
-  },
   content: {
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 24,
     maxWidth: 400,
     width: '100%',
     alignItems: 'center',
   },
-  contentDark: {
-    backgroundColor: '#2E2E2E',
-  },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#111',
     marginBottom: 12,
     textAlign: 'center',
   },
-  titleDark: {
-    color: '#E0E0E0',
-  },
   message: {
     fontSize: 14,
-    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
   },
-  messageDark: {
-    color: '#B0B0B0',
-  },
   retryButton: {
-    backgroundColor: '#0F62FE',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
-  retryButtonDark: {
-    backgroundColor: '#4DBAF7',
-  },
   retryButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
   },

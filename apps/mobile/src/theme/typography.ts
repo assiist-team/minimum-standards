@@ -88,7 +88,7 @@ export const typography: TypographyTheme = {
       fontWeight: '600',
     },
     pill: {
-      fontSize: 16,
+      fontSize: 14,
       fontWeight: '600',
     },
   },

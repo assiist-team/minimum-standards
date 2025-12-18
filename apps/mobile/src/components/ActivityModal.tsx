@@ -26,6 +26,7 @@ export interface ActivityModalProps {
 interface FormErrors {
   name?: string;
   unit?: string;
+  notes?: string;
 }
 
 export function ActivityModal({
@@ -39,6 +40,7 @@ export function ActivityModal({
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
+  const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -50,10 +52,12 @@ export function ActivityModal({
     if (activity) {
       setName(activity.name);
       setUnit(activity.unit);
+      setNotes(activity.notes ?? '');
     } else {
       // Reset form for create mode
       setName('');
       setUnit('');
+      setNotes('');
     }
     setErrors({});
     setSaveError(null);
@@ -76,6 +80,11 @@ export function ActivityModal({
       newErrors.unit = 'Unit cannot exceed 40 characters';
     }
 
+    // Validate notes
+    if (notes.length > 1000) {
+      newErrors.notes = 'Notes cannot exceed 1000 characters';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -94,6 +103,7 @@ export function ActivityModal({
         id: activity?.id || 'temp',
         name: name.trim(),
         unit: unit.trim(),
+        notes: notes.trim() || null,
         createdAtMs: activity?.createdAtMs || Date.now(),
         updatedAtMs: Date.now(),
         deletedAtMs: activity?.deletedAtMs || null,
@@ -102,6 +112,7 @@ export function ActivityModal({
       const savePayload: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'> = {
         name: activityData.name,
         unit: activityData.unit, // Already normalized by schema
+        notes: activityData.notes,
       };
 
       const createdActivity = await onSave(savePayload);
@@ -114,6 +125,7 @@ export function ActivityModal({
       // Reset form and close
       setName('');
       setUnit('');
+      setNotes('');
       setErrors({});
       onClose();
     } catch (error) {
@@ -133,6 +145,7 @@ export function ActivityModal({
     }
     setName('');
     setUnit('');
+    setNotes('');
     setErrors({});
     setSaveError(null);
     onClose();
@@ -227,6 +240,37 @@ export function ActivityModal({
               {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
             </View>
 
+            {/* Notes field */}
+            <View style={styles.field}>
+              <Text style={styles.label}>Notes (optional)</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.textArea,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: errors.notes ? theme.input.borderError : theme.input.border,
+                    color: theme.input.text,
+                  },
+                ]}
+                value={notes}
+                onChangeText={(text) => {
+                  setNotes(text);
+                  if (errors.notes) {
+                    setErrors({ ...errors, notes: undefined });
+                  }
+                }}
+                placeholder="Add any additional notes about this activity..."
+                placeholderTextColor={theme.input.placeholder}
+                maxLength={1000}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                editable={!saving}
+              />
+              {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
+            </View>
+
             {/* Save error */}
             {saveError && <Text style={styles.errorText}>{saveError}</Text>}
 
@@ -305,6 +349,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  textArea: {
+    minHeight: 100,
+    paddingTop: 12,
   },
   errorText: {
     color: '#ff4444',

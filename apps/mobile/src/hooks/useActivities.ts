@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   query,
+  serverTimestamp,
   where,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
@@ -16,7 +17,8 @@ import {
 import debounce from 'lodash.debounce';
 
 export interface UseActivitiesResult {
-  activities: Activity[];
+  activities: Activity[]; // Filtered and sorted activities based on search query
+  allActivities: Activity[]; // All activities (unfiltered) for checking total count
   recentActivities: Activity[]; // Five most recent activities by updatedAtMs
   loading: boolean;
   error: Error | null;
@@ -47,6 +49,21 @@ function filterActivitiesBySearch(activities: Activity[], searchQuery: string): 
  */
 function sortActivitiesByName(activities: Activity[]): Activity[] {
   return [...activities].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * Deduplicates activities by ID, keeping the last occurrence.
+ */
+function deduplicateActivitiesById(activities: Activity[]): Activity[] {
+  const seen = new Map<string, Activity>();
+  // Iterate in reverse to keep the last occurrence of each ID
+  for (let i = activities.length - 1; i >= 0; i--) {
+    const activity = activities[i];
+    if (!seen.has(activity.id)) {
+      seen.set(activity.id, activity);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 /**
@@ -114,7 +131,9 @@ export function useActivities(): UseActivitiesResult {
             }
           });
 
-          setActivities(activitiesList);
+          // Deduplicate and sort to prevent duplicates from race conditions
+          const deduplicated = deduplicateActivitiesById(activitiesList);
+          setActivities(deduplicated);
           setLoading(false);
           setError(null);
         } catch (err) {
@@ -158,7 +177,8 @@ export function useActivities(): UseActivitiesResult {
       // Optimistic update
       setActivities((prev) => {
         const updated = [...prev, tempActivity];
-        return sortActivitiesByName(updated);
+        const deduplicated = deduplicateActivitiesById(updated);
+        return sortActivitiesByName(deduplicated);
       });
 
       try {
@@ -170,18 +190,19 @@ export function useActivities(): UseActivitiesResult {
         
         await docRef.set(firestoreData);
 
-        // Wait for snapshot to update, or fetch the created doc
+        // Fetch the created doc to return it
         const createdDoc = await docRef.get();
         const createdActivity = fromFirestoreActivity(
           createdDoc.id,
           createdDoc.data() as any
         );
 
-        // Remove temp and add real activity
+        // Remove temp activity - the snapshot listener will add the real one
+        // Deduplication in the snapshot handler will prevent duplicates
         setActivities((prev) => {
           const filtered = prev.filter((a) => a.id !== tempId);
-          const updated = [...filtered, createdActivity];
-          return sortActivitiesByName(updated);
+          const deduplicated = deduplicateActivitiesById(filtered);
+          return sortActivitiesByName(deduplicated);
         });
 
         return createdActivity;
@@ -224,7 +245,8 @@ export function useActivities(): UseActivitiesResult {
 
         const filtered = prev.filter((a) => a.id !== activityId);
         const updatedList = [...filtered, updated];
-        return sortActivitiesByName(updatedList);
+        const deduplicated = deduplicateActivitiesById(updatedList);
+        return sortActivitiesByName(deduplicated);
       });
 
       try {
@@ -269,7 +291,8 @@ export function useActivities(): UseActivitiesResult {
         if (activityToDelete) {
           setActivities((prev) => {
             const updated = [...prev, activityToDelete];
-            return sortActivitiesByName(updated);
+            const deduplicated = deduplicateActivitiesById(updated);
+            return sortActivitiesByName(deduplicated);
           });
         }
         throw err;
@@ -296,13 +319,14 @@ export function useActivities(): UseActivitiesResult {
           ...filtered,
           { ...activity, deletedAtMs: null, updatedAtMs: Date.now() }
         ];
-        return sortActivitiesByName(restored);
+        const deduplicated = deduplicateActivitiesById(restored);
+        return sortActivitiesByName(deduplicated);
       });
 
       try {
         await docRef.update({
           deletedAt: null,
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp()
+          updatedAt: serverTimestamp()
         });
       } catch (err) {
         setActivities((prev) => prev.filter((a) => a.id !== activity.id));
@@ -327,6 +351,7 @@ export function useActivities(): UseActivitiesResult {
 
   return {
     activities: filteredAndSortedActivities,
+    allActivities: activities, // Return unfiltered list for checking total count
     recentActivities,
     loading,
     error,

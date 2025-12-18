@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Icon Candidates</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+        }
+        .icon-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .icon-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .icon-card.selected {
+            border: 3px solid #2196F3;
+            background: #E3F2FD;
+        }
+        .icon-name {
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+        .material-icons {
+            font-size: 48px;
+            color: #333;
+        }
+        .selected .material-icons {
+            color: #2196F3;
+        }
+        .selected .icon-name {
+            color: #1976D2;
+            font-weight: 600;
+        }
+        .instructions {
+            background: #FFF3CD;
+            border: 1px solid #FFC107;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 30px;
+            color: #856404;
+        }
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            display: none;
+        }
+        .code-block.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Activity Icon Candidates</h1>
+    <div class="instructions">
+        Click on an icon to select it. The icon name will be shown below.
+    </div>
+    <div class="icon-grid" id="iconGrid">
+        <div class="icon-card" data-icon="fitness-center">
+            <span class="material-icons">fitness_center</span>
+            <div class="icon-name">fitness-center</div>
+        </div>
+        <div class="icon-card" data-icon="directions-run">
+            <span class="material-icons">directions_run</span>
+            <div class="icon-name">directions-run</div>
+        </div>
+        <div class="icon-card" data-icon="pool">
+            <span class="material-icons">pool</span>
+            <div class="icon-name">pool</div>
+        </div>
+        <div class="icon-card" data-icon="sports">
+            <span class="material-icons">sports</span>
+            <div class="icon-name">sports</div>
+        </div>
+        <div class="icon-card" data-icon="sports-soccer">
+            <span class="material-icons">sports_soccer</span>
+            <div class="icon-name">sports-soccer</div>
+        </div>
+        <div class="icon-card" data-icon="sports-basketball">
+            <span class="material-icons">sports_basketball</span>
+            <div class="icon-name">sports-basketball</div>
+        </div>
+        <div class="icon-card" data-icon="check-circle">
+            <span class="material-icons">check_circle</span>
+            <div class="icon-name">check-circle</div>
+        </div>
+        <div class="icon-card" data-icon="assignment">
+            <span class="material-icons">assignment</span>
+            <div class="icon-name">assignment</div>
+        </div>
+        <div class="icon-card" data-icon="play-circle">
+            <span class="material-icons">play_circle</span>
+            <div class="icon-name">play-circle</div>
+        </div>
+        <div class="icon-card" data-icon="history">
+            <span class="material-icons">history</span>
+            <div class="icon-name">history</div>
+        </div>
+        <div class="icon-card" data-icon="today">
+            <span class="material-icons">today</span>
+            <div class="icon-name">today</div>
+        </div>
+        <div class="icon-card" data-icon="event-note">
+            <span class="material-icons">event_note</span>
+            <div class="icon-name">event-note</div>
+        </div>
+        <div class="icon-card" data-icon="list-alt">
+            <span class="material-icons">list_alt</span>
+            <div class="icon-name">list-alt</div>
+        </div>
+        <div class="icon-card" data-icon="format-list-bulleted">
+            <span class="material-icons">format_list_bulleted</span>
+            <div class="icon-name">format-list-bulleted</div>
+        </div>
+        <div class="icon-card" data-icon="book">
+            <span class="material-icons">book</span>
+            <div class="icon-name">book</div>
+        </div>
+        <div class="icon-card" data-icon="library-books">
+            <span class="material-icons">library_books</span>
+            <div class="icon-name">library-books</div>
+        </div>
+        <div class="icon-card" data-icon="menu-book">
+            <span class="material-icons">menu_book</span>
+            <div class="icon-name">menu-book</div>
+        </div>
+        <div class="icon-card" data-icon="category">
+            <span class="material-icons">category</span>
+            <div class="icon-name">category</div>
+        </div>
+        <div class="icon-card" data-icon="apps">
+            <span class="material-icons">apps</span>
+            <div class="icon-name">apps</div>
+        </div>
+        <div class="icon-card" data-icon="view-module">
+            <span class="material-icons">view_module</span>
+            <div class="icon-name">view-module</div>
+        </div>
+    </div>
+    <div class="code-block" id="codeBlock">
+        <strong>Selected icon name:</strong><br>
+        <code id="selectedIcon"></code>
+    </div>
+
+    <script>
+        const cards = document.querySelectorAll('.icon-card');
+        const codeBlock = document.getElementById('codeBlock');
+        const selectedIcon = document.getElementById('selectedIcon');
+        let currentSelection = null;
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                // Remove previous selection
+                if (currentSelection) {
+                    currentSelection.classList.remove('selected');
+                }
+                
+                // Add selection to clicked card
+                card.classList.add('selected');
+                currentSelection = card;
+                
+                // Show code block with icon name
+                const iconName = card.dataset.icon;
+                selectedIcon.textContent = iconName;
+                codeBlock.classList.add('show');
+            });
+        });
+    </script>
+</body>
+</html>

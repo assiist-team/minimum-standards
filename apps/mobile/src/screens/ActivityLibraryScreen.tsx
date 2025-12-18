@@ -37,7 +37,7 @@ export function ActivityLibraryScreen({
   const insets = useSafeAreaInsets();
   const {
     activities,
-    recentActivities,
+    allActivities,
     loading,
     error,
     searchQuery,
@@ -51,21 +51,11 @@ export function ActivityLibraryScreen({
   const [modalVisible, setModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [undoActivity, setUndoActivity] = useState<Activity | null>(null);
-  const [hasFocusedSearch, setHasFocusedSearch] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const trimmedQuery = searchQuery.trim();
-  const showRecents = hasFocusedSearch && trimmedQuery.length === 0;
-  const showResults = hasFocusedSearch && trimmedQuery.length > 0;
-  const showPrefocusState = !hasFocusedSearch;
-
-  const recentsEmptyCopy = useMemo(() => {
-    if (recentActivities.length === 0) {
-      return 'No recents yet — search or create an activity to get started.';
-    }
-    return null;
-  }, [recentActivities.length]);
+  const hasSearchQuery = trimmedQuery.length > 0;
 
   useEffect(() => {
     return () => {
@@ -212,7 +202,6 @@ export function ActivityLibraryScreen({
             autoCapitalize="none"
             autoCorrect={false}
             onFocus={() => {
-              setHasFocusedSearch(true);
               setIsSearchFocused(true);
             }}
             onBlur={() => setIsSearchFocused(false)}
@@ -226,71 +215,45 @@ export function ActivityLibraryScreen({
             <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ Create</Text>
           </TouchableOpacity>
         </View>
-        {hasFocusedSearch && (
+        {hasSearchQuery && activities.length > 0 && (
           <Text style={[styles.searchHint, { color: theme.text.secondary }]}>
-            Showing {showRecents ? 'recent picks' : 'search results'}
+            Found {activities.length} {activities.length === 1 ? 'activity' : 'activities'}
           </Text>
         )}
       </View>
 
       <View style={styles.listArea}>
-        {showPrefocusState && (
-          <View style={styles.prefocusContainer}>
-            <Text style={[styles.prefocusTitle, { color: theme.text.primary }]}>Start with search</Text>
-            <Text style={[styles.prefocusSubtitle, { color: theme.text.secondary }]}>
-              Tap the search field to reveal your five most recent activities.
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.activityIndicator} />
+          </View>
+        ) : allActivities.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
+              No activities
+            </Text>
+            <TouchableOpacity
+              onPress={handleAddPress}
+              style={[styles.createButton, { backgroundColor: theme.button.primary.background }]}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Activity</Text>
+            </TouchableOpacity>
+          </View>
+        ) : activities.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
+              No activities found matching your search
             </Text>
           </View>
-        )}
-
-        {showRecents && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Recent activities</Text>
-              {isSearchFocused && (
-                <Text style={[styles.sectionHint, { color: theme.text.tertiary }]}>Recents refresh on focus</Text>
-              )}
-            </View>
-            {recentsEmptyCopy ? (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: theme.text.secondary }]}>{recentsEmptyCopy}</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={recentActivities}
-                renderItem={renderActivityItem}
-                keyExtractor={(item) => item.id}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-              />
-            )}
-          </View>
-        )}
-
-        {showResults && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Search results</Text>
-              {loading && <ActivityIndicator size="small" color={theme.activityIndicator} />}
-            </View>
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={theme.activityIndicator} />
-              </View>
-            ) : activities.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Text style={[styles.emptyText, { color: theme.text.secondary }]}>No activities found</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={activities}
-                renderItem={renderActivityItem}
-                keyExtractor={(item) => item.id}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-              />
-            )}
-          </View>
+        ) : (
+          <FlatList
+            data={activities}
+            renderItem={renderActivityItem}
+            keyExtractor={(item) => item.id}
+            style={styles.list}
+            contentContainerStyle={styles.listContent}
+          />
         )}
       </View>
 
@@ -356,38 +319,6 @@ const styles = StyleSheet.create({
   listArea: {
     flex: 1,
   },
-  prefocusContainer: {
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    gap: 8,
-  },
-  prefocusTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  prefocusSubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-  section: {
-    flex: 1,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  sectionHint: {
-    fontSize: 12,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -398,9 +329,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
+    gap: 12,
   },
   emptyText: {
     fontSize: 16,
+  },
+  createButton: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
   },
   list: {
     flex: 1,

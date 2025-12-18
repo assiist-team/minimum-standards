@@ -201,10 +201,9 @@ export function ActiveStandardsDashboardScreen({
 
     if (dashboardStandards.length === 0) {
       return (
-        <View style={styles.emptyState} testID="dashboard-empty-state">
-          <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>No active standards yet</Text>
-          <Text style={[styles.emptySubtitle, { color: theme.text.secondary }]}>
-            Pinned standards will appear here once you create them.
+        <View style={styles.emptyContainer} testID="dashboard-empty-state">
+          <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
+            No active standards
           </Text>
           <TouchableOpacity
             onPress={onLaunchBuilder}
@@ -407,20 +406,15 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: 4,
   },
-  emptyState: {
+  emptyContainer: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 32,
     gap: 12,
   },
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    textAlign: 'center',
+  emptyText: {
+    fontSize: 16,
   },
   builderButton: {
     marginTop: 8,

@@ -4,6 +4,8 @@ import {
   collection,
   doc,
   query,
+  serverTimestamp,
+  Timestamp,
   where,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
@@ -215,7 +217,7 @@ export function useStandards(): UseStandardsResult {
           dashboardPinsRef
             .set({
               pinnedStandardIds: [],
-              updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+              updatedAt: serverTimestamp(),
             })
             .catch((err) => {
               const normalizedError = normalizeFirebaseError(err);
@@ -288,7 +290,7 @@ export function useStandards(): UseStandardsResult {
       .set(
         {
           pinnedStandardIds: sanitized,
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         },
         { merge: true }
       )
@@ -328,8 +330,8 @@ export function useStandards(): UseStandardsResult {
         ),
         ...(quickAddValues ? { quickAddValues } : {}),
         archivedAt: null,
-        createdAt: firebaseFirestore.FieldValue.serverTimestamp(),
-        updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         deletedAt: null,
       };
 
@@ -363,9 +365,9 @@ export function useStandards(): UseStandardsResult {
         await standardRef.update({
           state: shouldArchive ? 'archived' : 'active',
           archivedAt: shouldArchive
-            ? firebaseFirestore.FieldValue.serverTimestamp()
+            ? serverTimestamp()
             : null,
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
       });
     },
@@ -417,10 +419,10 @@ export function useStandards(): UseStandardsResult {
         await logsRef.set({
           standardId,
           value,
-          occurredAt: firebaseFirestore.Timestamp.fromMillis(occurredAtMs),
+          occurredAt: Timestamp.fromMillis(occurredAtMs),
           note,
-          createdAt: firebaseFirestore.FieldValue.serverTimestamp(),
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
           editedAt: null,
           deletedAt: null,
         });
@@ -449,10 +451,10 @@ export function useStandards(): UseStandardsResult {
       await retryFirestoreWrite(async () => {
         await logRef.update({
           value,
-          occurredAt: firebaseFirestore.Timestamp.fromMillis(occurredAtMs),
+          occurredAt: Timestamp.fromMillis(occurredAtMs),
           note,
-          editedAt: firebaseFirestore.FieldValue.serverTimestamp(),
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          editedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
       });
     },
@@ -478,8 +480,8 @@ export function useStandards(): UseStandardsResult {
 
       await retryFirestoreWrite(async () => {
         await logRef.update({
-          deletedAt: firebaseFirestore.FieldValue.serverTimestamp(),
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          deletedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
       });
     },
@@ -506,7 +508,7 @@ export function useStandards(): UseStandardsResult {
       await retryFirestoreWrite(async () => {
         await logRef.update({
           deletedAt: null,
-          updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+          updatedAt: serverTimestamp(),
         });
       });
     },
@@ -522,7 +524,7 @@ export function useStandards(): UseStandardsResult {
         await dashboardPinsRef.set(
           {
             pinnedStandardIds: nextOrder,
-            updatedAt: firebaseFirestore.FieldValue.serverTimestamp(),
+            updatedAt: serverTimestamp(),
           },
           { merge: true }
         );

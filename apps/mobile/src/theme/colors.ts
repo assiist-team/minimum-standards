@@ -118,9 +118,9 @@ export interface ColorTheme {
 export const lightTheme: ColorTheme = {
   status: {
     met: {
-      background: '#E6F4EA',
-      text: '#1E8E3E',
-      bar: '#1E8E3E',
+      background: '#F5F3EF',
+      text: '#987e55',
+      bar: '#987e55',
     },
     inProgress: {
       background: '#FFF8E1',
@@ -160,7 +160,7 @@ export const lightTheme: ColorTheme = {
   },
   tabBar: {
     background: '#F9F9F9',
-    activeTint: '#1E8E3E',
+    activeTint: '#987e55',
     inactiveTint: '#999',
     border: '#E5E5EA',
   },
@@ -204,9 +204,9 @@ export const lightTheme: ColorTheme = {
 export const darkTheme: ColorTheme = {
   status: {
     met: {
-      background: '#1E3A2E',
-      text: '#4CAF50',
-      bar: '#4CAF50',
+      background: '#3D3224',
+      text: '#987e55',
+      bar: '#987e55',
     },
     inProgress: {
       background: '#3E2E1A',
@@ -246,7 +246,7 @@ export const darkTheme: ColorTheme = {
   },
   tabBar: {
     background: '#1C1C1E',
-    activeTint: '#4CAF50',
+    activeTint: '#987e55',
     inactiveTint: '#888',
     border: '#38383A',
   },

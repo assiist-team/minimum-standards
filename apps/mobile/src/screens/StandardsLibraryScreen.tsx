@@ -146,8 +146,12 @@ export function StandardsLibraryScreen({
         <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Standards Library</Text>
         {onNavigateToBuilder ? (
-          <TouchableOpacity onPress={onNavigateToBuilder}>
-            <Text style={[styles.builderButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.link }]}>+ New</Text>
+          <TouchableOpacity
+            onPress={onNavigateToBuilder}
+            style={[styles.headerButton, { backgroundColor: theme.button.primary.background }]}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.headerButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ New</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.headerSpacer} />
@@ -223,8 +227,17 @@ export function StandardsLibraryScreen({
             <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
               {searchQuery.trim()
                 ? 'No standards match your search'
-                : `No ${activeTab} standards`}
+                : 'No standards'}
             </Text>
+            {!searchQuery.trim() && onNavigateToBuilder && (
+              <TouchableOpacity
+                onPress={onNavigateToBuilder}
+                style={[styles.createButton, { backgroundColor: theme.button.primary.background }]}
+                accessibilityRole="button"
+              >
+                <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Standard</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : (
           <FlatList
@@ -261,7 +274,21 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 60, // Match back button width for centering
   },
-  builderButton: {
+  headerButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  headerButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
+  },
+  createButton: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  createButtonText: {
     // fontSize and fontWeight come from typography.button.primary
   },
   searchContainer: {
@@ -302,6 +329,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 32,
+    gap: 12,
   },
   emptyText: {
     fontSize: 16,

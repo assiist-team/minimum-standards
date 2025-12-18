@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import {
   Activity,
   CadenceUnit,
@@ -14,8 +14,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  FlatList,
-  Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardsLibraryModal } from '../components/StandardsLibraryModal';
@@ -34,6 +32,7 @@ import { trackStandardEvent } from '../utils/analytics';
 import { Standard } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardsBuilderScreenProps {
   onBack: () => void;
@@ -70,6 +69,8 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   const [minimumError, setMinimumError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [dropdownButtonLayout, setDropdownButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const dropdownButtonRef = useRef<TouchableOpacity>(null);
 
   const summaryPreview = getSummaryPreview();
 
@@ -336,31 +337,57 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
           </View>
           
           <View style={styles.activitySelectorRow}>
-            <TouchableOpacity
-              style={[
-                styles.activityDropdown,
-                {
-                  backgroundColor: theme.input.background,
-                  borderColor: theme.input.border,
-                },
-              ]}
-              onPress={() => setActivityDropdownVisible(true)}
-            >
-              {selectedActivity ? (
-                <View style={styles.selectedActivityContent}>
-                  <Text style={[styles.selectedActivityName, { color: theme.text.primary }]}>
-                    {selectedActivity.name}
-                  </Text>
-                  <Text style={[styles.selectedActivityUnit, { color: theme.text.secondary }]}>
-                    {selectedActivity.unit}
-                  </Text>
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity
+                ref={dropdownButtonRef}
+                style={[
+                  styles.activityDropdown,
+                  {
+                    backgroundColor: theme.input.background,
+                    borderColor: theme.input.border,
+                  },
+                ]}
+                onLayout={() => {
+                  // Measure button position relative to window
+                  dropdownButtonRef.current?.measureInWindow((x, y, width, height) => {
+                    setDropdownButtonLayout({ x, y, width, height });
+                  });
+                }}
+                onPress={() => {
+                  // Measure position when opening dropdown
+                  dropdownButtonRef.current?.measureInWindow((x, y, width, height) => {
+                    setDropdownButtonLayout({ x, y, width, height });
+                  });
+                  setActivityDropdownVisible(!activityDropdownVisible);
+                }}
+              >
+                <View style={styles.activityDropdownContent}>
+                  {selectedActivity ? (
+                    <View style={styles.selectedActivityContent}>
+                      <Text style={[styles.selectedActivityName, { color: theme.text.primary }]}>
+                        {selectedActivity.name}
+                      </Text>
+                      <Text style={[styles.selectedActivityUnit, { color: theme.text.secondary }]}>
+                        {selectedActivity.unit}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={[styles.dropdownPlaceholder, { color: theme.input.placeholder }]}>
+                      Select an activity...
+                    </Text>
+                  )}
                 </View>
-              ) : (
-                <Text style={[styles.dropdownPlaceholder, { color: theme.input.placeholder }]}>
-                  Select an activity...
-                </Text>
-              )}
-            </TouchableOpacity>
+                <MaterialIcons
+                  name="keyboard-arrow-down"
+                  size={24}
+                  color={theme.text.secondary}
+                  style={[
+                    styles.dropdownChevron,
+                    activityDropdownVisible && styles.dropdownChevronOpen,
+                  ]}
+                />
+              </TouchableOpacity>
+            </View>
             
             <TouchableOpacity
               style={[styles.createActivityButton, { backgroundColor: theme.button.primary.background }]}
@@ -516,66 +543,63 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         </View>
       </View>
 
-      {/* Activity Dropdown Modal */}
-      <Modal
-        visible={activityDropdownVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setActivityDropdownVisible(false)}
-      >
-        <View style={styles.dropdownOverlay}>
+      {activityDropdownVisible && (
+        <>
           <TouchableOpacity
-            style={StyleSheet.absoluteFill}
+            style={styles.dropdownBackdrop}
             activeOpacity={1}
             onPress={() => setActivityDropdownVisible(false)}
           />
-          <View
-            style={[
-              styles.dropdownContent,
-              { backgroundColor: theme.background.modal },
-            ]}
-            pointerEvents="box-none"
-          >
-            <View pointerEvents="auto">
-              <FlatList
-                data={activities}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.activityDropdownItem,
-                      {
-                        backgroundColor: selectedActivity?.id === item.id ? theme.background.tertiary : 'transparent',
-                        borderBottomColor: theme.border.secondary,
-                      },
-                    ]}
-                    onPress={() => handleActivitySelect(item)}
-                  >
-                    <View style={styles.activityDropdownItemContent}>
-                      <Text style={[styles.activityDropdownItemName, { color: theme.text.primary }]}>
-                        {item.name}
-                      </Text>
-                      <Text style={[styles.activityDropdownItemUnit, { color: theme.text.secondary }]}>
-                        {item.unit}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
-                style={styles.dropdownList}
-                contentContainerStyle={styles.dropdownListContent}
-                nestedScrollEnabled={true}
-                ListEmptyComponent={
-                  <View style={styles.dropdownEmpty}>
-                    <Text style={[styles.dropdownEmptyText, { color: theme.text.secondary }]}>
-                      No activities found
-                    </Text>
-                  </View>
-                }
-              />
+          {dropdownButtonLayout && (
+            <View
+              style={[
+                styles.dropdownContent,
+                {
+                  backgroundColor: theme.background.modal,
+                  borderColor: theme.border.primary,
+                  shadowColor: theme.shadow,
+                  top: dropdownButtonLayout.y + dropdownButtonLayout.height + 4,
+                  left: dropdownButtonLayout.x,
+                  width: dropdownButtonLayout.width,
+                },
+              ]}
+            >
+              {activities.length === 0 ? (
+                <View style={styles.dropdownEmpty}>
+                  <Text style={[styles.dropdownEmptyText, { color: theme.text.secondary }]}>
+                    No activities
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.dropdownListContent}>
+                  {activities.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      style={[
+                        styles.activityDropdownItem,
+                        {
+                          backgroundColor: selectedActivity?.id === item.id ? theme.background.tertiary : 'transparent',
+                          borderBottomColor: theme.border.secondary,
+                        },
+                      ]}
+                      onPress={() => handleActivitySelect(item)}
+                    >
+                      <View style={styles.activityDropdownItemContent}>
+                        <Text style={[styles.activityDropdownItemName, { color: theme.text.primary }]}>
+                          {item.name}
+                        </Text>
+                        <Text style={[styles.activityDropdownItemUnit, { color: theme.text.secondary }]}>
+                          {item.unit}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
-          </View>
-        </View>
-      </Modal>
+          )}
+        </>
+      )}
 
       <StandardsLibraryModal
         visible={standardsLibraryVisible}
@@ -781,7 +805,11 @@ const styles = StyleSheet.create({
   activitySelectorRow: {
     flexDirection: 'row',
     gap: 12,
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  dropdownContainer: {
+    flex: 1,
+    position: 'relative',
   },
   activityDropdown: {
     flex: 1,
@@ -790,10 +818,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     minHeight: 48,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  activityDropdownContent: {
+    flex: 1,
   },
   selectedActivityContent: {
     gap: 4,
+  },
+  dropdownChevron: {
+    marginLeft: 8,
+    transform: [{ rotate: '0deg' }],
+  },
+  dropdownChevronOpen: {
+    transform: [{ rotate: '180deg' }],
   },
   selectedActivityName: {
     fontSize: 16,
@@ -816,24 +856,28 @@ const styles = StyleSheet.create({
   createActivityButtonText: {
     // fontSize and fontWeight come from typography.button.primary
   },
-  dropdownOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
   },
   dropdownContent: {
-    width: '90%',
-    maxHeight: '70%',
-    minHeight: 200,
-    borderRadius: 12,
+    position: 'absolute',
+    maxHeight: 300,
+    borderRadius: 8,
+    borderWidth: 1,
     overflow: 'hidden',
-    alignSelf: 'center',
-    zIndex: 1000,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
     elevation: 5,
-  },
-  dropdownList: {
-    flex: 1,
+    zIndex: 1000,
   },
   dropdownListContent: {
     paddingVertical: 8,

@@ -8,6 +8,7 @@ const Timestamp = firestoreModule.Timestamp;
 type FirestoreActivityData = {
   name: string;
   unit: string;
+  notes: string | null;
   createdAt: FirebaseFirestoreTypes.Timestamp | null;
   updatedAt: FirebaseFirestoreTypes.Timestamp | null;
   deletedAt: FirebaseFirestoreTypes.Timestamp | null;
@@ -24,6 +25,7 @@ export function fromFirestoreActivity(
     id: docId,
     name: data.name,
     unit: data.unit,
+    notes: data.notes,
     createdAtMs: data.createdAt?.toMillis() ?? Date.now(),
     updatedAtMs: data.updatedAt?.toMillis() ?? Date.now(),
     deletedAtMs: data.deletedAt?.toMillis() ?? null,
@@ -44,6 +46,7 @@ export function toFirestoreActivity(
   return {
     name: activity.name,
     unit: activity.unit, // Already normalized via schema transform
+    notes: activity.notes ?? null,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
     deletedAt: null,
@@ -67,6 +70,9 @@ export function toFirestoreActivityUpdate(
   }
   if (updates.unit !== undefined) {
     result.unit = updates.unit;
+  }
+  if (updates.notes !== undefined) {
+    result.notes = updates.notes;
   }
 
   return result;

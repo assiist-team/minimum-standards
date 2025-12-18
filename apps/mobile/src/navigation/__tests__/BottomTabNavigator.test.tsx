@@ -97,7 +97,7 @@ describe('BottomTabNavigator', () => {
       </NavigationContainer>
     );
 
-    expect(getByText('Dashboard')).toBeTruthy();
+    expect(getByText('Active')).toBeTruthy();
     expect(getByText('Standards')).toBeTruthy();
     expect(getByText('Activities')).toBeTruthy();
     expect(getByText('Settings')).toBeTruthy();
@@ -121,7 +121,7 @@ describe('BottomTabNavigator', () => {
     );
 
     // Verify all tab labels are present
-    expect(getByText('Dashboard')).toBeTruthy();
+    expect(getByText('Active')).toBeTruthy();
     expect(getByText('Standards')).toBeTruthy();
     expect(getByText('Activities')).toBeTruthy();
     expect(getByText('Settings')).toBeTruthy();

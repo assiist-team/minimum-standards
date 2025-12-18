@@ -17,6 +17,7 @@ import type { DashboardStandard } from '../../hooks/useActiveStandardsDashboard'
 import { trackStandardEvent } from '../../utils/analytics';
 import { buildOrderedStandards } from '../../utils/dashboardPins';
 import type { Standard } from '@minimum-standards/shared-model';
+import { lightTheme, getStatusColors } from '../../theme/colors';
 
 jest.mock('../../hooks/useActiveStandardsDashboard', () => ({
   useActiveStandardsDashboard: jest.fn(),
@@ -33,12 +34,6 @@ jest.mock('../../components/LogEntryModal', () => ({
 const mockUseDashboard = useActiveStandardsDashboard as jest.MockedFunction<
   typeof useActiveStandardsDashboard
 >;
-
-const STATUS_COLORS = {
-  Met: { background: '#E6F4EA', text: '#1E8E3E', bar: '#1E8E3E' },
-  'In Progress': { background: '#FFF8E1', text: '#B06E00', bar: '#F4B400' },
-  Missed: { background: '#FCE8E6', text: '#C5221F', bar: '#C5221F' },
-};
 
 const baseStandard = (overrides: Partial<Standard> = {}): Standard => ({
   id: 'std-1',
@@ -382,10 +377,11 @@ describe('ActiveStandardsDashboardScreen Integration Tests', () => {
       const statusText = getByText('Met');
       
       // Verify status text color matches expected color token
+      const expectedColors = getStatusColors(lightTheme, 'Met');
       expect(statusText.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            color: STATUS_COLORS.Met.text,
+            color: expectedColors.text,
           }),
         ])
       );
@@ -419,10 +415,11 @@ describe('ActiveStandardsDashboardScreen Integration Tests', () => {
       const statusText = getByText('In Progress');
       
       // Verify status text color matches expected color token
+      const expectedColors = getStatusColors(lightTheme, 'In Progress');
       expect(statusText.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            color: STATUS_COLORS['In Progress'].text,
+            color: expectedColors.text,
           }),
         ])
       );
@@ -456,10 +453,11 @@ describe('ActiveStandardsDashboardScreen Integration Tests', () => {
       const statusText = getByText('Missed');
       
       // Verify status text color matches expected color token
+      const expectedColors = getStatusColors(lightTheme, 'Missed');
       expect(statusText.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            color: STATUS_COLORS.Missed.text,
+            color: expectedColors.text,
           }),
         ])
       );

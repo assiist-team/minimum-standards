@@ -20,6 +20,7 @@ import {
 import { msToTimestamp, timestampToMs } from './timestamps';
 
 type FirestoreActivity = Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'> & {
+  notes: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;
@@ -60,6 +61,7 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
     return {
       name: model.name,
       unit: model.unit, // Already normalized via schema transform
+      notes: model.notes,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       deletedAt: model.deletedAtMs == null ? null : msToTimestamp(model.deletedAtMs)
@@ -72,6 +74,7 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
       id: snapshot.id,
       name: data.name,
       unit: data.unit,
+      notes: data.notes,
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
