@@ -24,10 +24,13 @@ describe('standardsBuilderStore', () => {
     const { result } = renderHook(() => useStandardsBuilderStore());
 
     expect(result.current.selectedActivity).toBeNull();
-    expect(result.current.cadence).toBeNull();
-    expect(result.current.minimum).toBeNull();
+    expect(result.current.cadence).toEqual({ interval: 1, unit: 'week' });
+    expect(result.current.goalTotal).toBeNull();
     expect(result.current.unitOverride).toBeNull();
-    expect(result.current.isArchived).toBe(false);
+    expect(result.current.breakdownEnabled).toBe(false);
+    expect(result.current.sessionLabel).toBe('session');
+    expect(result.current.sessionsPerCadence).toBeNull();
+    expect(result.current.volumePerSession).toBeNull();
     expect(result.current.getSummaryPreview()).toBeNull();
   });
 
@@ -66,29 +69,23 @@ describe('standardsBuilderStore', () => {
   test('getSummaryPreview returns null when required fields are missing', () => {
     const { result } = renderHook(() => useStandardsBuilderStore());
 
-    // No activity, cadence, or minimum
+    // No activity or goalTotal
     expect(result.current.getSummaryPreview()).toBeNull();
 
     act(() => {
       result.current.setSelectedActivity(mockActivity);
     });
-    // Still missing cadence and minimum
-    expect(result.current.getSummaryPreview()).toBeNull();
-
-    act(() => {
-      result.current.setCadence({ interval: 1, unit: 'week' });
-    });
-    // Still missing minimum
+    // Still missing goalTotal
     expect(result.current.getSummaryPreview()).toBeNull();
   });
 
-  test('getSummaryPreview generates correct summary when all fields are set', () => {
+  test('getSummaryPreview generates correct summary when all fields are set (direct mode)', () => {
     const { result } = renderHook(() => useStandardsBuilderStore());
 
     act(() => {
       result.current.setSelectedActivity(mockActivity);
       result.current.setCadence({ interval: 1, unit: 'week' });
-      result.current.setMinimum(1000);
+      result.current.setGoalTotal(1000);
     });
 
     const summary = result.current.getSummaryPreview();
@@ -101,7 +98,7 @@ describe('standardsBuilderStore', () => {
     act(() => {
       result.current.setSelectedActivity(mockActivity);
       result.current.setCadence({ interval: 1, unit: 'week' });
-      result.current.setMinimum(1000);
+      result.current.setGoalTotal(1000);
       result.current.setUnitOverride('minutes');
     });
 
@@ -115,7 +112,7 @@ describe('standardsBuilderStore', () => {
     act(() => {
       result.current.setSelectedActivity(mockActivity);
       result.current.setCadence({ interval: 2, unit: 'day' });
-      result.current.setMinimum(50);
+      result.current.setGoalTotal(50);
     });
 
     const summary = result.current.getSummaryPreview();
@@ -133,13 +130,13 @@ describe('standardsBuilderStore', () => {
     expect(result.current.generatePayload()).toBeNull();
   });
 
-  test('generatePayload returns correct payload when all fields are set', () => {
+  test('generatePayload returns correct payload when all fields are set (direct mode)', () => {
     const { result } = renderHook(() => useStandardsBuilderStore());
 
     act(() => {
       result.current.setSelectedActivity(mockActivity);
       result.current.setCadence({ interval: 1, unit: 'week' });
-      result.current.setMinimum(1000);
+      result.current.setGoalTotal(1000);
     });
 
     const payload = result.current.generatePayload();
@@ -149,6 +146,11 @@ describe('standardsBuilderStore', () => {
       unit: 'calls',
       cadence: { interval: 1, unit: 'week' },
       summary: '1000 calls / week',
+      sessionConfig: {
+        sessionLabel: 'session',
+        sessionsPerCadence: 1,
+        volumePerSession: 1000,
+      },
     });
   });
 
@@ -158,7 +160,7 @@ describe('standardsBuilderStore', () => {
     act(() => {
       result.current.setSelectedActivity(mockActivity);
       result.current.setCadence({ interval: 1, unit: 'week' });
-      result.current.setMinimum(1000);
+      result.current.setGoalTotal(1000);
       result.current.setUnitOverride('minutes');
     });
 
@@ -167,20 +169,46 @@ describe('standardsBuilderStore', () => {
     expect(payload?.summary).toBe('1000 minutes / week');
   });
 
-  test('setIsArchived updates archive state', () => {
+  test('generatePayload returns correct payload for session-based mode', () => {
     const { result } = renderHook(() => useStandardsBuilderStore());
 
     act(() => {
-      result.current.setIsArchived(true);
+      result.current.setSelectedActivity(mockActivity);
+      result.current.setCadence({ interval: 1, unit: 'week' });
+      result.current.setBreakdownEnabled(true);
+      result.current.setSessionsPerCadence(5);
+      result.current.setVolumePerSession(15);
+      result.current.setSessionLabel('session');
     });
 
-    expect(result.current.isArchived).toBe(true);
+    const payload = result.current.generatePayload();
+    expect(payload).toEqual({
+      activityId: 'activity-1',
+      minimum: 75, // 5 * 15
+      unit: 'calls',
+      cadence: { interval: 1, unit: 'week' },
+      summary: '5 sessions × 15 calls = 75 calls / week',
+      sessionConfig: {
+        sessionLabel: 'session',
+        sessionsPerCadence: 5,
+        volumePerSession: 15,
+      },
+    });
+  });
+
+  test('getSummaryPreview shows session breakdown when breakdown enabled', () => {
+    const { result } = renderHook(() => useStandardsBuilderStore());
 
     act(() => {
-      result.current.setIsArchived(false);
+      result.current.setSelectedActivity(mockActivity);
+      result.current.setCadence({ interval: 1, unit: 'week' });
+      result.current.setBreakdownEnabled(true);
+      result.current.setSessionsPerCadence(5);
+      result.current.setVolumePerSession(15);
     });
 
-    expect(result.current.isArchived).toBe(false);
+    const summary = result.current.getSummaryPreview();
+    expect(summary).toBe('5 sessions × 15 calls = 75 calls / week');
   });
 
   test('reset clears all state', () => {
@@ -189,9 +217,12 @@ describe('standardsBuilderStore', () => {
     act(() => {
       result.current.setSelectedActivity(mockActivity);
       result.current.setCadence({ interval: 1, unit: 'week' });
-      result.current.setMinimum(1000);
+      result.current.setGoalTotal(1000);
       result.current.setUnitOverride('minutes');
-      result.current.setIsArchived(true);
+      result.current.setBreakdownEnabled(true);
+      result.current.setSessionsPerCadence(5);
+      result.current.setVolumePerSession(15);
+      result.current.setSessionLabel('workout');
     });
 
     act(() => {
@@ -199,9 +230,12 @@ describe('standardsBuilderStore', () => {
     });
 
     expect(result.current.selectedActivity).toBeNull();
-    expect(result.current.cadence).toBeNull();
-    expect(result.current.minimum).toBeNull();
+    expect(result.current.cadence).toEqual({ interval: 1, unit: 'week' });
+    expect(result.current.goalTotal).toBeNull();
     expect(result.current.unitOverride).toBeNull();
-    expect(result.current.isArchived).toBe(false);
+    expect(result.current.breakdownEnabled).toBe(false);
+    expect(result.current.sessionLabel).toBe('session');
+    expect(result.current.sessionsPerCadence).toBeNull();
+    expect(result.current.volumePerSession).toBeNull();
   });
 });

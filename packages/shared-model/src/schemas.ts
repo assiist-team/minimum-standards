@@ -25,6 +25,12 @@ export const legacyStandardCadenceSchema = z.union([
 
 export const standardStateSchema = z.union([z.literal('active'), z.literal('archived')]);
 
+export const standardSessionConfigSchema = z.object({
+  sessionLabel: z.string().min(1).max(40),
+  sessionsPerCadence: z.number().int().positive(),
+  volumePerSession: z.number().positive(),
+});
+
 export const activitySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(120),
@@ -59,13 +65,20 @@ export const standardSchema = z.object({
   unit: z.string().min(1).max(40),
   cadence: standardCadenceSchema,
   state: standardStateSchema,
-  summary: z.string().min(1).max(200), // Normalized summary string like "1000 calls / week"
+  summary: z.string().min(1).max(200), // Normalized summary string like "1000 calls / week" or "5 sessions × 15 minutes = 75 minutes / week"
   archivedAtMs: timestampMsSchema.nullable(), // Timestamp when archived, null if active
   quickAddValues: z.array(z.number().positive()).max(5).optional(),
+  sessionConfig: standardSessionConfigSchema, // Required: session-based configuration
   createdAtMs: timestampMsSchema,
   updatedAtMs: timestampMsSchema,
   deletedAtMs: timestampMsSchema.nullable()
-});
+}).refine(
+  (data) => data.minimum === data.sessionConfig.sessionsPerCadence * data.sessionConfig.volumePerSession,
+  {
+    message: 'minimum must equal sessionsPerCadence × volumePerSession',
+    path: ['minimum'],
+  }
+);
 
 export const activityLogSchema = z.object({
   id: z.string().min(1),

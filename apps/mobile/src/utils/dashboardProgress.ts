@@ -77,7 +77,8 @@ export function buildDashboardProgressMap(params: {
       targetSummary: formatStandardSummary(
         standard.minimum,
         standard.unit,
-        standard.cadence
+        standard.cadence,
+        standard.sessionConfig
       ),
       progressPercent: Number((ratio * 100).toFixed(2)),
       status,

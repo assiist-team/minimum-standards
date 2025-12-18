@@ -48,10 +48,18 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     setSelectedActivity,
     cadence,
     setCadence,
-    minimum,
-    setMinimum,
+    goalTotal,
+    setGoalTotal,
     unitOverride,
     setUnitOverride,
+    breakdownEnabled,
+    setBreakdownEnabled,
+    sessionLabel,
+    setSessionLabel,
+    sessionsPerCadence,
+    setSessionsPerCadence,
+    volumePerSession,
+    setVolumePerSession,
     getSummaryPreview,
     generatePayload,
     reset,
@@ -66,7 +74,8 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   const [customIntervalInput, setCustomIntervalInput] = useState('1');
   const [customUnit, setCustomUnit] = useState<CadenceUnit>('week');
   const [cadenceError, setCadenceError] = useState<string | null>(null);
-  const [minimumError, setMinimumError] = useState<string | null>(null);
+  const [goalTotalError, setGoalTotalError] = useState<string | null>(null);
+  const [sessionConfigError, setSessionConfigError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [dropdownButtonLayout, setDropdownButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
@@ -97,8 +106,24 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       setSelectedActivity(activity);
     }
     setCadence(standard.cadence);
-    setMinimum(standard.minimum);
     setUnitOverride(standard.unit);
+    
+    // Populate session config
+    const sessionConfig = standard.sessionConfig;
+    setSessionLabel(sessionConfig.sessionLabel);
+    
+    if (sessionConfig.sessionsPerCadence > 1) {
+      // Session-based mode
+      setBreakdownEnabled(true);
+      setSessionsPerCadence(sessionConfig.sessionsPerCadence);
+      setVolumePerSession(sessionConfig.volumePerSession);
+      setGoalTotal(standard.minimum); // Show total for reference
+    } else {
+      // Direct minimum mode
+      setBreakdownEnabled(false);
+      setGoalTotal(standard.minimum);
+    }
+    
     setStandardsLibraryVisible(false);
   };
 
@@ -146,22 +171,60 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     handleCustomIntervalChange(customIntervalInput);
   };
 
-  const handleMinimumChange = (text: string) => {
+  const handleGoalTotalChange = (text: string) => {
     if (!text) {
-      setMinimum(null);
-      setMinimumError('Minimum is required');
+      setGoalTotal(null);
+      setGoalTotalError('Goal total is required');
       return;
     }
 
     const numeric = Number(text);
     if (Number.isNaN(numeric) || numeric <= 0) {
-      setMinimumError('Enter a positive number');
-      setMinimum(null);
+      setGoalTotalError('Enter a positive number');
+      setGoalTotal(null);
       return;
     }
 
-    setMinimumError(null);
-    setMinimum(numeric);
+    setGoalTotalError(null);
+    setGoalTotal(numeric);
+  };
+
+  const handleSessionsPerCadenceChange = (text: string) => {
+    if (!text) {
+      setSessionsPerCadence(null);
+      return;
+    }
+
+    const numeric = Number(text);
+    if (Number.isNaN(numeric) || numeric <= 0 || !Number.isInteger(numeric)) {
+      setSessionConfigError('Enter a positive whole number');
+      setSessionsPerCadence(null);
+      return;
+    }
+
+    setSessionConfigError(null);
+    setSessionsPerCadence(numeric);
+  };
+
+  const handleVolumePerSessionChange = (text: string) => {
+    if (!text) {
+      setVolumePerSession(null);
+      return;
+    }
+
+    const numeric = Number(text);
+    if (Number.isNaN(numeric) || numeric <= 0) {
+      setSessionConfigError('Enter a positive number');
+      setVolumePerSession(null);
+      return;
+    }
+
+    setSessionConfigError(null);
+    setVolumePerSession(numeric);
+  };
+
+  const handleSessionLabelChange = (text: string) => {
+    setSessionLabel(text.trim() || 'session');
   };
 
   const handleUnitOverrideChange = (text: string) => {
@@ -174,7 +237,8 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
     setCustomIntervalInput('1');
     setCustomUnit('week');
     setCadenceError(null);
-    setMinimumError(null);
+    setGoalTotalError(null);
+    setSessionConfigError(null);
     setSaveError(null);
   };
 
@@ -184,18 +248,28 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       setSaveError('Select an activity first');
       return;
     }
-    if (!minimum || minimum <= 0) {
-      setMinimumError('Minimum is required');
+    if (!goalTotal || goalTotal <= 0) {
+      setGoalTotalError('Goal total is required');
       return;
     }
     if (!cadence) {
       setCadenceError('Pick a cadence');
       return;
     }
+    if (breakdownEnabled) {
+      if (!sessionsPerCadence || sessionsPerCadence <= 0) {
+        setSessionConfigError('Sessions per period is required');
+        return;
+      }
+      if (!volumePerSession || volumePerSession <= 0) {
+        setSessionConfigError('Volume per session is required');
+        return;
+      }
+    }
 
     const payload = generatePayload();
     if (!payload) {
-      setSaveError('Complete cadence + minimum to continue');
+      setSaveError('Complete all required fields to continue');
       return;
     }
 
@@ -403,10 +477,16 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
           <View style={styles.stepHeader}>
             <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Step 2</Text>
-            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Minimum + unit</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>Goal</Text>
           </View>
+          <Text style={[styles.helperText, { color: theme.text.secondary }]}>
+            Set your total target for the period.
+          </Text>
           <View style={styles.minimumUnitRow}>
             <View style={styles.minimumUnitField}>
+              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
+                Total per {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
+              </Text>
               <TextInput
                 style={[
                   styles.input,
@@ -418,13 +498,14 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                 ]}
                 placeholderTextColor={theme.input.placeholder}
                 keyboardType="number-pad"
-                placeholder="Minimum Qty"
-                value={minimum ? String(minimum) : ''}
-                onChangeText={handleMinimumChange}
+                placeholder="e.g. 75"
+                value={goalTotal ? String(goalTotal) : ''}
+                onChangeText={handleGoalTotalChange}
               />
-              {minimumError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{minimumError}</Text>}
+              {goalTotalError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{goalTotalError}</Text>}
             </View>
             <View style={styles.minimumUnitField}>
+              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Unit</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -437,7 +518,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
                 placeholderTextColor={theme.input.placeholder}
                 placeholder={
                   selectedActivity
-                    ? `Unit (default ${selectedActivity.unit})`
+                    ? `Default: ${selectedActivity.unit}`
                     : 'Unit'
                 }
                 value={unitOverride ?? ''}
@@ -445,6 +526,126 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
               />
             </View>
           </View>
+
+          <View style={styles.breakdownSection}>
+            <TouchableOpacity
+              style={styles.toggleRow}
+              onPress={() => setBreakdownEnabled(!breakdownEnabled)}
+            >
+              <Text style={[styles.toggleLabel, { color: theme.text.primary }]}>
+                Break this goal into sessions
+              </Text>
+              <View
+                style={[
+                  styles.toggle,
+                  {
+                    backgroundColor: breakdownEnabled ? theme.button.primary.background : theme.input.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleThumb,
+                    {
+                      backgroundColor: theme.background.primary,
+                      transform: [{ translateX: breakdownEnabled ? 20 : 0 }],
+                    },
+                  ]}
+                />
+              </View>
+            </TouchableOpacity>
+            {breakdownEnabled && (
+              <Text style={[styles.helperText, { color: theme.text.secondary }]}>
+                Recommended for habits you do multiple times per period. You'll see progress like '3 of 5 sessions done'.
+              </Text>
+            )}
+          </View>
+
+          {breakdownEnabled && (
+            <View style={[styles.sessionConfigSection, { borderTopColor: theme.border.secondary }]}>
+              <View style={styles.sessionConfigRow}>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Call it a</Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    placeholder="session"
+                    value={sessionLabel}
+                    onChangeText={handleSessionLabelChange}
+                  />
+                </View>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
+                    {sessionLabel || 'session'}s per {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 5"
+                    value={sessionsPerCadence ? String(sessionsPerCadence) : ''}
+                    onChangeText={handleSessionsPerCadenceChange}
+                  />
+                </View>
+              </View>
+              <View style={styles.sessionConfigRow}>
+                <View style={styles.sessionConfigField}>
+                  <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>
+                    Each {sessionLabel || 'session'} is
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      {
+                        backgroundColor: theme.input.background,
+                        borderColor: theme.input.border,
+                        color: theme.input.text,
+                      },
+                    ]}
+                    placeholderTextColor={theme.input.placeholder}
+                    keyboardType="number-pad"
+                    placeholder="e.g. 15"
+                    value={volumePerSession ? String(volumePerSession) : ''}
+                    onChangeText={handleVolumePerSessionChange}
+                  />
+                  {unitOverride && (
+                    <Text style={[styles.unitHint, { color: theme.text.tertiary }]}>
+                      {unitOverride}
+                    </Text>
+                  )}
+                  {!unitOverride && selectedActivity && (
+                    <Text style={[styles.unitHint, { color: theme.text.tertiary }]}>
+                      {selectedActivity.unit}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              {sessionConfigError && (
+                <Text style={[styles.errorText, { color: theme.input.borderError }]}>
+                  {sessionConfigError}
+                </Text>
+              )}
+              {sessionsPerCadence !== null && volumePerSession !== null && sessionsPerCadence > 0 && volumePerSession > 0 && (
+                <Text style={[styles.previewText, { color: theme.text.secondary }]}>
+                  {sessionsPerCadence} {sessionLabel || 'session'}{sessionsPerCadence !== 1 ? 's' : ''} × {volumePerSession} {unitOverride || selectedActivity?.unit || 'units'} = {sessionsPerCadence * volumePerSession} {unitOverride || selectedActivity?.unit || 'units'} / {cadence ? (cadence.interval === 1 ? cadence.unit : `${cadence.interval} ${cadence.unit}s`) : 'period'}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
@@ -903,5 +1104,62 @@ const styles = StyleSheet.create({
   },
   dropdownEmptyText: {
     fontSize: 16,
+  },
+  helperText: {
+    fontSize: 14,
+    marginTop: 4,
+  },
+  breakdownSection: {
+    marginTop: 16,
+    gap: 8,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  toggleLabel: {
+    fontSize: 16,
+    flex: 1,
+  },
+  toggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    padding: 2,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  sessionConfigSection: {
+    marginTop: 16,
+    gap: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  sessionConfigRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  sessionConfigField: {
+    flex: 1,
+    gap: 6,
+  },
+  unitHint: {
+    fontSize: 12,
+    marginTop: 4,
+  },
+  previewText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginTop: 8,
   },
 });

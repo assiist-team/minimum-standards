@@ -8,6 +8,7 @@ export type FirestoreStandardData = {
   cadence: Standard['cadence'];
   state: Standard['state'];
   summary: string;
+  sessionConfig: Standard['sessionConfig'];
   quickAddValues?: number[];
   archivedAt: FirebaseFirestoreTypes.Timestamp | null;
   createdAt: FirebaseFirestoreTypes.Timestamp | null;
@@ -35,6 +36,7 @@ export function fromFirestoreStandard(
     cadence: data.cadence,
     state: data.state,
     summary: data.summary,
+    sessionConfig: data.sessionConfig,
     quickAddValues: Array.isArray(data.quickAddValues)
       ? data.quickAddValues.filter(
           (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0

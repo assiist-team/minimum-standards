@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   FirebaseFirestoreTypes,
+  Timestamp,
   collection,
   doc,
   query,
@@ -55,8 +56,8 @@ export function usePeriodLogs(
     const logsQuery = query(
       collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
       where('standardId', '==', standardId),
-      where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(periodStartMs)),
-      where('occurredAt', '<', firebaseFirestore.Timestamp.fromMillis(periodEndMs))
+      where('occurredAt', '>=', Timestamp.fromMillis(periodStartMs)),
+      where('occurredAt', '<', Timestamp.fromMillis(periodEndMs))
     );
 
     const unsubscribe = logsQuery.onSnapshot(

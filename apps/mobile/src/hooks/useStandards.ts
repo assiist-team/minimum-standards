@@ -12,6 +12,7 @@ import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import {
   Standard,
   StandardCadence,
+  StandardSessionConfig,
   DashboardPins,
   formatStandardSummary,
 } from '@minimum-standards/shared-model';
@@ -33,6 +34,7 @@ export interface CreateStandardInput {
   minimum: number;
   unit: string;
   cadence: StandardCadence;
+  sessionConfig: StandardSessionConfig;
 }
 
 function buildDefaultQuickAddValues(params: { minimum: number; unit: string }): number[] | undefined {
@@ -326,8 +328,10 @@ export function useStandards(): UseStandardsResult {
         summary: formatStandardSummary(
           input.minimum,
           input.unit,
-          input.cadence
+          input.cadence,
+          input.sessionConfig
         ),
+        sessionConfig: input.sessionConfig,
         ...(quickAddValues ? { quickAddValues } : {}),
         archivedAt: null,
         createdAt: serverTimestamp(),

@@ -27,6 +27,7 @@ type FirestoreActivity = Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | '
 };
 
 type FirestoreStandard = Omit<Standard, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs' | 'archivedAtMs'> & {
+  sessionConfig: Standard['sessionConfig'];
   createdAt: Timestamp;
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;
@@ -86,8 +87,8 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
 
 export const standardConverter: FirestoreDataConverter<Standard> = {
   toFirestore(model: Standard) {
-    // Ensure summary is regenerated if cadence/minimum/unit changed
-    const summary = formatStandardSummary(model.minimum, model.unit, model.cadence);
+    // Ensure summary is regenerated if cadence/minimum/unit/sessionConfig changed
+    const summary = formatStandardSummary(model.minimum, model.unit, model.cadence, model.sessionConfig);
     
     return {
       activityId: model.activityId,
@@ -96,6 +97,7 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       cadence: model.cadence,
       state: model.state,
       summary: summary,
+      sessionConfig: model.sessionConfig,
       ...(Array.isArray(model.quickAddValues) && model.quickAddValues.length > 0
         ? { quickAddValues: model.quickAddValues }
         : {}),
@@ -116,6 +118,7 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       cadence: data.cadence,
       state: data.state,
       summary: data.summary,
+      sessionConfig: data.sessionConfig,
       quickAddValues: Array.isArray((data as any).quickAddValues)
         ? ((data as any).quickAddValues as unknown[]).filter(
             (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0

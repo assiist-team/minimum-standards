@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FirebaseFirestoreTypes,
+  Timestamp,
   collection,
   doc,
   query,
@@ -75,7 +76,7 @@ export function useActiveStandardsDashboard() {
 
     const logsQuery = query(
       collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
-      where('occurredAt', '>=', firebaseFirestore.Timestamp.fromMillis(earliestStart))
+      where('occurredAt', '>=', Timestamp.fromMillis(earliestStart))
     );
 
     const unsubscribe = logsQuery.onSnapshot(

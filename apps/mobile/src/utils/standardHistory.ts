@@ -89,7 +89,7 @@ export function computeStandardHistory(
         periodLabel: window.label,
         total: periodTotal,
         target: safeMinimum,
-        targetSummary: formatStandardSummary(standard.minimum, standard.unit, standard.cadence),
+        targetSummary: formatStandardSummary(standard.minimum, standard.unit, standard.cadence, standard.sessionConfig),
         status,
         progressPercent,
         periodStartMs: window.startMs,
