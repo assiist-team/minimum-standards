@@ -51,7 +51,7 @@ export function ActivityModal({
   useEffect(() => {
     if (activity) {
       setName(activity.name);
-      setUnit(activity.unit);
+      setUnit(activity.unit ? activity.unit.toLowerCase() : '');
       setNotes(activity.notes ?? '');
     } else {
       // Reset form for create mode
@@ -227,7 +227,7 @@ export function ActivityModal({
                 ]}
                 value={unit}
                 onChangeText={(text) => {
-                  setUnit(text);
+                  setUnit(text.toLowerCase());
                   if (errors.unit) {
                     setErrors({ ...errors, unit: undefined });
                   }

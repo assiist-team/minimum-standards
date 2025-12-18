@@ -62,6 +62,7 @@ service cloud.firestore {
       return hasOnlyKeys([
         'name',
         'unit',
+        'notes',
         'createdAt',
         'updatedAt',
         'deletedAt'
@@ -73,9 +74,40 @@ service cloud.firestore {
       && request.resource.data.unit is string
       && request.resource.data.unit.size() >= 1
       && request.resource.data.unit.size() <= 40
+      && isOptionalStringField('notes')
+      && (!('notes' in request.resource.data) || request.resource.data.notes == null || request.resource.data.notes.size() <= 1000)
       && isTimestamp(request.resource.data.createdAt)
       && isTimestamp(request.resource.data.updatedAt)
       && isOptionalTimestampField('deletedAt');
+    }
+
+    // Validation for partial updates (allows updating only specific fields)
+    function validActivityUpdate() {
+      return hasOnlyKeys([
+        'name',
+        'unit',
+        'notes',
+        'createdAt',
+        'updatedAt',
+        'deletedAt'
+      ])
+      && (!('name' in request.resource.data) || (
+        request.resource.data.name is string
+        && request.resource.data.name.size() >= 1
+        && request.resource.data.name.size() <= 120
+      ))
+      && (!('unit' in request.resource.data) || (
+        request.resource.data.unit is string
+        && request.resource.data.unit.size() >= 1
+        && request.resource.data.unit.size() <= 40
+      ))
+      && (!('notes' in request.resource.data) || (
+        isOptionalStringField('notes')
+        && (request.resource.data.notes == null || request.resource.data.notes.size() <= 1000)
+      ))
+      && (!('createdAt' in request.resource.data) || request.resource.data.createdAt == resource.data.createdAt)
+      && (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt == request.time)
+      && (!('deletedAt' in request.resource.data) || isOptionalTimestampField('deletedAt'));
     }
 
     function validStandard() {
@@ -227,7 +259,7 @@ service cloud.firestore {
       match /activities/{activityId} {
         allow read: if isOwner(uid);
         allow create: if isOwner(uid) && validActivity() && isCreateWithServerTimestamps();
-        allow update: if isOwner(uid) && validActivity() && isUpdateWithServerTimestampAndStableCreatedAt();
+        allow update: if isOwner(uid) && validActivityUpdate() && isUpdateWithServerTimestampAndStableCreatedAt();
         allow delete: if false; // soft-delete via deletedAt
       }
 

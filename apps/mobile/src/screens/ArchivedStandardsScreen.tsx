@@ -13,6 +13,7 @@ import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface ArchivedStandardsScreenProps {
   onBack: () => void;
@@ -87,8 +88,9 @@ export function ArchivedStandardsScreen({
         style={[styles.secondaryButton, { borderColor: theme.link }]}
         onPress={() => handleUnarchive(item)}
         accessibilityRole="button"
+        accessibilityLabel="Unarchive standard"
       >
-        <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight, color: theme.link }]}>Unarchive Standard</Text>
+        <MaterialIcons name="unarchive" size={24} color={theme.link} />
       </TouchableOpacity>
     </View>
   );
@@ -205,9 +207,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
-  },
-  secondaryButtonText: {
-    // fontSize and fontWeight come from typography.button.secondary
+    justifyContent: 'center',
   },
   emptyState: {
     flex: 1,

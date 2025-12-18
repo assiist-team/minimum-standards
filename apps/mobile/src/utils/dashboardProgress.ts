@@ -22,6 +22,8 @@ export type DashboardProgress = {
   targetSummary: string;
   progressPercent: number;
   status: PeriodStatus;
+  currentSessions: number;
+  targetSessions: number;
 };
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
@@ -64,6 +66,8 @@ export function buildDashboardProgressMap(params: {
     );
 
     const currentTotal = windowLogs.reduce((sum, log) => sum + log.value, 0);
+    const currentSessions = windowLogs.length;
+    const targetSessions = standard.sessionConfig.sessionsPerCadence;
     const status = derivePeriodStatus(currentTotal, standard.minimum, nowMs, window.endMs);
     const safeMinimum = Math.max(standard.minimum, 0);
     const ratio = safeMinimum === 0 ? 1 : Math.min(currentTotal / safeMinimum, 1);
@@ -82,6 +86,8 @@ export function buildDashboardProgressMap(params: {
       ),
       progressPercent: Number((ratio * 100).toFixed(2)),
       status,
+      currentSessions,
+      targetSessions,
     };
   });
 

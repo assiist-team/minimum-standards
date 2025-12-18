@@ -12,7 +12,7 @@ import pluralize from 'pluralize';
  * @throws Error if the unit is blank or empty after trimming
  */
 export function normalizeUnitToPlural(unit: string): string {
-  const trimmed = unit.trim();
+  const trimmed = unit.trim().toLowerCase();
   
   if (trimmed.length === 0) {
     throw new Error('Unit cannot be blank');

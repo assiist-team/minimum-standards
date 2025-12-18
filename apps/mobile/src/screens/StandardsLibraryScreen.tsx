@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Standard } from '@minimum-standards/shared-model';
@@ -15,6 +15,7 @@ import { useActivities } from '../hooks/useActivities';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardsLibraryScreenProps {
   onBack?: () => void; // Optional - not shown on main screen
@@ -24,18 +25,7 @@ export interface StandardsLibraryScreenProps {
 
 type Tab = 'active' | 'archived';
 
-/**
- * Formats cadence display string from StandardCadence.
- * Example: { interval: 1, unit: 'week' } => "every week"
- * Example: { interval: 2, unit: 'day' } => "every 2 days"
- */
-function formatCadenceDisplay(cadence: Standard['cadence']): string {
-  const { interval, unit } = cadence;
-  if (interval === 1) {
-    return `every ${unit}`;
-  }
-  return `every ${interval} ${unit}s`;
-}
+const CARD_SPACING = 16;
 
 export function StandardsLibraryScreen({
   onBack,
@@ -88,63 +78,101 @@ export function StandardsLibraryScreen({
     }
   };
 
-  const handleSelect = (standard: Standard) => {
+  const handleSelect = useCallback((standard: Standard) => {
     if (onSelectStandard) {
       onSelectStandard(standard);
       if (onBack) {
         onBack();
       }
     }
-  };
+  }, [onSelectStandard, onBack]);
 
-  const renderStandardItem = ({ item }: { item: Standard }) => {
-    const activityName = activityMap.get(item.activityId) || 'Unknown Activity';
-    const cadenceDisplay = formatCadenceDisplay(item.cadence);
-    const isActive = item.state === 'active' && item.archivedAtMs === null;
+  const handleRetry = useCallback(() => {
+    // Refresh standards if needed
+  }, []);
 
-    return (
-      <View style={[styles.standardItem, { borderBottomColor: theme.border.secondary }]}>
-        <TouchableOpacity
-          style={styles.standardContent}
-          onPress={() => handleSelect(item)}
-          disabled={!onSelectStandard}
-        >
-          <View style={styles.standardInfo}>
-            <Text style={[styles.standardSummary, { color: theme.text.primary }]}>{item.summary}</Text>
-            <Text style={[styles.standardActivity, { color: theme.text.secondary }]}>{activityName}</Text>
-            <Text style={[styles.standardCadence, { color: theme.text.secondary }]}>{cadenceDisplay}</Text>
-            <Text style={[styles.standardMinimum, { color: theme.text.secondary }]}>
-              Minimum: {item.minimum} {item.unit}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        <View style={styles.standardActions}>
-          {isActive ? (
+  const renderCard = useCallback(
+    ({ item }: { item: Standard }) => (
+      <StandardCard
+        standard={item}
+        onSelect={() => handleSelect(item)}
+        onArchive={() => handleArchive(item.id)}
+        onActivate={() => handleActivate(item.id)}
+        activityNameMap={activityMap}
+        onSelectStandard={onSelectStandard}
+      />
+    ),
+    [handleSelect, handleArchive, handleActivate, activityMap, onSelectStandard]
+  );
+
+  const content = useMemo(() => {
+    if (loading && currentStandards.length === 0) {
+      return (
+        <View style={styles.skeletonContainer} testID="library-skeletons">
+          {[0, 1, 2].map((key) => (
+            <View key={key} style={[styles.skeletonCard, { backgroundColor: theme.background.card }]}>
+              <View style={[styles.skeletonLine, { backgroundColor: theme.background.tertiary }]} />
+              <View style={[styles.skeletonLineShort, { backgroundColor: theme.background.tertiary }]} />
+            </View>
+          ))}
+        </View>
+      );
+    }
+
+    if (currentStandards.length === 0) {
+      return (
+        <View style={styles.emptyContainer} testID="library-empty-state">
+          <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
+            {searchQuery.trim()
+              ? 'No standards match your search'
+              : 'No standards'}
+          </Text>
+          {!searchQuery.trim() && onNavigateToBuilder && (
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: theme.archive.background }]}
-              onPress={() => handleArchive(item.id)}
+              onPress={onNavigateToBuilder}
+              style={[styles.builderButton, { backgroundColor: theme.button.primary.background }]}
+              accessibilityRole="button"
             >
-              <Text style={[styles.archiveButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight, color: theme.archive.text }]}>Archive</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={[styles.actionButton, styles.activateButton]}
-              onPress={() => handleActivate(item.id)}
-            >
-              <Text style={[styles.activateButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight }]}>Activate</Text>
+              <Text style={[styles.builderButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Standard</Text>
             </TouchableOpacity>
           )}
         </View>
-      </View>
+      );
+    }
+
+    return (
+      <FlatList
+        testID="library-list"
+        data={currentStandards}
+        renderItem={renderCard}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={handleRetry} />
+        }
+      />
     );
-  };
+  }, [
+    currentStandards,
+    loading,
+    onNavigateToBuilder,
+    renderCard,
+    searchQuery,
+    theme,
+    handleRetry,
+  ]);
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background.secondary }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
-        <View style={styles.headerSpacer} />
-        <Text style={styles.headerTitle}>Standards Library</Text>
+    <View style={[styles.screen, { backgroundColor: theme.background.primary }]}>
+      <View style={[styles.header, { backgroundColor: theme.background.secondary, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+        {onBack ? (
+          <TouchableOpacity onPress={onBack} accessibilityRole="button">
+            <Text style={[styles.backButton, { color: theme.primary.main }]}>Back</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards Library</Text>
         {onNavigateToBuilder ? (
           <TouchableOpacity
             onPress={onNavigateToBuilder}
@@ -157,10 +185,11 @@ export function StandardsLibraryScreen({
           <View style={styles.headerSpacer} />
         )}
       </View>
-      <ErrorBanner error={error} />
+
+      <ErrorBanner error={error} onRetry={handleRetry} />
 
       {/* Search Input */}
-      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary }]}>
         <TextInput
           style={[
             styles.searchInput,
@@ -181,7 +210,7 @@ export function StandardsLibraryScreen({
       </View>
 
       {/* Tab Navigation */}
-      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.tertiary }]}>
+      <View style={[styles.tabContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.secondary }]}>
         <TouchableOpacity
           style={[
             styles.tab,
@@ -216,83 +245,137 @@ export function StandardsLibraryScreen({
         </TouchableOpacity>
       </View>
 
-      {/* Standards List */}
-      <View style={styles.listArea}>
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.activityIndicator} />
-          </View>
-        ) : currentStandards.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
-              {searchQuery.trim()
-                ? 'No standards match your search'
-                : 'No standards'}
-            </Text>
-            {!searchQuery.trim() && onNavigateToBuilder && (
-              <TouchableOpacity
-                onPress={onNavigateToBuilder}
-                style={[styles.createButton, { backgroundColor: theme.button.primary.background }]}
-                accessibilityRole="button"
-              >
-                <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Standard</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <FlatList
-            data={currentStandards}
-            renderItem={renderStandardItem}
-            keyExtractor={(item) => item.id}
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
-          />
-        )}
-      </View>
+      {content}
     </View>
   );
 }
 
+function StandardCard({
+  standard,
+  onSelect,
+  onArchive,
+  onActivate,
+  activityNameMap,
+  onSelectStandard,
+}: {
+  standard: Standard;
+  onSelect: () => void;
+  onArchive: () => void;
+  onActivate: () => void;
+  activityNameMap: Map<string, string>;
+  onSelectStandard?: (standard: Standard) => void;
+}) {
+  const theme = useTheme();
+  const isActive = standard.state === 'active' && standard.archivedAtMs === null;
+  
+  // Get activity name from map, fallback to activityId if not found
+  const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
+  
+  // Format volume/period: "75 minutes / week"
+  const { interval, unit: cadenceUnit } = standard.cadence;
+  const cadenceStr = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
+  const volumePeriodText = `${standard.minimum} ${standard.unit} / ${cadenceStr}`;
+  
+  // Format session params: "5 sessions × 15 minutes"
+  const sessionConfig = standard.sessionConfig;
+  const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1 
+    ? sessionConfig.sessionLabel 
+    : `${sessionConfig.sessionLabel}s`;
+  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${standard.unit}`;
+
+  return (
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}
+      onPress={onSelectStandard ? onSelect : undefined}
+      activeOpacity={onSelectStandard ? 0.7 : 1}
+      accessibilityRole={onSelectStandard ? 'button' : undefined}
+      accessibilityLabel={onSelectStandard ? `Select ${activityName}` : undefined}
+    >
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleBlock}>
+            <Text
+              style={[styles.activityName, { color: theme.text.primary }]}
+              numberOfLines={1}
+              accessibilityLabel={`Activity ${activityName}`}
+            >
+              {activityName}
+            </Text>
+            <Text
+              style={[styles.volumePeriodText, { color: theme.text.primary }]}
+              numberOfLines={1}
+              accessibilityLabel={`Volume: ${volumePeriodText}`}
+            >
+              {volumePeriodText}
+            </Text>
+            <Text
+              style={[styles.sessionParamsText, { color: theme.text.secondary }]}
+              numberOfLines={1}
+              accessibilityLabel={`Session params: ${sessionParamsText}`}
+            >
+              {sessionParamsText}
+            </Text>
+          </View>
+          <View style={styles.headerActions}>
+            {isActive ? (
+              <TouchableOpacity
+                onPress={onArchive}
+                style={[styles.actionButtonHeader, { backgroundColor: theme.archive.background }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Archive ${activityName}`}
+              >
+                <MaterialIcons name="archive" size={20} color={theme.archive.text} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                onPress={onActivate}
+                style={[styles.actionButtonHeader, { backgroundColor: theme.button.primary.background }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Activate ${activityName}`}
+              >
+                <MaterialIcons name="unarchive" size={20} color={theme.button.primary.text} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: CARD_SPACING,
+    paddingVertical: 12,
     borderBottomWidth: 1,
   },
   backButton: {
-    // fontSize and fontWeight come from typography.button.primary
+    fontSize: 16,
+    fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
   },
   headerSpacer: {
-    width: 60, // Match back button width for centering
+    width: 64,
   },
   headerButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
   headerButtonText: {
     // fontSize and fontWeight come from typography.button.primary
   },
-  createButton: {
-    marginTop: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  createButtonText: {
-    // fontSize and fontWeight come from typography.button.primary
-  },
   searchContainer: {
-    padding: 16,
+    padding: CARD_SPACING,
     borderBottomWidth: 1,
   },
   searchInput: {
@@ -304,6 +387,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     borderBottomWidth: 1,
+    paddingHorizontal: CARD_SPACING,
   },
   tab: {
     flex: 1,
@@ -316,13 +400,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  listArea: {
-    flex: 1,
+  skeletonContainer: {
+    padding: CARD_SPACING,
+    gap: CARD_SPACING,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  skeletonCard: {
+    borderRadius: 12,
+    padding: 16,
+    gap: 8,
+  },
+  skeletonLine: {
+    height: 16,
+    borderRadius: 8,
+  },
+  skeletonLineShort: {
+    height: 16,
+    width: '60%',
+    borderRadius: 8,
   },
   emptyContainer: {
     flex: 1,
@@ -333,58 +427,61 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    textAlign: 'center',
   },
-  list: {
-    flex: 1,
+  builderButton: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  builderButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
   },
   listContent: {
-    padding: 16,
+    padding: CARD_SPACING,
+    gap: CARD_SPACING,
   },
-  standardItem: {
+  card: {
+    borderRadius: 16,
+    padding: 0,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+    overflow: 'hidden',
+  },
+  cardContent: {
+    gap: 0,
+  },
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
     padding: 16,
-    borderBottomWidth: 1,
   },
-  standardContent: {
+  titleBlock: {
     flex: 1,
+    gap: 4,
   },
-  standardInfo: {
-    flex: 1,
-  },
-  standardSummary: {
+  activityName: {
     fontSize: 16,
     fontWeight: '600',
-    marginBottom: 4,
   },
-  standardActivity: {
+  volumePeriodText: {
     fontSize: 14,
-    marginBottom: 2,
+    fontWeight: '500',
   },
-  standardCadence: {
-    fontSize: 14,
-    marginBottom: 2,
+  sessionParamsText: {
+    fontSize: 13,
   },
-  standardMinimum: {
-    fontSize: 14,
+  headerActions: {
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
   },
-  standardActions: {
-    marginLeft: 16,
-  },
-  actionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  archiveButtonText: {
-    // fontSize and fontWeight come from typography.button.small
-  },
-  activateButton: {
-    backgroundColor: '#e8f5e9',
-  },
-  activateButtonText: {
-    color: '#2e7d32',
-    // fontSize and fontWeight come from typography.button.small
+  actionButtonHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

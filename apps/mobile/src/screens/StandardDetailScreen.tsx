@@ -20,6 +20,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { getStatusColors } from '../theme/colors';
 import { typography } from '../theme/typography';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardDetailScreenProps {
   standardId: string;
@@ -313,7 +314,7 @@ export function StandardDetailScreen({
             accessibilityRole="button"
             accessibilityLabel="Edit standard"
           >
-            <Text style={[styles.actionButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.primary.main }]}>Edit</Text>
+            <MaterialIcons name="edit" size={24} color={theme.primary.main} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleArchivePress}
@@ -323,9 +324,11 @@ export function StandardDetailScreen({
               standard.state === 'active' ? 'Archive standard' : 'Unarchive standard'
             }
           >
-            <Text style={[styles.actionButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.primary.main }]}>
-              {standard.state === 'active' ? 'Archive' : 'Unarchive'}
-            </Text>
+            <MaterialIcons 
+              name={standard.state === 'active' ? 'archive' : 'unarchive'} 
+              size={24} 
+              color={theme.primary.main} 
+            />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -490,8 +493,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
-  },
-  actionButtonText: {
-    // fontSize and fontWeight come from typography.button.primary
+    justifyContent: 'center',
   },
 });

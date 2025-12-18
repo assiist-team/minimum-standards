@@ -15,6 +15,7 @@ import { LogEntryModal } from './LogEntryModal';
 import { useStandards } from '../hooks/useStandards';
 import type { ActivityLog } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface PeriodLogsModalProps {
   visible: boolean;
@@ -74,7 +75,7 @@ function LogItem({
             accessibilityLabel="Edit log entry"
             accessibilityRole="button"
           >
-            <Text style={[styles.actionButtonText, { color: theme.primary.main }]}>Edit</Text>
+            <MaterialIcons name="edit" size={20} color={theme.primary.main} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.background.tertiary }]}
@@ -82,7 +83,7 @@ function LogItem({
             accessibilityLabel="Delete log entry"
             accessibilityRole="button"
           >
-            <Text style={[styles.actionButtonText, styles.deleteButtonText, { color: theme.status.missed.text }]}>Delete</Text>
+            <MaterialIcons name="delete" size={20} color={theme.status.missed.text} />
           </TouchableOpacity>
         </View>
       )}
@@ -394,12 +395,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteButton: {},
-  actionButtonText: {
-    fontSize: 14,
-  },
-  deleteButtonText: {},
   snackbar: {
     position: 'absolute',
     left: 16,

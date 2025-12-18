@@ -113,7 +113,7 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
   },
 
   setUnitOverride: (unitOverride) => {
-    set({ unitOverride });
+    set({ unitOverride: unitOverride ? unitOverride.toLowerCase() : null });
   },
 
     setBreakdownEnabled: (enabled) => {

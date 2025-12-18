@@ -16,6 +16,7 @@ import { Activity } from '@minimum-standards/shared-model';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 /**
  * Standalone Activity Library screen.
@@ -164,16 +165,18 @@ export function ActivityLibraryScreen({
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: theme.button.secondary.background }]}
             onPress={() => handleEditPress(item)}
+            accessibilityLabel="Edit activity"
+            accessibilityRole="button"
           >
-            <Text style={[styles.actionButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight, color: theme.link }]}>Edit</Text>
+            <MaterialIcons name="edit" size={20} color={theme.link} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton, { backgroundColor: theme.archive.background }]}
             onPress={() => handleDeletePress(item)}
+            accessibilityLabel="Delete activity"
+            accessibilityRole="button"
           >
-            <Text style={[styles.actionButtonText, styles.deleteButtonText, { fontSize: typography.button.small.fontSize, fontWeight: typography.button.small.fontWeight, color: theme.archive.text }]}>
-              Delete
-            </Text>
+            <MaterialIcons name="delete" size={20} color={theme.archive.text} />
           </TouchableOpacity>
         </View>
       )}
@@ -381,12 +384,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteButton: {},
-  actionButtonText: {
-    // fontSize and fontWeight come from typography.button.small
-  },
-  deleteButtonText: {},
   snackbar: {
     position: 'absolute',
     left: 16,

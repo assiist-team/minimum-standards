@@ -113,7 +113,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
       setSelectedActivity(activity);
     }
     setCadence(standard.cadence);
-    setUnitOverride(standard.unit);
+    setUnitOverride(standard.unit ? standard.unit.toLowerCase() : null);
     
     // Populate session config
     const sessionConfig = standard.sessionConfig;
@@ -235,7 +235,7 @@ export function StandardsBuilderScreen({ onBack }: StandardsBuilderScreenProps) 
   };
 
   const handleUnitOverrideChange = (text: string) => {
-    setUnitOverride(text.trim() ? text.trim() : null);
+    setUnitOverride(text.trim() ? text.trim().toLowerCase() : null);
   };
 
   const resetForm = () => {

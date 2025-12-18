@@ -210,7 +210,10 @@ function StandardCard({
   const theme = useTheme();
   const { standard, progress } = entry;
   const status = progress?.status ?? 'In Progress';
-  const statusColors = getStatusColors(theme, status as 'Met' | 'In Progress' | 'Missed');
+  // Use green (met) color for progress bar when status is Met, otherwise use inProgress color
+  const progressBarColor = status === 'Met' 
+    ? getStatusColors(theme, 'Met').bar 
+    : getStatusColors(theme, 'In Progress').bar;
   const percent = progress?.progressPercent ?? 0;
   
   // Get activity name from map, fallback to activityId if not found
@@ -220,12 +223,33 @@ function StandardCard({
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
   const nowMs = Date.now();
   const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
-  // Use the numeric date format from calculatePeriodWindow (already numeric)
   const periodLabel = progress?.periodLabel ?? window.label;
   
-  const targetSummary = progress?.targetSummary ?? standard.summary;
-  const currentFormatted = progress?.currentTotalFormatted ?? '—';
-  const dateLine = periodLabel;
+  // Format volume/period: "75 minutes / week"
+  const { interval, unit: cadenceUnit } = standard.cadence;
+  const cadenceStr = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
+  const volumePeriodText = `${standard.minimum} ${standard.unit} / ${cadenceStr}`;
+  
+  // Format session params: "5 sessions × 15 minutes"
+  const sessionConfig = standard.sessionConfig;
+  const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1 
+    ? sessionConfig.sessionLabel 
+    : `${sessionConfig.sessionLabel}s`;
+  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${standard.unit}`;
+  
+  // Get numeric summaries
+  const currentTotal = progress?.currentTotal ?? 0;
+  const targetValue = progress?.targetValue ?? standard.minimum;
+  const currentTotalFormatted = progress?.currentTotalFormatted ?? '0';
+  const targetValueFormatted = Math.round(targetValue).toString();
+  const periodSummary = `${currentTotalFormatted} / ${targetValueFormatted} ${standard.unit}`;
+  
+  const currentSessions = progress?.currentSessions ?? 0;
+  const targetSessions = progress?.targetSessions ?? sessionConfig.sessionsPerCadence;
+  const sessionLabelPluralForSummary = targetSessions === 1 
+    ? sessionConfig.sessionLabel 
+    : `${sessionConfig.sessionLabel}s`;
+  const sessionsSummary = `${currentSessions} / ${targetSessions} ${sessionLabelPluralForSummary}`;
 
   return (
     <TouchableOpacity
@@ -246,53 +270,55 @@ function StandardCard({
               {activityName}
             </Text>
             <Text
-              style={[styles.standardSummary, { color: theme.text.primary }]}
+              style={[styles.volumePeriodText, { color: theme.text.primary }]}
               numberOfLines={1}
-              accessibilityLabel={`Standard: ${targetSummary}`}
+              accessibilityLabel={`Volume: ${volumePeriodText}`}
             >
-              {targetSummary}
+              {volumePeriodText}
+            </Text>
+            <Text
+              style={[styles.sessionParamsText, { color: theme.text.secondary }]}
+              numberOfLines={1}
+              accessibilityLabel={`Session params: ${sessionParamsText}`}
+            >
+              {sessionParamsText}
             </Text>
             <Text 
               style={[styles.dateLine, { color: theme.text.secondary }]} 
               numberOfLines={1}
-              accessibilityLabel={`Period: ${dateLine}`}
+              accessibilityLabel={`Period: ${periodLabel}`}
             >
-              {dateLine}
+              {periodLabel}
             </Text>
           </View>
           <View style={styles.headerActions}>
-            <View
-              style={[styles.statusPill, { backgroundColor: statusColors.background }]}
-              accessibilityRole="text"
-            >
-              <Text style={[styles.statusText, { color: statusColors.text }]}>
-                {status}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={[styles.progressContainer, { backgroundColor: theme.background.secondary, borderTopColor: theme.border.secondary }]}>
-          <View style={styles.progressSection}>
-            <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
-              <View
-                style={[styles.progressFill, { width: `${percent}%`, backgroundColor: statusColors.bar }]}
-                accessibilityRole="progressbar"
-                accessibilityValue={{ now: percent, min: 0, max: 100 }}
-              />
-            </View>
             <TouchableOpacity
               onPress={onLogPress}
-              style={[styles.logButton, { backgroundColor: theme.button.primary.background }]}
+              style={[styles.logButtonHeader, { backgroundColor: theme.button.primary.background }]}
               accessibilityRole="button"
               accessibilityLabel={`Log progress for ${activityName}`}
             >
               <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
             </TouchableOpacity>
           </View>
-          <Text style={[styles.progressText, { color: theme.text.secondary }]}>
-            {currentFormatted} / {targetSummary}
-          </Text>
+        </View>
+
+        <View style={[styles.progressContainer, { backgroundColor: theme.background.secondary, borderTopColor: theme.border.secondary }]}>
+          <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
+            <View
+              style={[styles.progressFill, { width: `${percent}%`, backgroundColor: progressBarColor }]}
+              accessibilityRole="progressbar"
+              accessibilityValue={{ now: percent, min: 0, max: 100 }}
+            />
+          </View>
+          <View style={styles.progressSummaries}>
+            <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
+              {periodSummary}
+            </Text>
+            <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
+              {sessionsSummary}
+            </Text>
+          </View>
         </View>
       </View>
     </TouchableOpacity>
@@ -386,44 +412,42 @@ const styles = StyleSheet.create({
   },
   titleBlock: {
     flex: 1,
-    gap: 6,
+    gap: 4,
   },
   activityName: {
     fontSize: 16,
     fontWeight: '600',
   },
-  standardSummary: {
+  volumePeriodText: {
     fontSize: 14,
     fontWeight: '500',
   },
-  dateLine: {
+  sessionParamsText: {
     fontSize: 13,
+  },
+  dateLine: {
+    fontSize: 12,
+    marginTop: 2,
   },
   headerActions: {
     alignItems: 'flex-start',
-    gap: 8,
+    justifyContent: 'flex-start',
   },
-  statusPill: {
+  logButtonHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
   },
-  statusText: {
-    fontWeight: '600',
-    fontSize: 12,
+  logButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
   },
   progressContainer: {
     padding: 16,
     borderTopWidth: 1,
-    gap: 8,
-  },
-  progressSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
   },
   progressBar: {
-    flex: 1,
+    width: '100%',
     height: 4,
     borderRadius: 2,
   },
@@ -431,16 +455,11 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 2,
   },
-  progressText: {
+  progressSummaries: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  progressSummaryText: {
     fontSize: 12,
-    textAlign: 'center',
-  },
-  logButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 999,
-  },
-  logButtonText: {
-    // fontSize and fontWeight come from typography.button.primary
   },
 });
