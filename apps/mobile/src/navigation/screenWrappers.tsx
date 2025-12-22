@@ -8,6 +8,7 @@ import {
   ActivitiesStackParamList,
 } from './types';
 import { ActivityLibraryScreen } from '../screens/ActivityLibraryScreen';
+import { ActivityHistoryScreen } from '../screens/ActivityHistoryScreen';
 import { StandardsBuilderScreen } from '../screens/StandardsBuilderScreen';
 import { StandardsLibraryScreen } from '../screens/StandardsLibraryScreen';
 import { ArchivedStandardsScreen } from '../screens/ArchivedStandardsScreen';
@@ -27,6 +28,25 @@ export function ActivityLibraryScreenWrapper() {
   return (
     <ActivityLibraryScreen
       onClose={canGoBack ? () => navigation.goBack() : undefined}
+    />
+  );
+}
+
+export function ActivityHistoryScreenWrapper() {
+  const navigation = useNavigation<ActivitiesNavigationProp>();
+  const route = useRoute();
+  const activityId = (route.params as { activityId: string })?.activityId;
+  
+  if (!activityId) {
+    // Guard for missing activityId - navigate back if not provided
+    navigation.goBack();
+    return null;
+  }
+  
+  return (
+    <ActivityHistoryScreen
+      activityId={activityId}
+      onBack={() => navigation.goBack()}
     />
   );
 }

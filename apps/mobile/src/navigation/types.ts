@@ -24,6 +24,7 @@ export type StandardsStackParamList = {
 
 export type ActivitiesStackParamList = {
   ActivityLibrary: undefined;
+  ActivityHistory: { activityId: string };
 };
 
 export type SettingsStackParamList = {
