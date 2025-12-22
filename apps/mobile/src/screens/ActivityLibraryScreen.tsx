@@ -80,7 +80,7 @@ export function ActivityLibraryScreen({
 
   // Sort activities: those part of activated standards first, then others
   // Maintain alphabetical order within each group
-  // Activities part of activated standards should have muted appearance
+  // Activities part of activated standards should appear active (fully visible)
   const sortedActivities = useMemo(() => {
     const sorted = [...activities].sort((a, b) => {
       const aIsActive = activeActivityIds.has(a.id);
@@ -185,7 +185,7 @@ export function ActivityLibraryScreen({
 
   const renderActivityItem = ({ item }: { item: Activity }) => {
     const isPartOfActivatedStandard = activeActivityIds.has(item.id);
-    const cardOpacity = isPartOfActivatedStandard ? 0.6 : 1;
+    const cardOpacity = isPartOfActivatedStandard ? 1 : 0.6;
     
     return (
       <ActivityCard

@@ -38,3 +38,4 @@ Release builds currently crash the moment `SyncStatusBanner` loads because Herme
 - `apps/mobile/src/components/SyncStatusBanner.tsx`
 - `apps/mobile/src/utils/optionalNetInfo.ts`
 - `apps/mobile/package.json`
+

@@ -40,3 +40,4 @@ Downgrade testing forced `FORCE_EMBEDDED_JS_BUNDLE` to keep Hermes stable while 
 ## References
 - `apps/mobile/ios/MinimumStandardsMobile/AppDelegate.swift` shows how the `FORCE_EMBEDDED_JS_BUNDLE` flag changes bundle resolution.
 - `troubleshooting/react-native-ios-blank-screen-metro.md` contains historical context on embedded bundles vs. Metro.
+

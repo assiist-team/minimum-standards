@@ -35,3 +35,4 @@
 2.  **Disable Fabric (Advanced):** Requires deep patching of `react-native` scripts to bypass the 0.83 enforcements (highly risky).
 3.  **Wait for Fix:** 0.83 is very new; this may be a framework bug.
 
+

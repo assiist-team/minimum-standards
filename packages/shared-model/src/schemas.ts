@@ -62,7 +62,24 @@ export const standardSchema = z.object({
   id: z.string().min(1),
   activityId: z.string().min(1),
   minimum: z.number().min(0),
-  unit: z.string().min(1).max(40),
+  unit: z
+    .string()
+    .min(1)
+    .max(40)
+    .transform((val) => {
+      try {
+        return normalizeUnitToPlural(val);
+      } catch (error) {
+        // If normalization fails, throw a Zod error
+        throw new z.ZodError([
+          {
+            code: z.ZodIssueCode.custom,
+            path: ['unit'],
+            message: error instanceof Error ? error.message : 'Invalid unit'
+          }
+        ]);
+      }
+    }),
   cadence: standardCadenceSchema,
   state: standardStateSchema,
   summary: z.string().min(1).max(200), // Normalized summary string like "1000 calls / week" or "5 sessions × 15 minutes = 75 minutes / week"

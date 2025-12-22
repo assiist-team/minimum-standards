@@ -36,3 +36,4 @@ React Navigation logs `Screen name 'Settings' is already defined in the navigato
 - `apps/mobile/src/navigation/SettingsStack.tsx`
 - `apps/mobile/src/navigation/types.ts`
 - React Navigation docs on screen names: https://reactnavigation.org/docs/nesting-navigators/#screen-names
+

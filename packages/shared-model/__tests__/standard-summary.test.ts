@@ -75,4 +75,24 @@ describe('formatStandardSummary', () => {
     );
     expect(result).toBe('15 minutes / day');
   });
+
+  test('normalizes uppercase units to lowercase', () => {
+    const result = formatStandardSummary(1000, 'CALLS', { interval: 1, unit: 'week' });
+    expect(result).toBe('1000 calls / week');
+  });
+
+  test('normalizes mixed case units to lowercase', () => {
+    const result = formatStandardSummary(50, 'MiNuTeS', { interval: 1, unit: 'day' });
+    expect(result).toBe('50 minutes / day');
+  });
+
+  test('normalizes uppercase units in session-based summaries', () => {
+    const result = formatStandardSummary(
+      75,
+      'MINUTES',
+      { interval: 1, unit: 'week' },
+      { sessionLabel: 'session', sessionsPerCadence: 5, volumePerSession: 15 }
+    );
+    expect(result).toBe('5 sessions × 15 minutes = 75 minutes / week');
+  });
 });

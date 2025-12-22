@@ -39,3 +39,4 @@ During the RN 0.76.5 downgrade, Firestore listeners for `users/{uid}/preferences
 - Security rules: `firebase/firestore.rules`
 - Hooks issuing reads/writes: `apps/mobile/src/hooks/*.ts`
 - Auth store: `apps/mobile/src/stores/authStore.ts`
+

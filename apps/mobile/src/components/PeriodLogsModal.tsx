@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import type { PeriodLogEntry } from '../hooks/usePeriodLogs';
 import { LogEntryModal } from './LogEntryModal';
 import { useStandards } from '../hooks/useStandards';
 import type { ActivityLog } from '@minimum-standards/shared-model';
+import { useActivities } from '../hooks/useActivities';
 import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -105,6 +106,7 @@ export function PeriodLogsModal({
   const theme = useTheme();
   const { logs, loading, error } = usePeriodLogs(standardId, periodStartMs, periodEndMs);
   const { standards, updateLogEntry, deleteLogEntry, restoreLogEntry, canLogStandard } = useStandards();
+  const { allActivities } = useActivities();
   
   const [editingLogEntry, setEditingLogEntry] = useState<ActivityLog | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -113,6 +115,13 @@ export function PeriodLogsModal({
 
   const standard = standards.find((s) => s.id === standardId);
   const canEdit = standard ? canLogStandard(standardId) : false;
+  const activityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    allActivities.forEach((activity) => {
+      map.set(activity.id, activity.name);
+    });
+    return map;
+  }, [allActivities]);
 
   useEffect(() => {
     return () => {
@@ -288,6 +297,7 @@ export function PeriodLogsModal({
         logEntry={editingLogEntry || undefined}
         onClose={handleEditModalClose}
         onSave={handleEditSave}
+        resolveActivityName={(activityId) => activityNameMap.get(activityId)}
       />
     </Modal>
   );

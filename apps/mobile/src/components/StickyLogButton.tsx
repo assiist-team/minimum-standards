@@ -32,13 +32,19 @@ export function StickyLogButton({
   resolveActivityName,
 }: StickyLogButtonProps) {
   const theme = useTheme();
-  const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
-  const [logModalVisible, setLogModalVisible] = useState(false);
+  const [modalState, setModalState] = useState<{
+    visible: boolean;
+    standard: Standard | null;
+  }>({
+    visible: false,
+    standard: null,
+  });
 
   const handleLogPress = useCallback(() => {
     trackStandardEvent('sticky_log_button_tap', {});
-    setSelectedStandard(null);
-    setLogModalVisible(true);
+    const next = { visible: true, standard: null as Standard | null };
+    console.log('[StickyLogButton] handleLogPress -> opening modal with', next);
+    setModalState(next);
   }, []);
 
   const handleLogSave = useCallback(
@@ -62,10 +68,14 @@ export function StickyLogButton({
   );
 
   const handleLogModalClose = useCallback(() => {
-    setLogModalVisible(false);
-    setSelectedStandard(null);
+    console.log('[StickyLogButton] handleLogModalClose -> closing modal');
+    setModalState({
+      visible: false,
+      standard: null,
+    });
   }, []);
 
+  console.log('[StickyLogButton] render modalState=', modalState);
   return (
     <>
       {/* Sticky Log button positioned above tab bar divider - appears as part of tab bar container */}
@@ -99,8 +109,8 @@ export function StickyLogButton({
       </View>
 
       <LogEntryModal
-        visible={logModalVisible}
-        standard={selectedStandard}
+        visible={modalState.visible}
+        standard={modalState.standard}
         onClose={handleLogModalClose}
         onSave={handleLogSave}
         resolveActivityName={resolveActivityName}

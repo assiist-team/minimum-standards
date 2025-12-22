@@ -42,6 +42,17 @@ describe('normalizeUnitToPlural', () => {
     expect(normalizeUnitToPlural('  call  ')).toBe('calls');
     expect(normalizeUnitToPlural('  calls  ')).toBe('calls');
   });
+
+  test('normalizes uppercase to lowercase', () => {
+    expect(normalizeUnitToPlural('CALLS')).toBe('calls');
+    expect(normalizeUnitToPlural('MINUTES')).toBe('minutes');
+    expect(normalizeUnitToPlural('WORKOUTS')).toBe('workouts');
+  });
+
+  test('normalizes mixed case to lowercase', () => {
+    expect(normalizeUnitToPlural('CaLLs')).toBe('calls');
+    expect(normalizeUnitToPlural('MiNuTeS')).toBe('minutes');
+  });
 });
 
 describe('formatUnitWithCount', () => {
