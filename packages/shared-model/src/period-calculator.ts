@@ -3,6 +3,11 @@ import { StandardCadence, TimestampMs } from './types';
 
 export type PeriodStatus = 'Met' | 'In Progress' | 'Missed';
 
+const LABEL_LOCALE = 'en-US';
+
+const formatLabel = (dt: DateTime, format: string) =>
+  dt.setLocale(LABEL_LOCALE).toFormat(format);
+
 export type PeriodWindow = {
   startMs: TimestampMs;
   endMs: TimestampMs;
@@ -35,14 +40,18 @@ export function calculatePeriodWindow(
     // For daily cadence, align to day start
     const start = zoned.startOf('day');
     const end = start.plus({ days: interval });
-    const endDate = end.minus({ days: 1 });
+    const inclusiveEnd = end.minus({ days: 1 });
     return {
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
-      label: interval === 1 
-        ? `${start.month}/${start.day}/${start.year}`
-        : `${start.month}/${start.day}/${start.year}-${endDate.month}/${endDate.day}/${endDate.year}`
+      label:
+        interval === 1
+          ? formatLabel(start, 'MMMM d, yyyy')
+          : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(
+              inclusiveEnd,
+              'MMMM d, yyyy'
+            )}`,
     };
   }
 
@@ -53,12 +62,15 @@ export function calculatePeriodWindow(
     const daysToMonday = weekday === 1 ? 0 : weekday === 7 ? 6 : weekday - 1;
     const start = zoned.minus({ days: daysToMonday }).startOf('day');
     const end = start.plus({ weeks: interval });
-    const endDate = end.minus({ days: 1 });
+    const inclusiveEnd = end.minus({ days: 1 });
     return {
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
-      label: `${start.month}/${start.day}/${start.year}-${endDate.month}/${endDate.day}/${endDate.year}`
+      label: `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(
+        inclusiveEnd,
+        'MMMM d, yyyy'
+      )}`,
     };
   }
 
@@ -66,14 +78,18 @@ export function calculatePeriodWindow(
   if (unit === 'month') {
     const monthStart = zoned.startOf('month');
     const monthEnd = monthStart.plus({ months: interval });
-    const endDate = monthEnd.minus({ days: 1 });
+    const inclusiveEnd = monthEnd.minus({ days: 1 });
     return {
       startMs: monthStart.toMillis(),
       endMs: monthEnd.toMillis(),
       periodKey: monthStart.toFormat('yyyy-LL'),
-      label: interval === 1
-        ? `${monthStart.month}/${monthStart.day}/${monthStart.year}-${endDate.month}/${endDate.day}/${endDate.year}`
-        : `${monthStart.month}/${monthStart.day}/${monthStart.year}-${endDate.month}/${endDate.day}/${endDate.year}`
+      label:
+        interval === 1
+          ? formatLabel(monthStart, 'MMMM yyyy')
+          : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(
+              inclusiveEnd,
+              'MMMM yyyy'
+            )}`,
     };
   }
 

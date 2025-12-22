@@ -54,7 +54,7 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
     activityId: z.ZodString;
     minimum: z.ZodNumber;
-    unit: z.ZodString;
+    unit: z.ZodEffects<z.ZodString, string, string>;
     cadence: z.ZodObject<{
         interval: z.ZodNumber;
         unit: z.ZodEnum<["day", "week", "month"]>;

@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Standard } from '@minimum-standards/shared-model';
-import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboard';
 import type { DashboardStandard } from '../hooks/useActiveStandardsDashboard';
 import { useActivities } from '../hooks/useActivities';
@@ -241,11 +240,9 @@ function StandardCard({
   // Get activity name from map, fallback to activityId if not found
   const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
   
-  // Compute period window and ensure numeric date format
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
-  const nowMs = Date.now();
-  const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
-  const periodLabel = progress?.periodLabel ?? window.label;
+  // Use period label from progress (computed with windowReferenceMs for auto-advance)
+  // Fallback to empty string if progress is null (shouldn't happen in normal flow)
+  const periodLabel = progress?.periodLabel ?? '';
   
   // Get numeric summaries
   const currentTotal = progress?.currentTotal ?? 0;

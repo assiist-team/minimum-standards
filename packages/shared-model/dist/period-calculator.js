@@ -4,9 +4,7 @@ exports.calculatePeriodWindow = calculatePeriodWindow;
 exports.derivePeriodStatus = derivePeriodStatus;
 const luxon_1 = require("luxon");
 const LABEL_LOCALE = 'en-US';
-function formatLabel(dt, format) {
-    return dt.setLocale(LABEL_LOCALE).toFormat(format);
-}
+const formatLabel = (dt, format) => dt.setLocale(LABEL_LOCALE).toFormat(format);
 /**
  * Calculates the period window for a given timestamp, cadence, and timezone.
  *
@@ -25,13 +23,14 @@ function calculatePeriodWindow(timestampMs, cadence, timezone) {
         // For daily cadence, align to day start
         const start = zoned.startOf('day');
         const end = start.plus({ days: interval });
+        const inclusiveEnd = end.minus({ days: 1 });
         return {
             startMs: start.toMillis(),
             endMs: end.toMillis(),
             periodKey: start.toFormat('yyyy-LL-dd'),
             label: interval === 1
                 ? formatLabel(start, 'MMMM d, yyyy')
-                : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
+                : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(inclusiveEnd, 'MMMM d, yyyy')}`,
         };
     }
     if (unit === 'week') {
@@ -41,26 +40,26 @@ function calculatePeriodWindow(timestampMs, cadence, timezone) {
         const daysToMonday = weekday === 1 ? 0 : weekday === 7 ? 6 : weekday - 1;
         const start = zoned.minus({ days: daysToMonday }).startOf('day');
         const end = start.plus({ weeks: interval });
+        const inclusiveEnd = end.minus({ days: 1 });
         return {
             startMs: start.toMillis(),
             endMs: end.toMillis(),
             periodKey: start.toFormat('yyyy-LL-dd'),
-            label: interval === 1
-                ? `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
-                : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(end.minus({ days: 1 }), 'MMMM d, yyyy')}`
+            label: `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(inclusiveEnd, 'MMMM d, yyyy')}`,
         };
     }
     // Monthly cadence
     if (unit === 'month') {
         const monthStart = zoned.startOf('month');
         const monthEnd = monthStart.plus({ months: interval });
+        const inclusiveEnd = monthEnd.minus({ days: 1 });
         return {
             startMs: monthStart.toMillis(),
             endMs: monthEnd.toMillis(),
             periodKey: monthStart.toFormat('yyyy-LL'),
             label: interval === 1
                 ? formatLabel(monthStart, 'MMMM yyyy')
-                : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(monthEnd.minus({ days: 1 }), 'MMMM yyyy')}`
+                : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(inclusiveEnd, 'MMMM yyyy')}`,
         };
     }
     throw new Error(`Unsupported cadence unit: ${unit}`);

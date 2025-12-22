@@ -18,7 +18,7 @@ const pluralize_1 = __importDefault(require("pluralize"));
  * @throws Error if the unit is blank or empty after trimming
  */
 function normalizeUnitToPlural(unit) {
-    const trimmed = unit.trim();
+    const trimmed = unit.trim().toLowerCase();
     if (trimmed.length === 0) {
         throw new Error('Unit cannot be blank');
     }

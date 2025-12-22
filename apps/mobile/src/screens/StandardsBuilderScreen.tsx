@@ -88,18 +88,30 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   const summaryPreview = getSummaryPreview();
   const isEditMode = !!standardId;
   const standardToEdit = standardId ? standards.find((s) => s.id === standardId) : null;
+  const hasPrefilledRef = useRef<string | null>(null);
 
   // Pre-fill form when editing
   useEffect(() => {
+    if (!isEditMode) {
+      hasPrefilledRef.current = null;
+      return;
+    }
+
     if (!standardId || !standardToEdit) {
+      return;
+    }
+
+    if (hasPrefilledRef.current === standardId) {
       return;
     }
 
     // Find the activity by activityId
     const activity = activities.find((a) => a.id === standardToEdit.activityId);
-    if (activity) {
-      setSelectedActivity(activity);
+    if (!activity) {
+      return;
     }
+
+    setSelectedActivity(activity);
     setCadence(standardToEdit.cadence);
     setUnitOverride(standardToEdit.unit ? standardToEdit.unit.toLowerCase() : null);
     
@@ -138,8 +150,22 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
       setBreakdownEnabled(false);
       setGoalTotal(standardToEdit.minimum);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [standardId]); // Only re-run when standardId changes
+
+    hasPrefilledRef.current = standardId;
+  }, [
+    activities,
+    isEditMode,
+    setBreakdownEnabled,
+    setCadence,
+    setGoalTotal,
+    setSelectedActivity,
+    setSessionLabel,
+    setSessionsPerCadence,
+    setUnitOverride,
+    setVolumePerSession,
+    standardId,
+    standardToEdit,
+  ]);
 
   useEffect(() => {
     if (goalTotal !== null && goalTotal > 0 && goalTotalError) {

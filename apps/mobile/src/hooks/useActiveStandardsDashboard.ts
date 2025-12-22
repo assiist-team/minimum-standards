@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import {
   FirebaseFirestoreTypes,
   Timestamp,
@@ -52,8 +53,10 @@ export function useActiveStandardsDashboard() {
   const [logsLoading, setLogsLoading] = useState(true);
   const [logsError, setLogsError] = useState<Error | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
+  const [windowReferenceMs, setWindowReferenceMs] = useState(() => Date.now());
   const userId = firebaseAuth.currentUser?.uid;
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!userId || orderedActiveStandards.length === 0) {
@@ -119,14 +122,76 @@ export function useActiveStandardsDashboard() {
     return () => unsubscribe();
   }, [userId, orderedActiveStandards, timezone, refreshToken]);
 
+  // Compute next boundary and schedule timeout to advance windowReferenceMs
+  useEffect(() => {
+    if (orderedActiveStandards.length === 0) {
+      return;
+    }
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // Find the earliest boundary across all active standards
+    const nowMs = Date.now();
+    let nextBoundaryMs: number | null = null;
+
+    for (const standard of orderedActiveStandards) {
+      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone);
+      if (nextBoundaryMs === null || window.endMs < nextBoundaryMs) {
+        nextBoundaryMs = window.endMs;
+      }
+    }
+
+    if (nextBoundaryMs === null) {
+      return;
+    }
+
+    if (nextBoundaryMs <= nowMs) {
+      // Boundary already passed (e.g., app was paused); snap forward immediately
+      setWindowReferenceMs(Date.now());
+      return;
+    }
+
+    const delayMs = nextBoundaryMs - nowMs;
+
+    // Schedule timeout to advance window reference
+    timeoutRef.current = setTimeout(() => {
+      setWindowReferenceMs(Date.now());
+    }, delayMs);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [orderedActiveStandards, windowReferenceMs, timezone]);
+
+  // Snap forward on app resume
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        setWindowReferenceMs(Date.now());
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   const progressMap = useMemo(
     () =>
       buildDashboardProgressMap({
         standards: orderedActiveStandards,
         logs,
         timezone,
+        windowReferenceMs,
       }),
-    [orderedActiveStandards, logs, timezone]
+    [orderedActiveStandards, logs, timezone, windowReferenceMs]
   );
 
   const dashboardStandards: DashboardStandard[] = useMemo(
