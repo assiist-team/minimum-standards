@@ -119,3 +119,35 @@ export const dashboardPinsSchema = z.object({
   pinnedStandardIds: z.array(z.string().min(1)),
   updatedAtMs: timestampMsSchema
 });
+
+export const activityHistorySourceSchema = z.enum(['boundary', 'resume']);
+
+export const activityHistoryStandardSnapshotSchema = z.object({
+  minimum: z.number().min(0),
+  unit: z.string().min(1).max(40),
+  cadence: standardCadenceSchema,
+  sessionConfig: standardSessionConfigSchema,
+  summary: z.string().max(200).optional(),
+});
+
+export const activityHistoryPeriodStatusSchema = z.enum(['Met', 'In Progress', 'Missed']);
+
+export const activityHistoryDocSchema = z.object({
+  id: z.string().min(1),
+  activityId: z.string().min(1),
+  standardId: z.string().min(1),
+  periodStartMs: timestampMsSchema,
+  periodEndMs: timestampMsSchema,
+  periodLabel: z.string().min(1).max(200),
+  periodKey: z.string().min(1).max(50),
+  standardSnapshot: activityHistoryStandardSnapshotSchema,
+  total: z.number().min(0),
+  currentSessions: z.number().int().nonnegative(),
+  targetSessions: z.number().int().positive(),
+  status: activityHistoryPeriodStatusSchema,
+  progressPercent: z.number().min(0).max(100),
+  generatedAtMs: timestampMsSchema,
+  source: activityHistorySourceSchema,
+});
+
+export type ActivityHistoryDocSchema = z.infer<typeof activityHistoryDocSchema>;

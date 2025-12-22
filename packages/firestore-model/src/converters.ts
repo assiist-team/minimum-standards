@@ -10,9 +10,11 @@ import {
   Activity,
   ActivityLog,
   Standard,
+  ActivityHistoryDoc,
   activityLogSchema,
   activitySchema,
   standardSchema,
+  activityHistoryDocSchema,
   formatStandardSummary,
   DashboardPins,
   dashboardPinsSchema
@@ -178,6 +180,51 @@ export const dashboardPinsConverter: FirestoreDataConverter<DashboardPins> = {
         : [],
       updatedAtMs:
         data.updatedAt == null ? Date.now() : timestampToMs(data.updatedAt)
+    });
+  }
+};
+
+// ActivityHistory stores timestamps as numbers (ms), not Firestore Timestamps
+type FirestoreActivityHistoryDoc = Omit<ActivityHistoryDoc, 'id'>;
+
+export const activityHistoryConverter: FirestoreDataConverter<ActivityHistoryDoc> = {
+  toFirestore(model: ActivityHistoryDoc) {
+    // Note: All timestamps are stored as numbers (ms) per spec
+    return {
+      activityId: model.activityId,
+      standardId: model.standardId,
+      periodStartMs: model.periodStartMs,
+      periodEndMs: model.periodEndMs,
+      periodLabel: model.periodLabel,
+      periodKey: model.periodKey,
+      standardSnapshot: model.standardSnapshot,
+      total: model.total,
+      currentSessions: model.currentSessions,
+      targetSessions: model.targetSessions,
+      status: model.status,
+      progressPercent: model.progressPercent,
+      generatedAtMs: model.generatedAtMs,
+      source: model.source,
+    } as unknown as FirestoreActivityHistoryDoc;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ActivityHistoryDoc {
+    const data = snapshot.data(options) as FirestoreActivityHistoryDoc;
+    return parseWith(activityHistoryDocSchema, {
+      id: snapshot.id,
+      activityId: data.activityId,
+      standardId: data.standardId,
+      periodStartMs: data.periodStartMs,
+      periodEndMs: data.periodEndMs,
+      periodLabel: data.periodLabel,
+      periodKey: data.periodKey,
+      standardSnapshot: data.standardSnapshot,
+      total: data.total,
+      currentSessions: data.currentSessions,
+      targetSessions: data.targetSessions,
+      status: data.status,
+      progressPercent: data.progressPercent,
+      generatedAtMs: data.generatedAtMs,
+      source: data.source,
     });
   }
 };

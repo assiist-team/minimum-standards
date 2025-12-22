@@ -10,6 +10,7 @@ export type UserScopedCollections = {
   activities: CollectionReference;
   standards: CollectionReference;
   activityLogs: CollectionReference;
+  activityHistory: CollectionReference;
   dashboardPins: DocumentReference;
 };
 
@@ -29,6 +30,7 @@ export function getUserScopedCollections(params: {
     activities: collection(userDoc, 'activities'),
     standards: collection(userDoc, 'standards'),
     activityLogs: collection(userDoc, 'activityLogs'),
+    activityHistory: collection(userDoc, 'activityHistory'),
     dashboardPins: doc(userDoc, 'preferences', 'dashboardPins')
   };
 }

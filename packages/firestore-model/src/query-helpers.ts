@@ -20,3 +20,15 @@ export function whereStandardIdEquals(standardId: string): QueryConstraint {
 export function whereStandardStateEquals(state: 'active' | 'archived'): QueryConstraint {
   return where('state', '==', state);
 }
+
+export function whereActivityIdEquals(activityId: string): QueryConstraint {
+  return where('activityId', '==', activityId);
+}
+
+export function orderByPeriodStartMsDesc(): QueryConstraint {
+  return orderBy('periodStartMs', 'desc');
+}
+
+export function orderByPeriodEndMsDesc(): QueryConstraint {
+  return orderBy('periodEndMs', 'desc');
+}

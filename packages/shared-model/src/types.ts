@@ -59,3 +59,33 @@ export type DashboardPins = {
   pinnedStandardIds: string[];
   updatedAtMs: TimestampMs;
 };
+
+export type ActivityHistorySource = 'boundary' | 'resume';
+
+export type ActivityHistoryStandardSnapshot = {
+  minimum: number;
+  unit: string;
+  cadence: StandardCadence;
+  sessionConfig: StandardSessionConfig;
+  summary?: string;
+};
+
+export type ActivityHistoryPeriodStatus = 'Met' | 'In Progress' | 'Missed';
+
+export type ActivityHistoryDoc = {
+  id: string;
+  activityId: string;
+  standardId: string;
+  periodStartMs: TimestampMs;
+  periodEndMs: TimestampMs;
+  periodLabel: string;
+  periodKey: string;
+  standardSnapshot: ActivityHistoryStandardSnapshot;
+  total: number;
+  currentSessions: number;
+  targetSessions: number;
+  status: ActivityHistoryPeriodStatus;
+  progressPercent: number;
+  generatedAtMs: TimestampMs;
+  source: ActivityHistorySource;
+};
