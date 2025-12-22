@@ -13,6 +13,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useActivities } from '../hooks/useActivities';
 import { useStandards } from '../hooks/useStandards';
 import { ActivityModal } from '../components/ActivityModal';
@@ -22,6 +24,7 @@ import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { ActivitiesStackParamList } from '../navigation/types';
 
 /**
  * Standalone Activity Library screen.
@@ -308,6 +311,8 @@ export function ActivityLibraryScreen({
   );
 }
 
+type ActivitiesNavigationProp = NativeStackNavigationProp<ActivitiesStackParamList>;
+
 function ActivityCard({
   activity,
   isPartOfActivatedStandard,
@@ -328,6 +333,7 @@ function ActivityCard({
   onSelectActivity?: (activity: Activity) => void;
 }) {
   const theme = useTheme();
+  const navigation = useNavigation<ActivitiesNavigationProp>();
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuButtonLayout, setMenuButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const menuButtonRef = useRef<View>(null);
@@ -349,6 +355,11 @@ function ActivityCard({
   const handleDeletePress = () => {
     setMenuVisible(false);
     onDelete(activity);
+  };
+
+  const handleViewHistoryPress = (e: any) => {
+    e.stopPropagation();
+    navigation.navigate('ActivityHistory', { activityId: activity.id });
   };
 
   return (
@@ -385,20 +396,46 @@ function ActivityCard({
                 {activity.unit}
               </Text>
             </View>
-            {!hideDestructiveControls && (
-              <View style={styles.headerActions}>
-                <View ref={menuButtonRef}>
-                  <TouchableOpacity
-                    onPress={handleMenuPress}
-                    style={styles.menuButton}
-                    accessibilityRole="button"
-                    accessibilityLabel={`More options for ${activity.name}`}
+            <View style={styles.headerActions}>
+              <View style={styles.actionButtonsRow}>
+                <TouchableOpacity
+                  onPress={handleViewHistoryPress}
+                  style={[
+                    styles.viewHistoryButton,
+                    {
+                      backgroundColor: theme.button.primary.background,
+                    },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`View history for ${activity.name}`}
+                >
+                  <Text
+                    style={[
+                      styles.viewHistoryButtonText,
+                      {
+                        fontSize: typography.button.primary.fontSize,
+                        fontWeight: typography.button.primary.fontWeight,
+                        color: theme.button.primary.text,
+                      }]
+                    }
                   >
-                    <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
-                  </TouchableOpacity>
-                </View>
+                    View History
+                  </Text>
+                </TouchableOpacity>
+                {!hideDestructiveControls && (
+                  <View ref={menuButtonRef}>
+                    <TouchableOpacity
+                      onPress={handleMenuPress}
+                      style={styles.menuButton}
+                      accessibilityRole="button"
+                      accessibilityLabel={`More options for ${activity.name}`}
+                    >
+                      <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -561,6 +598,22 @@ const styles = StyleSheet.create({
   headerActions: {
     alignItems: 'flex-end',
     justifyContent: 'flex-start',
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  viewHistoryButton: {
+    borderRadius: BUTTON_BORDER_RADIUS,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  viewHistoryButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
   },
   menuButton: {
     padding: 6,
