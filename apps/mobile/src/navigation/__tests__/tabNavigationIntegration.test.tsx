@@ -59,21 +59,7 @@ jest.mock('../BottomTabNavigator', () => ({
         React.createElement(
           View,
           { testID: 'active-standards-dashboard-screen' },
-          React.createElement(Text, null, 'Active Standards Dashboard'),
-          React.createElement(
-            TouchableOpacity,
-            {
-              testID: 'navigate-to-detail-button',
-              onPress: () => handleNavigate('StandardDetail', { standardId: 'test-standard-1' }),
-            },
-            React.createElement(Text, null, 'Navigate to Detail')
-          )
-        ),
-      currentScreen === 'StandardDetail' &&
-        React.createElement(
-          View,
-          { testID: 'standard-detail-screen' },
-          React.createElement(Text, null, 'Standard Detail: test-standard-1')
+          React.createElement(Text, null, 'Active Standards Dashboard')
         ),
       currentScreen === 'StandardsLibrary' &&
         React.createElement(
@@ -87,14 +73,6 @@ jest.mock('../BottomTabNavigator', () => ({
               onPress: () => handleNavigate('StandardsBuilder'),
             },
             React.createElement(Text, null, 'Navigate to Builder')
-          ),
-          React.createElement(
-            TouchableOpacity,
-            {
-              testID: 'navigate-to-detail-button',
-              onPress: () => handleNavigate('StandardDetail', { standardId: 'test-standard-2' }),
-            },
-            React.createElement(Text, null, 'Navigate to Detail')
           )
         ),
       currentScreen === 'StandardsBuilder' &&
@@ -114,50 +92,6 @@ jest.mock('../BottomTabNavigator', () => ({
 }));
 
 describe('Tab Navigation Integration', () => {
-  test('navigation to Standard Detail works from Dashboard tab', async () => {
-    const { getByTestId, getByText } = render(
-      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
-    );
-
-    // Wait for Dashboard screen to render
-    await waitFor(() => {
-      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
-    });
-
-    // Navigate to Standard Detail
-    const navigateButton = getByTestId('navigate-to-detail-button');
-    fireEvent.press(navigateButton);
-
-    // Verify Standard Detail screen is shown
-    await waitFor(() => {
-      expect(getByTestId('standard-detail-screen')).toBeTruthy();
-    });
-  });
-
-  test('navigation to Standard Detail works from Standards tab', async () => {
-    const { getByText, getByTestId } = render(
-      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
-    );
-
-    // Navigate to Standards tab
-    const standardsTab = getByTestId('standards-tab');
-    fireEvent.press(standardsTab);
-
-    // Wait for Standards Library screen to render
-    await waitFor(() => {
-      expect(getByTestId('standards-library-screen')).toBeTruthy();
-    });
-
-    // Navigate to Standard Detail
-    const navigateButton = getByTestId('navigate-to-detail-button');
-    fireEvent.press(navigateButton);
-
-    // Verify Standard Detail screen is shown
-    await waitFor(() => {
-      expect(getByTestId('standard-detail-screen')).toBeTruthy();
-    });
-  });
-
   test('navigation from Standards Library to Standards Builder works', async () => {
     const { getByTestId } = render(
       React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
@@ -181,29 +115,6 @@ describe('Tab Navigation Integration', () => {
       expect(getByTestId('standards-builder-screen')).toBeTruthy();
       expect(getByTestId('standards-builder-screen')).toBeTruthy();
     });
-  });
-
-  test('back navigation works correctly within Dashboard tab stack', async () => {
-    const { getByTestId } = render(
-      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
-    );
-
-    // Wait for Dashboard screen
-    await waitFor(() => {
-      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
-    });
-
-    // Navigate to Standard Detail
-    const navigateButton = getByTestId('navigate-to-detail-button');
-    fireEvent.press(navigateButton);
-
-    // Verify Standard Detail is shown
-    await waitFor(() => {
-      expect(getByTestId('standard-detail-screen')).toBeTruthy();
-    });
-
-    // Note: Back navigation testing would require more complex state management
-    // This test verifies navigation forward works correctly
   });
 
   test('tab switching preserves state when switching tabs', async () => {

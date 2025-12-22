@@ -82,8 +82,8 @@ export function StandardsLibraryScreenWrapper() {
     <StandardsLibraryScreen
       onBack={canGoBack ? () => navigation.goBack() : undefined}
       onSelectStandard={(standard) => {
-        // Navigate to Standard Detail when a standard is selected
-        navigation.navigate('StandardDetail', { standardId: standard.id });
+        // No navigation per Activity History plan - standard taps are now a no-op
+        // Activity History is accessible via the button added in Task 04
       }}
       onNavigateToBuilder={() => {
         navigation.navigate('StandardsBuilder', {});
@@ -115,7 +115,8 @@ export function ActiveStandardsDashboardScreenWrapper() {
         navigation.navigate('StandardsBuilder', {});
       }}
       onNavigateToDetail={(standardId: string) => {
-        navigation.navigate('StandardDetail', { standardId });
+        // No navigation per Activity History plan - standard taps are now a no-op
+        // Activity History is accessible via the button added in Task 04
       }}
       onEditStandard={(standardId) => {
         navigation.navigate('StandardsBuilder', { standardId });
@@ -126,6 +127,9 @@ export function ActiveStandardsDashboardScreenWrapper() {
 }
 
 export function StandardDetailScreenWrapper({ route }: { route: { params: { standardId: string } } }) {
+  // LEGACY: StandardDetail screen is deprecated for consumer paths (dashboard/library card taps).
+  // Standard taps are now a no-op per Activity History plan (Task 05).
+  // This screen may still be used for builder/admin flows if needed.
   // StandardDetail can be in Dashboard or Standards stack
   const navigation = useNavigation<DashboardNavigationProp | StandardsNavigationProp>();
   const { standards } = useStandards();

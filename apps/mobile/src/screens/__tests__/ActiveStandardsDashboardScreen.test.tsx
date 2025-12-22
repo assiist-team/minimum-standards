@@ -222,7 +222,7 @@ describe('ActiveStandardsDashboardScreen', () => {
   });
 
   describe('card interaction updates', () => {
-    test('card body tap navigates to detail screen', () => {
+    test('card body tap does not navigate (no-op per Activity History plan)', () => {
       const onNavigateToDetail = jest.fn();
       setupHook({ dashboardStandards: [baseStandard] });
       const { getByText } = render(
@@ -234,7 +234,8 @@ describe('ActiveStandardsDashboardScreen', () => {
       );
       // Tap on the card body (activity name or period text)
       fireEvent.press(getByText('Sales Calls'));
-      expect(onNavigateToDetail).toHaveBeenCalledWith(baseStandard.standard.id);
+      // Navigation is now a no-op per Activity History plan
+      expect(onNavigateToDetail).not.toHaveBeenCalled();
     });
 
     test('Log button tap opens logging modal and does not navigate', () => {
