@@ -13,6 +13,7 @@ import { useTheme } from '../theme/useTheme';
 import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
 import { StickyLogButton } from '../components/StickyLogButton';
+import { useActivityHistoryEngine } from '../hooks/useActivityHistoryEngine';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -49,6 +50,10 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
 export function BottomTabNavigator() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  
+  // Mount the Activity History Engine once at the authenticated app root
+  // This ensures it runs for the whole session and avoids duplicate timers
+  useActivityHistoryEngine();
 
   return (
     <Tab.Navigator
