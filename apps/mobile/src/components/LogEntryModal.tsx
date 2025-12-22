@@ -11,9 +11,10 @@ import {
   ToastAndroid,
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   ScrollView,
   Keyboard,
+  KeyboardEvent,
+  LayoutChangeEvent,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard, ActivityLog } from '@minimum-standards/shared-model';
@@ -52,6 +53,8 @@ export function LogEntryModal({
   const [showWhen, setShowWhen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [footerHeight, setFooterHeight] = useState(0);
   
   const { activeStandards, loading: standardsLoading } = useStandards();
 
@@ -80,6 +83,8 @@ export function LogEntryModal({
     const resolved = resolveActivityName?.(selectedStandard.activityId);
     return resolved ?? selectedStandard.activityId;
   }, [resolveActivityName, selectedStandard, showPicker]);
+
+  const effectiveKeyboardHeight = Math.max(0, keyboardHeight - insets.bottom);
 
   useEffect(() => {
     if (!visible) {
@@ -340,6 +345,27 @@ export function LogEntryModal({
     });
   }, [selectedStandard]);
 
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const handleKeyboardShow = (event: KeyboardEvent) => {
+      setKeyboardHeight(event.endCoordinates?.height ?? 0);
+    };
+
+    const handleKeyboardHide = () => {
+      setKeyboardHeight(0);
+    };
+
+    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
+    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
+
   const renderLoggingForm = () => {
     if (!selectedStandard) {
       return null;
@@ -529,6 +555,16 @@ export function LogEntryModal({
     Keyboard.dismiss();
   };
 
+  const handleFooterLayout = (event: LayoutChangeEvent) => {
+    if (keyboardHeight > 0) {
+      return;
+    }
+    const { height } = event.nativeEvent.layout;
+    if (Math.abs(height - footerHeight) > 1) {
+      setFooterHeight(height);
+    }
+  };
+
   const renderFooter = () => {
     if (showPicker || !selectedStandard) {
       return null;
@@ -536,12 +572,13 @@ export function LogEntryModal({
 
     return (
       <View
+        onLayout={handleFooterLayout}
         style={[
           styles.footer,
           {
             backgroundColor: theme.background.modal,
             borderTopColor: theme.border.secondary,
-            paddingBottom: 12 + insets.bottom,
+            paddingBottom: 12 + insets.bottom + effectiveKeyboardHeight,
           },
         ]}
       >
@@ -582,7 +619,10 @@ export function LogEntryModal({
           onStartShouldSetResponder={() => true}
           style={[
             styles.modalContent,
-            { backgroundColor: showPicker ? theme.background.screen : theme.background.modal },
+            {
+              backgroundColor: showPicker ? theme.background.screen : theme.background.modal,
+              paddingTop: 20 + insets.top,
+            },
           ]}
         >
             <View style={styles.modalHeader}>
@@ -617,10 +657,16 @@ export function LogEntryModal({
             ) : (
               <ScrollView
                 style={styles.formScroll}
-                contentContainerStyle={styles.form}
+                contentContainerStyle={[
+                  styles.form,
+                  { paddingBottom: 16 + footerHeight + effectiveKeyboardHeight },
+                ]}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
                 bounces={true}
                 showsVerticalScrollIndicator={true}
+                scrollIndicatorInsets={{ bottom: footerHeight + effectiveKeyboardHeight }}
+                contentInsetAdjustmentBehavior="always"
                 scrollEventThrottle={16}
                 nestedScrollEnabled={true}
               >
@@ -643,16 +689,11 @@ export function LogEntryModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 20,
+    flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 0,
-    maxHeight: '95%',
-    minHeight: '85%',
     width: '100%',
   },
   pickerContainer: {
