@@ -77,13 +77,16 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
       id: snapshot.id,
       name: data.name,
       unit: data.unit,
-      notes: data.notes,
+      notes: data.notes ?? null,
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
     });
 
-    return parsed;
+    return {
+      ...parsed,
+      notes: parsed.notes ?? null,
+    };
   }
 };
 

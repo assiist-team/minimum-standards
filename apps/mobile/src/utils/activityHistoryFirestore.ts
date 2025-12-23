@@ -1,141 +1,94 @@
 import {
   collection,
   doc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
+  FirebaseFirestoreTypes,
+} from '@react-native-firebase/firestore';
+import { ActivityHistoryDoc } from '@minimum-standards/shared-model';
+import {
+  ActivityHistoryFirestoreBindings,
+  GetLatestHistoryForStandardParams,
+  ListenActivityHistoryForActivityParams,
+  WriteActivityHistoryPeriodParams,
+  createActivityHistoryHelpers,
+} from '@minimum-standards/firestore-model';
+import { firebaseFirestore } from '../firebase/firebaseApp';
+
+const reactNativeBindings: ActivityHistoryFirestoreBindings = {
+  collection,
+  doc,
   query,
   where,
   orderBy,
   limit,
   getDocs,
-} from '@react-native-firebase/firestore';
-import { firebaseFirestore, firebaseAuth } from '../firebase/firebaseApp';
-import { Standard, PeriodWindow } from '@minimum-standards/shared-model';
-import { ActivityHistoryRow } from '../hooks/useActivityHistory';
+  onSnapshot,
+  setDoc: (
+    reference: FirebaseFirestoreTypes.DocumentReference,
+    data: ActivityHistoryDoc,
+    options?: { merge?: boolean }
+  ) => reference.set(data, options),
+};
 
-/**
- * Builds a deterministic document ID for activityHistory documents.
- * Format: activityId__standardId__periodStartMs
- */
-export function buildActivityHistoryDocId(
-  activityId: string,
-  standardId: string,
-  periodStartMs: number
-): string {
-  return `${activityId}__${standardId}__${periodStartMs}`;
+const {
+  writeActivityHistoryPeriod: writeActivityHistoryPeriodInternal,
+  getLatestHistoryForStandard: getLatestHistoryForStandardInternal,
+  listenActivityHistoryForActivity: listenActivityHistoryForActivityInternal,
+} = createActivityHistoryHelpers(reactNativeBindings);
+
+export function writeActivityHistoryPeriod(
+  params: Omit<WriteActivityHistoryPeriodParams, 'firestore'>
+) {
+  return writeActivityHistoryPeriodInternal({
+    ...params,
+    firestore: firebaseFirestore,
+  });
 }
 
-/**
- * Writes an activityHistory period document.
- * Uses merge: true for idempotency.
- */
-export async function writeActivityHistoryPeriod(params: {
-  userId: string;
-  activityId: string;
-  standardId: string;
-  window: PeriodWindow;
-  standardSnapshot: ActivityHistoryRow['standardSnapshot'];
-  rollup: {
-    total: number;
-    currentSessions: number;
-    targetSessions: number;
-    status: 'Met' | 'In Progress' | 'Missed';
-    progressPercent: number;
-  };
-  source: 'boundary' | 'resume';
-}): Promise<void> {
-  const {
-    userId,
-    activityId,
-    standardId,
-    window,
-    standardSnapshot,
-    rollup,
-    source,
-  } = params;
+export function getLatestHistoryForStandard(
+  params: Omit<GetLatestHistoryForStandardParams, 'firestore'>
+) {
+  // Validate params before calling internal function
+  // This catches issues early and provides better error messages
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    throw new Error(
+      '[getLatestHistoryForStandard] Expected object parameter with { userId, standardId }. ' +
+      'If you see this, you may have a stale bundle. ' +
+      'See troubleshooting/activity-history-engine-call-error.md for resolution.'
+    );
+  }
 
-  const docId = buildActivityHistoryDocId(activityId, standardId, window.startMs);
-  const docRef = doc(
-    collection(doc(firebaseFirestore, 'users', userId), 'activityHistory'),
-    docId
-  );
+  if (!params.userId || typeof params.userId !== 'string') {
+    throw new Error(
+      '[getLatestHistoryForStandard] userId is required and must be a string. ' +
+      'This may indicate a stale bundle. See troubleshooting/activity-history-engine-call-error.md'
+    );
+  }
 
-  const payload = {
-    activityId,
-    standardId,
-    periodStartMs: window.startMs,
-    periodEndMs: window.endMs,
-    periodLabel: window.label,
-    periodKey: window.periodKey,
-    standardSnapshot,
-    total: rollup.total,
-    currentSessions: rollup.currentSessions,
-    targetSessions: rollup.targetSessions,
-    status: rollup.status,
-    progressPercent: rollup.progressPercent,
-    generatedAtMs: Date.now(),
-    source,
-  };
+  if (!params.standardId || typeof params.standardId !== 'string') {
+    throw new Error(
+      '[getLatestHistoryForStandard] standardId is required and must be a string. ' +
+      'This may indicate a stale bundle. See troubleshooting/activity-history-engine-call-error.md'
+    );
+  }
 
-  await docRef.set(payload, { merge: true });
+  return getLatestHistoryForStandardInternal({
+    ...params,
+    firestore: firebaseFirestore,
+  });
 }
 
-/**
- * Gets the latest activityHistory document for a standard.
- * Returns null if no history exists.
- */
-export async function getLatestHistoryForStandard(
-  userId: string,
-  standardId: string
-): Promise<ActivityHistoryRow | null> {
-  const historyQuery = query(
-    collection(doc(firebaseFirestore, 'users', userId), 'activityHistory'),
-    where('standardId', '==', standardId),
-    orderBy('periodStartMs', 'desc'),
-    limit(1)
-  );
-
-  const snapshot = await getDocs(historyQuery);
-  if (snapshot.empty) {
-    return null;
-  }
-
-  const docSnap = snapshot.docs[0];
-  const data = docSnap.data();
-
-  // Validate required fields
-  if (
-    !data ||
-    !data.activityId ||
-    !data.standardId ||
-    typeof data.periodStartMs !== 'number' ||
-    typeof data.periodEndMs !== 'number' ||
-    !data.periodLabel ||
-    !data.standardSnapshot ||
-    typeof data.total !== 'number' ||
-    typeof data.currentSessions !== 'number' ||
-    typeof data.targetSessions !== 'number' ||
-    !data.status ||
-    typeof data.progressPercent !== 'number'
-  ) {
-    console.warn(`Invalid activityHistory document ${docSnap.id}: missing required fields`);
-    return null;
-  }
-
-  return {
-    id: docSnap.id,
-    activityId: data.activityId,
-    standardId: data.standardId,
-    periodStartMs: data.periodStartMs,
-    periodEndMs: data.periodEndMs,
-    periodLabel: data.periodLabel,
-    periodKey: data.periodKey,
-    standardSnapshot: data.standardSnapshot,
-    total: data.total,
-    currentSessions: data.currentSessions,
-    targetSessions: data.targetSessions,
-    status: data.status,
-    progressPercent: data.progressPercent,
-    generatedAtMs: data.generatedAtMs ?? Date.now(),
-    source: data.source ?? 'boundary',
-  };
+export function listenActivityHistoryForActivity(
+  params: Omit<ListenActivityHistoryForActivityParams, 'firestore'>
+) {
+  return listenActivityHistoryForActivityInternal({
+    ...params,
+    firestore: firebaseFirestore,
+  });
 }
 

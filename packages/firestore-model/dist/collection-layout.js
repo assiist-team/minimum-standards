@@ -1,16 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserScopedCollections = getUserScopedCollections;
-const firestore_1 = require("firebase/firestore");
 function getUserScopedCollections(params) {
-    const { userId } = params;
+    const { userId, bindings } = params;
     const firestore = params.firestore;
-    const userDoc = (0, firestore_1.doc)(firestore, 'users', userId);
+    const userDoc = bindings.doc(firestore, 'users', userId);
+    const activities = bindings.collection(userDoc, 'activities');
+    const standards = bindings.collection(userDoc, 'standards');
+    const activityLogs = bindings.collection(userDoc, 'activityLogs');
+    const activityHistory = bindings.collection(userDoc, 'activityHistory');
+    const preferences = bindings.collection(userDoc, 'preferences');
+    const dashboardPins = bindings.doc(preferences, 'dashboardPins');
     return {
-        activities: (0, firestore_1.collection)(userDoc, 'activities'),
-        standards: (0, firestore_1.collection)(userDoc, 'standards'),
-        activityLogs: (0, firestore_1.collection)(userDoc, 'activityLogs'),
-        dashboardPins: (0, firestore_1.doc)(userDoc, 'preferences', 'dashboardPins')
+        activities,
+        standards,
+        activityLogs,
+        activityHistory,
+        dashboardPins,
     };
 }
 //# sourceMappingURL=collection-layout.js.map

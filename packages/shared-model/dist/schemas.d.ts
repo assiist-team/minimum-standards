@@ -218,3 +218,188 @@ export declare const dashboardPinsSchema: z.ZodObject<{
     updatedAtMs: number;
     pinnedStandardIds: string[];
 }>;
+export declare const activityHistorySourceSchema: z.ZodEnum<["boundary", "resume"]>;
+export declare const activityHistoryStandardSnapshotSchema: z.ZodObject<{
+    minimum: z.ZodNumber;
+    unit: z.ZodString;
+    cadence: z.ZodObject<{
+        interval: z.ZodNumber;
+        unit: z.ZodEnum<["day", "week", "month"]>;
+    }, "strip", z.ZodTypeAny, {
+        interval: number;
+        unit: "day" | "week" | "month";
+    }, {
+        interval: number;
+        unit: "day" | "week" | "month";
+    }>;
+    sessionConfig: z.ZodObject<{
+        sessionLabel: z.ZodString;
+        sessionsPerCadence: z.ZodNumber;
+        volumePerSession: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    }, {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    }>;
+    summary: z.ZodOptional<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    unit: string;
+    minimum: number;
+    cadence: {
+        interval: number;
+        unit: "day" | "week" | "month";
+    };
+    sessionConfig: {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    };
+    summary?: string | undefined;
+}, {
+    unit: string;
+    minimum: number;
+    cadence: {
+        interval: number;
+        unit: "day" | "week" | "month";
+    };
+    sessionConfig: {
+        sessionLabel: string;
+        sessionsPerCadence: number;
+        volumePerSession: number;
+    };
+    summary?: string | undefined;
+}>;
+export declare const activityHistoryPeriodStatusSchema: z.ZodEnum<["Met", "In Progress", "Missed"]>;
+export declare const activityHistoryDocSchema: z.ZodObject<{
+    id: z.ZodString;
+    activityId: z.ZodString;
+    standardId: z.ZodString;
+    periodStartMs: z.ZodEffects<z.ZodNumber, number, number>;
+    periodEndMs: z.ZodEffects<z.ZodNumber, number, number>;
+    periodLabel: z.ZodString;
+    periodKey: z.ZodString;
+    standardSnapshot: z.ZodObject<{
+        minimum: z.ZodNumber;
+        unit: z.ZodString;
+        cadence: z.ZodObject<{
+            interval: z.ZodNumber;
+            unit: z.ZodEnum<["day", "week", "month"]>;
+        }, "strip", z.ZodTypeAny, {
+            interval: number;
+            unit: "day" | "week" | "month";
+        }, {
+            interval: number;
+            unit: "day" | "week" | "month";
+        }>;
+        sessionConfig: z.ZodObject<{
+            sessionLabel: z.ZodString;
+            sessionsPerCadence: z.ZodNumber;
+            volumePerSession: z.ZodNumber;
+        }, "strip", z.ZodTypeAny, {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        }, {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        }>;
+        summary: z.ZodOptional<z.ZodString>;
+    }, "strip", z.ZodTypeAny, {
+        unit: string;
+        minimum: number;
+        cadence: {
+            interval: number;
+            unit: "day" | "week" | "month";
+        };
+        sessionConfig: {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        };
+        summary?: string | undefined;
+    }, {
+        unit: string;
+        minimum: number;
+        cadence: {
+            interval: number;
+            unit: "day" | "week" | "month";
+        };
+        sessionConfig: {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        };
+        summary?: string | undefined;
+    }>;
+    total: z.ZodNumber;
+    currentSessions: z.ZodNumber;
+    targetSessions: z.ZodNumber;
+    status: z.ZodEnum<["Met", "In Progress", "Missed"]>;
+    progressPercent: z.ZodNumber;
+    generatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
+    source: z.ZodEnum<["boundary", "resume"]>;
+}, "strip", z.ZodTypeAny, {
+    status: "Met" | "In Progress" | "Missed";
+    id: string;
+    activityId: string;
+    standardId: string;
+    periodStartMs: number;
+    periodEndMs: number;
+    periodLabel: string;
+    periodKey: string;
+    standardSnapshot: {
+        unit: string;
+        minimum: number;
+        cadence: {
+            interval: number;
+            unit: "day" | "week" | "month";
+        };
+        sessionConfig: {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        };
+        summary?: string | undefined;
+    };
+    total: number;
+    currentSessions: number;
+    targetSessions: number;
+    progressPercent: number;
+    generatedAtMs: number;
+    source: "boundary" | "resume";
+}, {
+    status: "Met" | "In Progress" | "Missed";
+    id: string;
+    activityId: string;
+    standardId: string;
+    periodStartMs: number;
+    periodEndMs: number;
+    periodLabel: string;
+    periodKey: string;
+    standardSnapshot: {
+        unit: string;
+        minimum: number;
+        cadence: {
+            interval: number;
+            unit: "day" | "week" | "month";
+        };
+        sessionConfig: {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        };
+        summary?: string | undefined;
+    };
+    total: number;
+    currentSessions: number;
+    targetSessions: number;
+    progressPercent: number;
+    generatedAtMs: number;
+    source: "boundary" | "resume";
+}>;
+export type ActivityHistoryDocSchema = z.infer<typeof activityHistoryDocSchema>;

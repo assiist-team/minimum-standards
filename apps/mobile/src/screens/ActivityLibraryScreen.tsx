@@ -11,6 +11,7 @@ import {
   Platform,
   Modal,
   Dimensions,
+  TextStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -236,7 +237,7 @@ export function ActivityLibraryScreen({
             onPress={handleAddPress}
             accessibilityRole="button"
           >
-            <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ Create</Text>
+            <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.button.primary.text }]}>+ Create</Text>
           </TouchableOpacity>
         </View>
         {hasSearchQuery && sortedActivities.length > 0 && (
@@ -261,7 +262,7 @@ export function ActivityLibraryScreen({
               style={[styles.createButton, { backgroundColor: theme.button.primary.background }]}
               accessibilityRole="button"
             >
-              <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Create Activity</Text>
+              <Text style={[styles.createButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.button.primary.text }]}>Create Activity</Text>
             </TouchableOpacity>
           </View>
         ) : sortedActivities.length === 0 ? (
@@ -414,12 +415,12 @@ function ActivityCard({
                       styles.viewHistoryButtonText,
                       {
                         fontSize: typography.button.primary.fontSize,
-                        fontWeight: typography.button.primary.fontWeight,
+                        fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'],
                         color: theme.button.primary.text,
                       }]
                     }
                   >
-                    View History
+                    History
                   </Text>
                 </TouchableOpacity>
                 {!hideDestructiveControls && (
@@ -610,7 +611,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
   },
   viewHistoryButtonText: {
     // fontSize and fontWeight come from typography.button.primary

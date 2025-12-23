@@ -34,6 +34,8 @@ export function useActivityHistoryEngine() {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isRunningCatchUpRef = useRef(false);
+  const hasRunInitialCatchUpRef = useRef(false);
+  const previousStandardsLengthRef = useRef(0);
 
   /**
    * Computes rollups for a period window by querying logs.
@@ -120,7 +122,10 @@ export function useActivityHistoryEngine() {
           }
 
           // Get latest history for this standard
-          const latestHistory = await getLatestHistoryForStandard(userId, standard.id);
+          const latestHistory = await getLatestHistoryForStandard({
+            userId,
+            standardId: standard.id,
+          });
 
           // Determine starting reference time
           let startReference: number;
@@ -180,7 +185,27 @@ export function useActivityHistoryEngine() {
           }
         }
       } catch (error) {
-        console.error('[useActivityHistoryEngine] Error during catch-up:', error);
+        // Enhanced error logging to help diagnose stale bundle issues
+        if (error instanceof Error) {
+          const errorMessage = error.message.toLowerCase();
+          if (
+            errorMessage.includes('stale bundle') ||
+            errorMessage.includes('invalid parameter') ||
+            errorMessage.includes('firestore is required') ||
+            errorMessage.includes('expected object')
+          ) {
+            console.error(
+              '[useActivityHistoryEngine] STALE BUNDLE DETECTED: ' +
+              'The error suggests you are running an old JS bundle. ' +
+              'See troubleshooting/activity-history-engine-call-error.md for resolution steps.\n' +
+              'Error:', error.message
+            );
+          } else {
+            console.error('[useActivityHistoryEngine] Error during catch-up:', error);
+          }
+        } else {
+          console.error('[useActivityHistoryEngine] Error during catch-up:', error);
+        }
       } finally {
         isRunningCatchUpRef.current = false;
       }
@@ -241,16 +266,29 @@ export function useActivityHistoryEngine() {
 
   // Run catch-up on mount and when standards become available
   useEffect(() => {
-    if (!userId || orderedActiveStandards.length === 0) {
+    if (!userId) {
+      hasRunInitialCatchUpRef.current = false;
+      previousStandardsLengthRef.current = 0;
       return;
     }
 
-    // Run initial catch-up when standards are available
+    const previousLength = previousStandardsLengthRef.current;
+    previousStandardsLengthRef.current = orderedActiveStandards.length;
+
+    if (orderedActiveStandards.length === 0) {
+      hasRunInitialCatchUpRef.current = false;
+      return;
+    }
+
+    if (hasRunInitialCatchUpRef.current && previousLength > 0) {
+      return;
+    }
+
+    hasRunInitialCatchUpRef.current = true;
     runCatchUp('boundary').then(() => {
       scheduleNextBoundary();
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]); // Only run when userId changes (on mount), not when standards change
+  }, [userId, orderedActiveStandards.length, runCatchUp, scheduleNextBoundary]);
 
   // Schedule boundary timer when standards change
   useEffect(() => {

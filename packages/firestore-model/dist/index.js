@@ -18,4 +18,5 @@ __exportStar(require("./collection-layout"), exports);
 __exportStar(require("./converters"), exports);
 __exportStar(require("./query-helpers"), exports);
 __exportStar(require("./timestamps"), exports);
+__exportStar(require("./activity-history-helpers"), exports);
 //# sourceMappingURL=index.js.map

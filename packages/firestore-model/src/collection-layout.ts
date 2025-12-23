@@ -1,10 +1,25 @@
-import {
-  collection,
+import type {
   CollectionReference,
-  doc,
   DocumentReference,
   Firestore
 } from 'firebase/firestore';
+
+export type CollectionFn = (
+  reference: Firestore | DocumentReference,
+  path: string,
+  ...pathSegments: string[]
+) => CollectionReference;
+
+export type DocFn = (
+  reference: Firestore | DocumentReference | CollectionReference,
+  path: string,
+  ...pathSegments: string[]
+) => DocumentReference;
+
+export type CollectionBindings = {
+  collection: CollectionFn;
+  doc: DocFn;
+};
 
 export type UserScopedCollections = {
   activities: CollectionReference;
@@ -15,22 +30,26 @@ export type UserScopedCollections = {
 };
 
 export function getUserScopedCollections(params: {
-  // NOTE: Firestore's TS types are nominal (private fields) and can mismatch across
-  // different Firebase bundles (e.g., when running under emulator test harnesses).
-  // We accept `unknown` here and cast internally so this helper stays usable
-  // anywhere a Firestore instance is provided at runtime.
   firestore: unknown;
   userId: string;
+  bindings: CollectionBindings;
 }): UserScopedCollections {
-  const { userId } = params;
+  const { userId, bindings } = params;
   const firestore = params.firestore as Firestore;
-  const userDoc = doc(firestore, 'users', userId);
+  const userDoc = bindings.doc(firestore, 'users', userId);
+
+  const activities = bindings.collection(userDoc, 'activities');
+  const standards = bindings.collection(userDoc, 'standards');
+  const activityLogs = bindings.collection(userDoc, 'activityLogs');
+  const activityHistory = bindings.collection(userDoc, 'activityHistory');
+  const preferences = bindings.collection(userDoc, 'preferences');
+  const dashboardPins = bindings.doc(preferences, 'dashboardPins');
 
   return {
-    activities: collection(userDoc, 'activities'),
-    standards: collection(userDoc, 'standards'),
-    activityLogs: collection(userDoc, 'activityLogs'),
-    activityHistory: collection(userDoc, 'activityHistory'),
-    dashboardPins: doc(userDoc, 'preferences', 'dashboardPins')
+    activities,
+    standards,
+    activityLogs,
+    activityHistory,
+    dashboardPins,
   };
 }

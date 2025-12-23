@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react';
-import { collection, doc, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
-import { firebaseFirestore } from '../config/firebase';
-import { firebaseAuth } from '../config/firebase';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
+import {
+  FirebaseFirestoreTypes,
+  Timestamp,
+  collection,
+  doc,
+  onSnapshot,
+  query,
+  where,
+} from '@react-native-firebase/firestore';
+import { Standard, calculatePeriodWindow } from '@minimum-standards/shared-model';
+import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 
 export interface ActivityLogSlice {
   id: string;
@@ -17,17 +26,34 @@ export interface UseActivityLogsResult {
 }
 
 /**
- * Hook to fetch all logs for standards that reference a given activityId.
- * This is used to compute synthetic current period rows.
+ * Hook to fetch log slices for the current period windows of standards that reference an activity.
+ * Queries are scoped per-standard and bounded to [periodStart, periodEnd) to keep downloads small.
  */
-export function useActivityLogs(activityId: string | null, standardIds: string[]): UseActivityLogsResult {
+export function useActivityLogs(
+  activityId: string | null,
+  standards: Standard[],
+  timezone: string
+): UseActivityLogsResult {
   const [logs, setLogs] = useState<ActivityLogSlice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [windowReferenceMs, setWindowReferenceMs] = useState(() => Date.now());
   const userId = firebaseAuth.currentUser?.uid;
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeStandards = useMemo(
+    () =>
+      standards.filter(
+        (standard) =>
+          standard.activityId === activityId &&
+          standard.state === 'active' &&
+          standard.archivedAtMs === null
+      ),
+    [standards, activityId]
+  );
 
   useEffect(() => {
-    if (!userId || !activityId || standardIds.length === 0) {
+    if (!userId || !activityId || activeStandards.length === 0) {
       setLoading(false);
       setLogs([]);
       return;
@@ -36,65 +62,130 @@ export function useActivityLogs(activityId: string | null, standardIds: string[]
     setLoading(true);
     setError(null);
 
-    // Create a Set for efficient lookup
-    const standardIdSet = new Set(standardIds);
+    const logsByStandard = new Map<string, ActivityLogSlice[]>();
+    let pendingStandards = activeStandards.length;
 
-    // Query all logs (we'll filter by standardId client-side to avoid Firestore 'in' query limit of 10)
-    // For efficiency, we could add a time filter, but for now we query all logs
-    // since we need them for computing current period totals
-    const logsQuery = query(
-      collection(doc(firebaseFirestore, 'users', userId), 'activityLogs')
-    );
+    const subscriptions = activeStandards.map((standard) => {
+      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone);
+      const logsQuery = query(
+        collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+        where('standardId', '==', standard.id),
+        where('occurredAt', '>=', Timestamp.fromMillis(window.startMs)),
+        where('occurredAt', '<', Timestamp.fromMillis(window.endMs))
+      );
 
-    const unsubscribe = onSnapshot(
-      logsQuery,
-      (snapshot) => {
-        const nextLogs: ActivityLogSlice[] = [];
-        snapshot.forEach((docSnap) => {
-          const data = docSnap.data() as {
-            standardId?: string;
-            value?: number;
-            occurredAt?: FirebaseFirestoreTypes.Timestamp;
-            deletedAt?: FirebaseFirestoreTypes.Timestamp | null;
-          };
+      return onSnapshot(
+        logsQuery,
+        (snapshot) => {
+          const nextLogs: ActivityLogSlice[] = [];
+          snapshot.forEach((docSnap) => {
+            const data = docSnap.data() as {
+              standardId?: string;
+              value?: number;
+              occurredAt?: FirebaseFirestoreTypes.Timestamp;
+              deletedAt?: FirebaseFirestoreTypes.Timestamp | null;
+            };
 
-          if (!data || !data.standardId || typeof data.value !== 'number') {
-            return;
-          }
+            if (
+              !data ||
+              typeof data.standardId !== 'string' ||
+              typeof data.value !== 'number' ||
+              !data.occurredAt ||
+              data.deletedAt
+            ) {
+              return;
+            }
 
-          // Exclude soft-deleted logs
-          if (data.deletedAt) {
-            return;
-          }
-
-          if (!data.occurredAt) {
-            return;
-          }
-
-          // Only include logs for standards that reference this activity
-          if (!standardIdSet.has(data.standardId)) {
-            return;
-          }
-
-          nextLogs.push({
-            id: docSnap.id,
-            standardId: data.standardId,
-            value: data.value,
-            occurredAtMs: data.occurredAt.toMillis(),
+            nextLogs.push({
+              id: docSnap.id,
+              standardId: data.standardId,
+              value: data.value,
+              occurredAtMs: data.occurredAt.toMillis(),
+            });
           });
-        });
 
-        setLogs(nextLogs);
-        setLoading(false);
-      },
-      (err) => {
-        setError(err);
-        setLoading(false);
+          logsByStandard.set(standard.id, nextLogs);
+
+          if (pendingStandards > 0) {
+            pendingStandards -= 1;
+            if (pendingStandards === 0) {
+              setLoading(false);
+            }
+          }
+
+          const merged: ActivityLogSlice[] = [];
+          logsByStandard.forEach((list) => {
+            merged.push(...list);
+          });
+          setLogs(merged);
+        },
+        (err) => {
+          setError(err);
+          setLoading(false);
+        }
+      );
+    });
+
+    return () => {
+      subscriptions.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [userId, activityId, activeStandards, timezone, windowReferenceMs]);
+
+  // Schedule window refresh at the earliest cadence boundary
+  useEffect(() => {
+    if (activeStandards.length === 0) {
+      return;
+    }
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    const nowMs = Date.now();
+    let nextBoundaryMs: number | null = null;
+
+    for (const standard of activeStandards) {
+      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone);
+      if (nextBoundaryMs === null || window.endMs < nextBoundaryMs) {
+        nextBoundaryMs = window.endMs;
       }
-    );
+    }
 
-    return () => unsubscribe();
-  }, [userId, activityId, standardIds.join(',')]); // Use join to create stable dependency
+    if (nextBoundaryMs === null) {
+      return;
+    }
+
+    if (nextBoundaryMs <= nowMs) {
+      setWindowReferenceMs(Date.now());
+      return;
+    }
+
+    const delayMs = nextBoundaryMs - nowMs;
+    timeoutRef.current = setTimeout(() => {
+      setWindowReferenceMs(Date.now());
+    }, delayMs);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [activeStandards, timezone, windowReferenceMs]);
+
+  // Refresh windows on app resume to handle missed boundaries
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        setWindowReferenceMs(Date.now());
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   return {
     logs,

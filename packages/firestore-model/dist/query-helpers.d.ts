@@ -4,3 +4,6 @@ export declare function orderByUpdatedAtDesc(): QueryConstraint;
 export declare function orderByOccurredAtDesc(): QueryConstraint;
 export declare function whereStandardIdEquals(standardId: string): QueryConstraint;
 export declare function whereStandardStateEquals(state: 'active' | 'archived'): QueryConstraint;
+export declare function whereActivityIdEquals(activityId: string): QueryConstraint;
+export declare function orderByPeriodStartMsDesc(): QueryConstraint;
+export declare function orderByPeriodEndMsDesc(): QueryConstraint;

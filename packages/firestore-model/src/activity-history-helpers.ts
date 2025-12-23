@@ -1,23 +1,13 @@
 import {
-  doc,
-  setDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  getDocs,
-  onSnapshot,
-  Unsubscribe,
-  Firestore
-} from 'firebase/firestore';
-import {
   ActivityHistoryDoc,
   ActivityHistoryStandardSnapshot,
   ActivityHistorySource,
   PeriodWindow
 } from '@minimum-standards/shared-model';
-import { getUserScopedCollections } from './collection-layout';
-import { activityHistoryConverter } from './converters';
+import {
+  CollectionBindings,
+  getUserScopedCollections
+} from './collection-layout';
 
 /**
  * Builds a deterministic document ID for activityHistory documents.
@@ -32,7 +22,7 @@ export function buildActivityHistoryDocId(
 }
 
 export interface WriteActivityHistoryPeriodParams {
-  firestore: Firestore;
+  firestore: unknown;
   userId: string;
   activityId: string;
   standardId: string;
@@ -48,119 +38,253 @@ export interface WriteActivityHistoryPeriodParams {
   source: ActivityHistorySource;
 }
 
-/**
- * Writes an activityHistory period document.
- * Uses merge: true for idempotency.
- */
-export async function writeActivityHistoryPeriod(
-  params: WriteActivityHistoryPeriodParams
-): Promise<void> {
-  const {
-    firestore,
-    userId,
-    activityId,
-    standardId,
-    window,
-    standardSnapshot,
-    rollup,
-    source,
-  } = params;
-
-  const collections = getUserScopedCollections({ firestore, userId });
-  const docId = buildActivityHistoryDocId(activityId, standardId, window.startMs);
-  const docRef = doc(collections.activityHistory, docId).withConverter(activityHistoryConverter);
-
-  const payload: ActivityHistoryDoc = {
-    id: docId,
-    activityId,
-    standardId,
-    periodStartMs: window.startMs,
-    periodEndMs: window.endMs,
-    periodLabel: window.label,
-    periodKey: window.periodKey,
-    standardSnapshot,
-    total: rollup.total,
-    currentSessions: rollup.currentSessions,
-    targetSessions: rollup.targetSessions,
-    status: rollup.status,
-    progressPercent: rollup.progressPercent,
-    generatedAtMs: Date.now(),
-    source,
-  };
-
-  await setDoc(docRef, payload, { merge: true });
-}
-
 export interface GetLatestHistoryForStandardParams {
-  firestore: Firestore;
+  firestore: unknown;
   userId: string;
   standardId: string;
 }
 
-/**
- * Gets the latest activityHistory document for a standard.
- * Returns null if no history exists.
- */
-export async function getLatestHistoryForStandard(
-  params: GetLatestHistoryForStandardParams
-): Promise<ActivityHistoryDoc | null> {
-  const { firestore, userId, standardId } = params;
-
-  const collections = getUserScopedCollections({ firestore, userId });
-  const historyQuery = query(
-    collections.activityHistory,
-    where('standardId', '==', standardId),
-    orderBy('periodStartMs', 'desc'),
-    limit(1)
-  ).withConverter(activityHistoryConverter);
-
-  const snapshot = await getDocs(historyQuery);
-  if (snapshot.empty) {
-    return null;
-  }
-
-  return snapshot.docs[0].data();
-}
-
 export interface ListenActivityHistoryForActivityParams {
-  firestore: Firestore;
+  firestore: unknown;
   userId: string;
   activityId: string;
   onNext: (docs: ActivityHistoryDoc[]) => void;
   onError?: (error: Error) => void;
 }
 
-/**
- * Listens to activityHistory documents for a given activityId.
- * Returns an unsubscribe function.
- * Documents are ordered by periodEndMs desc.
- */
-export function listenActivityHistoryForActivity(
-  params: ListenActivityHistoryForActivityParams
-): Unsubscribe {
-  const { firestore, userId, activityId, onNext, onError } = params;
+export type Unsubscribe = () => void;
 
-  const collections = getUserScopedCollections({ firestore, userId });
-  const historyQuery = query(
-    collections.activityHistory,
-    where('activityId', '==', activityId),
-    orderBy('periodEndMs', 'desc')
-  ).withConverter(activityHistoryConverter);
+type QuerySnapshotLike = {
+  empty: boolean;
+  docs: Array<{ id: string; data(): Record<string, unknown> }>;
+  forEach(callback: (doc: { id: string; data(): Record<string, unknown> }) => void): void;
+};
 
-  return onSnapshot(
-    historyQuery,
-    (snapshot) => {
-      const docs: ActivityHistoryDoc[] = [];
-      snapshot.forEach((docSnap) => {
-        docs.push(docSnap.data());
-      });
-      onNext(docs);
-    },
-    (error) => {
-      if (onError) {
-        onError(error);
-      }
-    }
-  );
+export type ActivityHistoryFirestoreBindings = CollectionBindings & {
+  query: (...args: unknown[]) => unknown;
+  where: (...args: unknown[]) => unknown;
+  orderBy: (...args: unknown[]) => unknown;
+  limit: (...args: unknown[]) => unknown;
+  getDocs: (queryRef: unknown) => Promise<QuerySnapshotLike>;
+  setDoc: (docRef: unknown, data: ActivityHistoryDoc, options?: { merge?: boolean }) => Promise<void>;
+  onSnapshot: (
+    queryRef: unknown,
+    onNext: (snapshot: QuerySnapshotLike) => void,
+    onError?: (error: Error) => void
+  ) => Unsubscribe;
+};
+
+type RawActivityHistoryDoc = {
+  activityId?: string;
+  standardId?: string;
+  periodStartMs?: number;
+  periodEndMs?: number;
+  periodLabel?: string;
+  periodKey?: string;
+  standardSnapshot?: ActivityHistoryStandardSnapshot;
+  total?: number;
+  currentSessions?: number;
+  targetSessions?: number;
+  status?: ActivityHistoryDoc['status'];
+  progressPercent?: number;
+  generatedAtMs?: number;
+  source?: ActivityHistorySource;
+};
+
+function toActivityHistoryDoc(
+  docId: string,
+  data: RawActivityHistoryDoc
+): ActivityHistoryDoc | null {
+  if (
+    !data ||
+    typeof data.activityId !== 'string' ||
+    typeof data.standardId !== 'string' ||
+    typeof data.periodStartMs !== 'number' ||
+    typeof data.periodEndMs !== 'number' ||
+    typeof data.periodLabel !== 'string' ||
+    !data.standardSnapshot ||
+    typeof data.total !== 'number' ||
+    typeof data.currentSessions !== 'number' ||
+    typeof data.targetSessions !== 'number' ||
+    typeof data.status !== 'string' ||
+    typeof data.progressPercent !== 'number'
+  ) {
+    return null;
+  }
+
+  return {
+    id: docId,
+    activityId: data.activityId,
+    standardId: data.standardId,
+    periodStartMs: data.periodStartMs,
+    periodEndMs: data.periodEndMs,
+    periodLabel: data.periodLabel,
+    periodKey: data.periodKey ?? '',
+    standardSnapshot: data.standardSnapshot,
+    total: data.total,
+    currentSessions: data.currentSessions,
+    targetSessions: data.targetSessions,
+    status: data.status,
+    progressPercent: data.progressPercent,
+    generatedAtMs: data.generatedAtMs ?? Date.now(),
+    source: data.source ?? 'boundary',
+  };
 }
 
+export function createActivityHistoryHelpers(bindings: ActivityHistoryFirestoreBindings) {
+  const {
+    collection,
+    doc,
+    query,
+    where,
+    orderBy,
+    limit,
+    getDocs,
+    setDoc,
+    onSnapshot,
+  } = bindings;
+
+  async function writeActivityHistoryPeriod(
+    params: WriteActivityHistoryPeriodParams
+  ): Promise<void> {
+    const {
+      firestore,
+      userId,
+      activityId,
+      standardId,
+      window,
+      standardSnapshot,
+      rollup,
+      source,
+    } = params;
+
+    const collections = getUserScopedCollections({
+      firestore,
+      userId,
+      bindings: { collection, doc },
+    });
+    const docId = buildActivityHistoryDocId(activityId, standardId, window.startMs);
+    const docRef = doc(collections.activityHistory, docId);
+
+    const payload: ActivityHistoryDoc = {
+      id: docId,
+      activityId,
+      standardId,
+      periodStartMs: window.startMs,
+      periodEndMs: window.endMs,
+      periodLabel: window.label,
+      periodKey: window.periodKey ?? '',
+      standardSnapshot,
+      total: rollup.total,
+      currentSessions: rollup.currentSessions,
+      targetSessions: rollup.targetSessions,
+      status: rollup.status,
+      progressPercent: rollup.progressPercent,
+      generatedAtMs: Date.now(),
+      source,
+    };
+
+    await setDoc(docRef, payload, { merge: true });
+  }
+
+  async function getLatestHistoryForStandard(
+    params: GetLatestHistoryForStandardParams
+  ): Promise<ActivityHistoryDoc | null> {
+    // Runtime validation to catch stale bundle issues early
+    // If params is not an object or missing required fields, this indicates a stale bundle
+    // or incorrect call signature (positional instead of object parameter)
+    if (!params || typeof params !== 'object' || Array.isArray(params)) {
+      throw new Error(
+        '[getLatestHistoryForStandard] Invalid parameter: expected object with { firestore, userId, standardId }. ' +
+        'This error usually indicates a stale JS bundle. ' +
+        'See troubleshooting/activity-history-engine-call-error.md for resolution steps.'
+      );
+    }
+
+    const { firestore, userId, standardId } = params;
+
+    if (!firestore) {
+      throw new Error(
+        '[getLatestHistoryForStandard] firestore is required but was undefined. ' +
+        'This usually indicates a stale JS bundle calling the function with positional arguments. ' +
+        'See troubleshooting/activity-history-engine-call-error.md for resolution steps.'
+      );
+    }
+
+    if (!userId || typeof userId !== 'string') {
+      throw new Error(
+        `[getLatestHistoryForStandard] userId is required and must be a string, got: ${typeof userId}. ` +
+        'This may indicate a stale bundle. See troubleshooting/activity-history-engine-call-error.md'
+      );
+    }
+
+    if (!standardId || typeof standardId !== 'string') {
+      throw new Error(
+        `[getLatestHistoryForStandard] standardId is required and must be a string, got: ${typeof standardId}. ` +
+        'This may indicate a stale bundle. See troubleshooting/activity-history-engine-call-error.md'
+      );
+    }
+
+    const collections = getUserScopedCollections({
+      firestore,
+      userId,
+      bindings: { collection, doc },
+    });
+    const historyQuery = query(
+      collections.activityHistory,
+      where('standardId', '==', standardId),
+      orderBy('periodStartMs', 'desc'),
+      limit(1)
+    );
+
+    const snapshot = await getDocs(historyQuery);
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const raw = snapshot.docs[0].data() as RawActivityHistoryDoc;
+    return toActivityHistoryDoc(snapshot.docs[0].id, raw);
+  }
+
+  function listenActivityHistoryForActivity(
+    params: ListenActivityHistoryForActivityParams
+  ): Unsubscribe {
+    const { firestore, userId, activityId, onNext, onError } = params;
+
+    const collections = getUserScopedCollections({
+      firestore,
+      userId,
+      bindings: { collection, doc },
+    });
+    const historyQuery = query(
+      collections.activityHistory,
+      where('activityId', '==', activityId),
+      orderBy('periodEndMs', 'desc')
+    );
+
+    return onSnapshot(
+      historyQuery,
+      (snapshot) => {
+        const docs: ActivityHistoryDoc[] = [];
+        snapshot.forEach((docSnap) => {
+          const parsed = toActivityHistoryDoc(docSnap.id, docSnap.data() as RawActivityHistoryDoc);
+          if (parsed) {
+            docs.push(parsed);
+          }
+        });
+        onNext(docs);
+      },
+      (error) => {
+        if (onError) {
+          onError(error);
+        }
+      }
+    );
+  }
+
+  return {
+    writeActivityHistoryPeriod,
+    getLatestHistoryForStandard,
+    listenActivityHistoryForActivity,
+  };
+}

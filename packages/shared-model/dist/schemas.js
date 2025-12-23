@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.dashboardPinsSchema = exports.activityLogSchema = exports.standardSchema = exports.activitySchema = exports.standardSessionConfigSchema = exports.standardStateSchema = exports.legacyStandardCadenceSchema = exports.standardCadenceSchema = exports.cadenceUnitSchema = void 0;
+exports.activityHistoryDocSchema = exports.activityHistoryPeriodStatusSchema = exports.activityHistoryStandardSnapshotSchema = exports.activityHistorySourceSchema = exports.dashboardPinsSchema = exports.activityLogSchema = exports.standardSchema = exports.activitySchema = exports.standardSessionConfigSchema = exports.standardStateSchema = exports.legacyStandardCadenceSchema = exports.standardCadenceSchema = exports.cadenceUnitSchema = void 0;
 const zod_1 = require("zod");
 const unit_normalization_1 = require("./unit-normalization");
 const timestampMsSchema = zod_1.z
@@ -105,5 +105,31 @@ exports.dashboardPinsSchema = zod_1.z.object({
     id: zod_1.z.string().min(1),
     pinnedStandardIds: zod_1.z.array(zod_1.z.string().min(1)),
     updatedAtMs: timestampMsSchema
+});
+exports.activityHistorySourceSchema = zod_1.z.enum(['boundary', 'resume']);
+exports.activityHistoryStandardSnapshotSchema = zod_1.z.object({
+    minimum: zod_1.z.number().min(0),
+    unit: zod_1.z.string().min(1).max(40),
+    cadence: exports.standardCadenceSchema,
+    sessionConfig: exports.standardSessionConfigSchema,
+    summary: zod_1.z.string().max(200).optional(),
+});
+exports.activityHistoryPeriodStatusSchema = zod_1.z.enum(['Met', 'In Progress', 'Missed']);
+exports.activityHistoryDocSchema = zod_1.z.object({
+    id: zod_1.z.string().min(1),
+    activityId: zod_1.z.string().min(1),
+    standardId: zod_1.z.string().min(1),
+    periodStartMs: timestampMsSchema,
+    periodEndMs: timestampMsSchema,
+    periodLabel: zod_1.z.string().min(1).max(200),
+    periodKey: zod_1.z.string().min(1).max(50),
+    standardSnapshot: exports.activityHistoryStandardSnapshotSchema,
+    total: zod_1.z.number().min(0),
+    currentSessions: zod_1.z.number().int().nonnegative(),
+    targetSessions: zod_1.z.number().int().positive(),
+    status: exports.activityHistoryPeriodStatusSchema,
+    progressPercent: zod_1.z.number().min(0).max(100),
+    generatedAtMs: timestampMsSchema,
+    source: exports.activityHistorySourceSchema,
 });
 //# sourceMappingURL=schemas.js.map

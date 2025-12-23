@@ -206,8 +206,8 @@ export function StandardProgressCard({
             </View>
           </View>
 
-        <View style={[styles.progressContainer, { backgroundColor: theme.background.tertiary, borderTopColor: theme.border.secondary }]}>
-          <View style={[styles.progressBar, { backgroundColor: theme.background.tertiary }]}>
+        <View style={[styles.progressContainer, { backgroundColor: theme.background.card, borderTopColor: theme.border.secondary }]}>
+          <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
             <View
               style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: progressBarColor }]}
               accessibilityRole="progressbar"

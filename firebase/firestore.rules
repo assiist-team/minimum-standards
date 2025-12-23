@@ -18,6 +18,10 @@ service cloud.firestore {
       return value is timestamp;
     }
 
+    function isTimestampMs(value) {
+      return value is int && value >= 0;
+    }
+
     function isOptionalTimestampField(fieldName) {
       return !(fieldName in request.resource.data) ||
         request.resource.data[fieldName] == null ||
@@ -30,22 +34,21 @@ service cloud.firestore {
         request.resource.data[fieldName] is string;
     }
 
-    function validSessionConfig() {
-      return ('sessionConfig' in request.resource.data)
-        && request.resource.data.sessionConfig is map
-        && request.resource.data.sessionConfig.keys().hasOnly([
+    function validSessionConfig(sessionConfig) {
+      return sessionConfig is map
+        && sessionConfig.keys().hasOnly([
           'sessionLabel',
           'sessionsPerCadence',
           'volumePerSession'
         ])
-        && request.resource.data.sessionConfig.sessionLabel is string
-        && request.resource.data.sessionConfig.sessionLabel.size() >= 1
-        && request.resource.data.sessionConfig.sessionLabel.size() <= 60
-        && request.resource.data.sessionConfig.sessionsPerCadence is int
-        && request.resource.data.sessionConfig.sessionsPerCadence >= 1
-        && request.resource.data.sessionConfig.sessionsPerCadence <= 1000
-        && request.resource.data.sessionConfig.volumePerSession is number
-        && request.resource.data.sessionConfig.volumePerSession > 0;
+        && sessionConfig.sessionLabel is string
+        && sessionConfig.sessionLabel.size() >= 1
+        && sessionConfig.sessionLabel.size() <= 40
+        && sessionConfig.sessionsPerCadence is int
+        && sessionConfig.sessionsPerCadence >= 1
+        && sessionConfig.sessionsPerCadence <= 1000
+        && sessionConfig.volumePerSession is number
+        && sessionConfig.volumePerSession > 0;
     }
 
     function isCreateWithServerTimestamps() {
@@ -149,7 +152,8 @@ service cloud.firestore {
       && request.resource.data.summary is string
       && request.resource.data.summary.size() >= 1
       && request.resource.data.summary.size() <= 200
-      && validSessionConfig()
+      && ('sessionConfig' in request.resource.data)
+      && validSessionConfig(request.resource.data.sessionConfig)
       && isTimestamp(request.resource.data.createdAt)
       && isTimestamp(request.resource.data.updatedAt)
       && isOptionalTimestampField('deletedAt')
@@ -251,6 +255,85 @@ service cloud.firestore {
         request.resource.data.updatedAt == request.time;
     }
 
+    function validActivityHistoryStandardSnapshot(snapshot) {
+      return snapshot is map
+        && snapshot.keys().hasOnly([
+          'minimum',
+          'unit',
+          'cadence',
+          'sessionConfig',
+          'summary'
+        ])
+        && snapshot.minimum is number
+        && snapshot.minimum >= 0
+        && snapshot.unit is string
+        && snapshot.unit.size() >= 1
+        && snapshot.unit.size() <= 40
+        && snapshot.cadence is map
+        && snapshot.cadence.keys().hasOnly(['interval', 'unit'])
+        && snapshot.cadence.interval is int
+        && snapshot.cadence.interval > 0
+        && snapshot.cadence.unit in ['day', 'week', 'month']
+        && validSessionConfig(snapshot.sessionConfig)
+        && (
+          !('summary' in snapshot)
+          || (
+            snapshot.summary is string
+            && snapshot.summary.size() <= 200
+          )
+        );
+    }
+
+    function validActivityHistoryDoc() {
+      let data = request.resource.data;
+      return hasOnlyKeys([
+        'id',
+        'activityId',
+        'standardId',
+        'periodStartMs',
+        'periodEndMs',
+        'periodLabel',
+        'periodKey',
+        'standardSnapshot',
+        'total',
+        'currentSessions',
+        'targetSessions',
+        'status',
+        'progressPercent',
+        'generatedAtMs',
+        'source'
+      ])
+      && data.id is string
+      && data.id.size() >= 1
+      && data.activityId is string
+      && data.activityId.size() >= 1
+      && data.standardId is string
+      && data.standardId.size() >= 1
+      && isTimestampMs(data.periodStartMs)
+      && isTimestampMs(data.periodEndMs)
+      && data.periodEndMs >= data.periodStartMs
+      && data.periodLabel is string
+      && data.periodLabel.size() >= 1
+      && data.periodLabel.size() <= 200
+      && data.periodKey is string
+      && data.periodKey.size() >= 1
+      && data.periodKey.size() <= 50
+      && data.standardSnapshot is map
+      && validActivityHistoryStandardSnapshot(data.standardSnapshot)
+      && data.total is number
+      && data.total >= 0
+      && data.currentSessions is int
+      && data.currentSessions >= 0
+      && data.targetSessions is int
+      && data.targetSessions > 0
+      && data.status in ['Met', 'In Progress', 'Missed']
+      && data.progressPercent is number
+      && data.progressPercent >= 0
+      && data.progressPercent <= 100
+      && isTimestampMs(data.generatedAtMs)
+      && data.source in ['boundary', 'resume'];
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
       // Prevent client from directly writing the user root doc in MVP.
@@ -275,6 +358,15 @@ service cloud.firestore {
         allow create: if isOwner(uid) && validActivityLog() && isCreateWithServerTimestamps() && canCreateLogForStandard(uid, request.resource.data.standardId);
         allow update: if isOwner(uid) && validActivityLogUpdate() && isUpdateWithServerTimestampAndStableCreatedAt();
         allow delete: if false; // soft-delete via deletedAt
+      }
+
+      match /activityHistory/{historyId} {
+        allow read: if isOwner(uid);
+        allow create, update: if
+          isOwner(uid)
+          && validActivityHistoryDoc()
+          && request.resource.data.id == historyId;
+        allow delete: if false;
       }
 
       match /preferences/{preferenceId} {

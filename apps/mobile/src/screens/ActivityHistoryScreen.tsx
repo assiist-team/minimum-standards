@@ -56,36 +56,32 @@ export function ActivityHistoryScreen({
     [standards, activityId]
   );
 
-  // Get active standard IDs for fetching logs
-  const activeStandardIds = useMemo(
+  const activeStandards = useMemo(
     () =>
-      relevantStandards
-        .filter((s) => s.state === 'active' && s.archivedAtMs === null)
-        .map((s) => s.id),
+      relevantStandards.filter((standard) => standard.state === 'active' && standard.archivedAtMs === null),
     [relevantStandards]
   );
 
   // Fetch logs for active standards
   const { logs, loading: logsLoading, error: logsError } = useActivityLogs(
     activityId,
-    activeStandardIds
+    relevantStandards,
+    timezone
   );
 
   // Compute synthetic current rows
   const syntheticRows = useMemo(() => {
-    if (activeStandardIds.length === 0) {
+    if (activeStandards.length === 0) {
       return [];
     }
     return computeSyntheticCurrentRows({
-      standards: relevantStandards.filter(
-        (s) => s.state === 'active' && s.archivedAtMs === null
-      ),
+      standards: activeStandards,
       activityId,
       logs,
       timezone,
       nowMs,
     });
-  }, [relevantStandards, activityId, logs, timezone, nowMs, activeStandardIds]);
+  }, [activeStandards, activityId, logs, timezone, nowMs]);
 
   // Merge persisted and synthetic rows
   const mergedRows = useMemo(() => {

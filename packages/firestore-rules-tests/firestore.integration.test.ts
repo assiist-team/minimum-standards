@@ -57,7 +57,8 @@ describe('Integration: create/read with converters in user scope', () => {
 
     const { activities, standards, activityLogs } = getUserScopedCollections({
       firestore: db,
-      userId: 'u1'
+      userId: 'u1',
+      bindings: { collection, doc }
     });
 
     const activityRef = doc(activities, 'a1').withConverter(activityConverter);
