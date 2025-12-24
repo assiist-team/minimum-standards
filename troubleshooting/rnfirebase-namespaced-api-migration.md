@@ -53,3 +53,4 @@ React Native Firebase v23 warns every time we call namespaced helpers such as `f
 - Auth store: `apps/mobile/src/stores/authStore.ts`
 - RN Firebase migration guide: https://rnfirebase.io/migrating-to-v22
 
+

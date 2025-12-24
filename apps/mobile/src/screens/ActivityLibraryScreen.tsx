@@ -5,6 +5,8 @@ import {
   TextInput,
   FlatList,
   TouchableOpacity,
+  Pressable,
+  InteractionManager,
   StyleSheet,
   ActivityIndicator,
   Alert,
@@ -39,6 +41,12 @@ export interface ActivityLibraryScreenProps {
 }
 
 const CARD_SPACING = 16;
+
+function logActivityLibraryEvent(label: string, data?: Record<string, unknown>) {
+  if (__DEV__) {
+    console.log(`[ActivityLibrary] ${label}`, data);
+  }
+}
 
 export function ActivityLibraryScreen({
   onSelectActivity,
@@ -121,6 +129,7 @@ export function ActivityLibraryScreen({
   };
 
   const handleEditPress = (activity: Activity) => {
+    logActivityLibraryEvent('edit.open', { activityId: activity.id });
     setEditingActivity(activity);
     setModalVisible(true);
   };
@@ -169,7 +178,24 @@ export function ActivityLibraryScreen({
     activityData: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>
   ): Promise<Activity> => {
     if (editingActivity) {
-      await updateActivity(editingActivity.id, activityData);
+      logActivityLibraryEvent('edit.save.start', {
+        activityId: editingActivity.id,
+        payload: activityData,
+      });
+    }
+    if (editingActivity) {
+      try {
+        await updateActivity(editingActivity.id, activityData);
+        logActivityLibraryEvent('edit.save.success', {
+          activityId: editingActivity.id,
+        });
+      } catch (error) {
+        logActivityLibraryEvent('edit.save.failure', {
+          activityId: editingActivity.id,
+          error: error instanceof Error ? error.message : error,
+        });
+        throw error;
+      }
       // Return the updated activity (we'll reconstruct it)
       return {
         ...editingActivity,
@@ -338,6 +364,7 @@ function ActivityCard({
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuButtonLayout, setMenuButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const menuButtonRef = useRef<View>(null);
+  const [pendingEditActivity, setPendingEditActivity] = useState<Activity | null>(null);
 
   const handleMenuPress = (e: any) => {
     e.stopPropagation();
@@ -349,11 +376,13 @@ function ActivityCard({
   };
 
   const handleEditPress = () => {
+      logActivityLibraryEvent('menu.edit.press', { activityId: activity.id });
+    setPendingEditActivity(activity);
     setMenuVisible(false);
-    onEdit(activity);
   };
 
   const handleDeletePress = () => {
+      logActivityLibraryEvent('menu.delete.press', { activityId: activity.id });
     setMenuVisible(false);
     onDelete(activity);
   };
@@ -447,6 +476,14 @@ function ActivityCard({
           transparent={true}
           animationType="fade"
           onRequestClose={() => setMenuVisible(false)}
+          onDismiss={() => {
+            if (pendingEditActivity) {
+              const activityToEdit = pendingEditActivity;
+              setPendingEditActivity(null);
+              logActivityLibraryEvent('edit.open', { activityId: activityToEdit.id });
+              onEdit(activityToEdit);
+            }
+          }}
         >
           <TouchableOpacity
             style={styles.menuOverlay}
@@ -463,7 +500,7 @@ function ActivityCard({
               menuLeft = Math.max(16, Math.min(menuLeft, screenWidth - menuWidth - 16));
               
               return (
-                <View
+                <Pressable
                   style={[
                     styles.menuContainer,
                     {
@@ -472,7 +509,7 @@ function ActivityCard({
                       left: menuLeft,
                     },
                   ]}
-                  onStartShouldSetResponder={() => true}
+                  onPress={(event) => event.stopPropagation()}
                 >
                   <TouchableOpacity
                     onPress={handleEditPress}
@@ -492,7 +529,7 @@ function ActivityCard({
                     <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
                     <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Delete</Text>
                   </TouchableOpacity>
-                </View>
+                </Pressable>
               );
             })()}
           </TouchableOpacity>

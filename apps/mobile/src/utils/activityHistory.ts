@@ -155,3 +155,4 @@ export function formatTotal(total: number): string {
   return numberFormatter.format(total);
 }
 
+

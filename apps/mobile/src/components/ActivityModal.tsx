@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Animated,
+  useWindowDimensions,
 } from 'react-native';
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
@@ -38,6 +40,8 @@ export function ActivityModal({
 }: ActivityModalProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const slideAnim = React.useRef(new Animated.Value(windowWidth)).current;
   const [name, setName] = useState('');
   const [unit, setUnit] = useState('');
   const [notes, setNotes] = useState('');
@@ -62,6 +66,17 @@ export function ActivityModal({
     setErrors({});
     setSaveError(null);
   }, [activity, visible]);
+
+  useEffect(() => {
+    if (visible) {
+      slideAnim.setValue(windowWidth);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 280,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [slideAnim, visible, windowWidth]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -154,7 +169,7 @@ export function ActivityModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="none"
       transparent={true}
       onRequestClose={handleClose}
     >
@@ -164,135 +179,154 @@ export function ActivityModal({
           keyboardVerticalOffset={insets.bottom + 16}
           style={styles.keyboardAvoider}
         >
-          <View
+          <Animated.View
             style={[
               styles.modalContent,
-              { backgroundColor: theme.background.modal, paddingBottom: 20 + insets.bottom },
+              {
+                backgroundColor: theme.background.screen,
+                transform: [{ translateX: slideAnim }],
+              },
             ]}
           >
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {isEditMode ? 'Edit Activity' : 'Add Activity'}
-            </Text>
-            <TouchableOpacity onPress={handleClose} disabled={saving}>
-              <Text style={styles.closeButton}>✕</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.formScroll}
-            contentContainerStyle={styles.form}
-            keyboardShouldPersistTaps="handled"
-            bounces={false}
-          >
-            {/* Name field */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.input.background,
-                    borderColor: errors.name ? theme.input.borderError : theme.input.border,
-                    color: theme.input.text,
-                  },
-                ]}
-                value={name}
-                onChangeText={(text) => {
-                  setName(text);
-                  if (errors.name) {
-                    setErrors({ ...errors, name: undefined });
-                  }
-                }}
-                placeholder="e.g., Sales Calls"
-                placeholderTextColor={theme.input.placeholder}
-                maxLength={120}
-                editable={!saving}
-                autoFocus={!isEditMode}
-              />
-              {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-            </View>
-
-            {/* Unit field */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Unit</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: theme.input.background,
-                    borderColor: errors.unit ? theme.input.borderError : theme.input.border,
-                    color: theme.input.text,
-                  },
-                ]}
-                value={unit}
-                onChangeText={(text) => {
-                  setUnit(text.toLowerCase());
-                  if (errors.unit) {
-                    setErrors({ ...errors, unit: undefined });
-                  }
-                }}
-                placeholder="e.g., calls (will be pluralized)"
-                placeholderTextColor={theme.input.placeholder}
-                maxLength={40}
-                editable={!saving}
-              />
-              {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
-            </View>
-
-            {/* Notes field */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Notes (optional)</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                  {
-                    backgroundColor: theme.input.background,
-                    borderColor: errors.notes ? theme.input.borderError : theme.input.border,
-                    color: theme.input.text,
-                  },
-                ]}
-                value={notes}
-                onChangeText={(text) => {
-                  setNotes(text);
-                  if (errors.notes) {
-                    setErrors({ ...errors, notes: undefined });
-                  }
-                }}
-                placeholder="Add any additional notes about this activity..."
-                placeholderTextColor={theme.input.placeholder}
-                maxLength={1000}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-                editable={!saving}
-              />
-              {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
-            </View>
-
-            {/* Save error */}
-            {saveError && <Text style={styles.errorText}>{saveError}</Text>}
-
-            {/* Save button */}
-            <TouchableOpacity
+            <View
               style={[
-                styles.saveButton,
+                styles.modalHeader,
                 {
-                  backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background,
+                  backgroundColor: theme.background.chrome,
+                  borderBottomColor: theme.border.primary,
+                  paddingTop: Math.max(insets.top, 12),
                 },
               ]}
-              onPress={handleSave}
-              disabled={saving}
             >
-              {saving ? (
-                <ActivityIndicator color={theme.button.primary.text} />
-              ) : (
-                <Text style={[styles.saveButtonText, { color: theme.button.primary.text }]}>Save</Text>
-              )}
-            </TouchableOpacity>
-          </ScrollView>
-          </View>
+              <Text style={styles.modalTitle}>
+                {isEditMode ? 'Edit Activity' : 'Add Activity'}
+              </Text>
+              <TouchableOpacity onPress={handleClose} disabled={saving}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.formScroll}
+              contentContainerStyle={[
+                styles.form,
+                { paddingBottom: 32 + insets.bottom },
+              ]}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
+              {/* Name field */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.input.background,
+                      borderColor: errors.name ? theme.input.borderError : theme.input.border,
+                      color: theme.input.text,
+                    },
+                  ]}
+                  value={name}
+                  onChangeText={(text) => {
+                    setName(text);
+                    if (errors.name) {
+                      setErrors({ ...errors, name: undefined });
+                    }
+                  }}
+                  placeholder="e.g., Sales Calls"
+                  placeholderTextColor={theme.input.placeholder}
+                  maxLength={120}
+                  editable={!saving}
+                  autoFocus={!isEditMode}
+                />
+                {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+              </View>
+
+              {/* Unit field */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Unit</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.input.background,
+                      borderColor: errors.unit ? theme.input.borderError : theme.input.border,
+                      color: theme.input.text,
+                    },
+                  ]}
+                  value={unit}
+                  onChangeText={(text) => {
+                    setUnit(text.toLowerCase());
+                    if (errors.unit) {
+                      setErrors({ ...errors, unit: undefined });
+                    }
+                  }}
+                  placeholder="e.g., calls (will be pluralized)"
+                  placeholderTextColor={theme.input.placeholder}
+                  maxLength={40}
+                  editable={!saving}
+                />
+                {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
+              </View>
+
+              {/* Notes field */}
+              <View style={styles.field}>
+                <Text style={styles.label}>Notes (optional)</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.textArea,
+                    {
+                      backgroundColor: theme.input.background,
+                      borderColor: errors.notes ? theme.input.borderError : theme.input.border,
+                      color: theme.input.text,
+                    },
+                  ]}
+                  value={notes}
+                  onChangeText={(text) => {
+                    setNotes(text);
+                    if (errors.notes) {
+                      setErrors({ ...errors, notes: undefined });
+                    }
+                  }}
+                  placeholder="Add any additional notes about this activity..."
+                  placeholderTextColor={theme.input.placeholder}
+                  maxLength={1000}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  editable={!saving}
+                />
+                {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
+              </View>
+
+              {/* Save error */}
+              {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+
+              {/* Save button */}
+              <TouchableOpacity
+                style={[
+                  styles.saveButton,
+                  {
+                    backgroundColor: saving
+                      ? theme.button.disabled.background
+                      : theme.button.primary.background,
+                  },
+                ]}
+                onPress={handleSave}
+                disabled={saving}
+              >
+                {saving ? (
+                  <ActivityIndicator color={theme.button.primary.text} />
+                ) : (
+                  <Text style={[styles.saveButtonText, { color: theme.button.primary.text }]}>
+                    Save
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -302,24 +336,27 @@ export function ActivityModal({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   keyboardAvoider: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
   modalContent: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: '90%',
+    flex: 1,
     width: '100%',
+    borderRadius: 0,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    shadowOffset: { width: -6, height: 0 },
+    elevation: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
   },
   modalTitle: {
     fontSize: 24,
@@ -330,11 +367,12 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   formScroll: {
-    flexGrow: 1,
+    flex: 1,
   },
   form: {
     gap: 16,
-    paddingBottom: 8,
+    paddingTop: 16,
+    paddingHorizontal: 16,
   },
   field: {
     marginBottom: 16,
