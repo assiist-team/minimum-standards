@@ -364,6 +364,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     }
 
     setSaving(true);
+    let shouldCloseAfterSave = false;
     try {
       if (isEditMode && standardId) {
         // Update existing standard
@@ -377,7 +378,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
           cadence: payload.cadence,
         });
         Alert.alert('Standard updated', 'Your Standard has been updated successfully.');
-        onBack();
+        shouldCloseAfterSave = true;
       } else {
         // Check for duplicate Standard when creating
         const matchingStandard = findMatchingStandard(
@@ -399,10 +400,10 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               'Standard activated',
               'An existing inactive Standard has been activated.'
             );
+            shouldCloseAfterSave = true;
           } else {
             // If duplicate found and active: show error
             setSaveError('A Standard with these values already exists');
-            setSaving(false);
             return;
           }
         } else {
@@ -414,6 +415,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
             cadence: payload.cadence,
           });
           Alert.alert('Standard saved', 'Your Standard has been saved successfully.');
+          shouldCloseAfterSave = true;
         }
         resetForm();
       }
@@ -423,6 +425,9 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
       );
     } finally {
       setSaving(false);
+      if (shouldCloseAfterSave) {
+        onBack();
+      }
     }
   };
 

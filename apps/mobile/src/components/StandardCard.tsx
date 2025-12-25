@@ -33,17 +33,21 @@ export function StandardCard({
 
   const activityName = activityNameMap?.get(standard.activityId) ?? standard.activityId;
 
+  // Format volume/period: "1800 minutes / week" (derive from standard data)
   const { interval, unit: cadenceUnit } = standard.cadence;
   const cadenceStr = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
-  const minimumText = formatUnitWithCount(standard.unit, standard.minimum);
-  const volumePeriodText = `${minimumText} / ${cadenceStr}`;
+  const minimumUnitText = formatUnitWithCount(standard.unit, standard.minimum);
+  const volumePeriodText = `${standard.minimum} ${minimumUnitText} / ${cadenceStr}`;
 
+  // Format session params: "5 sessions × 15 minutes" (only show if sessionsPerCadence > 1)
   const sessionConfig = standard.sessionConfig;
-  const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1
-    ? sessionConfig.sessionLabel
-    : `${sessionConfig.sessionLabel}s`;
-  const sessionVolumeText = formatUnitWithCount(standard.unit, sessionConfig.volumePerSession);
-  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionVolumeText}`;
+  const usesSessions = sessionConfig.sessionsPerCadence > 1;
+  let sessionParamsText: string | null = null;
+  if (usesSessions) {
+    const sessionLabelPlural = `${sessionConfig.sessionLabel}s`;
+    const sessionVolumeUnit = formatUnitWithCount(standard.unit, sessionConfig.volumePerSession);
+    sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${sessionVolumeUnit}`;
+  }
 
   const handleToggle = useCallback((e: any) => {
     e.stopPropagation();
@@ -97,9 +101,11 @@ export function StandardCard({
               <Text style={[localStyles.volumePeriodText, { color: theme.text.primary }]} numberOfLines={1}>
                 {volumePeriodText}
               </Text>
-              <Text style={[localStyles.sessionParamsText, { color: theme.text.secondary }]} numberOfLines={1}>
-                {sessionParamsText}
-              </Text>
+              {sessionParamsText !== null && (
+                <Text style={[localStyles.sessionParamsText, { color: theme.text.secondary }]} numberOfLines={1}>
+                  {sessionParamsText}
+                </Text>
+              )}
             </View>
             <View style={localStyles.headerActions}>
               <View style={localStyles.actionButtonsRow}>
