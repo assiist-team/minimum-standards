@@ -1,5 +1,5 @@
 import { StandardCadence, StandardSessionConfig } from './types';
-import { normalizeUnitToPlural } from './unit-normalization';
+import { formatUnitWithCount, normalizeUnitToPlural } from './unit-normalization';
 
 /**
  * Formats a Standard's summary string in a normalized format.
@@ -39,9 +39,11 @@ export function formatStandardSummary(
     const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1 
       ? sessionConfig.sessionLabel 
       : `${sessionConfig.sessionLabel}s`;
-    return `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${normalizedUnit} = ${minimum} ${normalizedUnit} / ${cadenceStr}`;
+    const sessionVolumeText = formatUnitWithCount(normalizedUnit, sessionConfig.volumePerSession);
+    const minimumText = formatUnitWithCount(normalizedUnit, minimum);
+    return `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionVolumeText} = ${minimumText} / ${cadenceStr}`;
   }
   
   // Direct minimum mode (sessionsPerCadence === 1 or no sessionConfig): "minimum unit / cadence"
-  return `${minimum} ${normalizedUnit} / ${cadenceStr}`;
+  return `${formatUnitWithCount(normalizedUnit, minimum)} / ${cadenceStr}`;
 }

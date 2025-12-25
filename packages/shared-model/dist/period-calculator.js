@@ -29,8 +29,8 @@ function calculatePeriodWindow(timestampMs, cadence, timezone) {
             endMs: end.toMillis(),
             periodKey: start.toFormat('yyyy-LL-dd'),
             label: interval === 1
-                ? formatLabel(start, 'MMMM d, yyyy')
-                : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(inclusiveEnd, 'MMMM d, yyyy')}`,
+                ? formatLabel(start, 'MM/dd/yyyy')
+                : `${formatLabel(start, 'MM/dd/yyyy')} - ${formatLabel(inclusiveEnd, 'MM/dd/yyyy')}`,
         };
     }
     if (unit === 'week') {
@@ -45,7 +45,7 @@ function calculatePeriodWindow(timestampMs, cadence, timezone) {
             startMs: start.toMillis(),
             endMs: end.toMillis(),
             periodKey: start.toFormat('yyyy-LL-dd'),
-            label: `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(inclusiveEnd, 'MMMM d, yyyy')}`,
+            label: `${formatLabel(start, 'MM/dd/yyyy')} - ${formatLabel(inclusiveEnd, 'MM/dd/yyyy')}`,
         };
     }
     // Monthly cadence
@@ -58,8 +58,8 @@ function calculatePeriodWindow(timestampMs, cadence, timezone) {
             endMs: monthEnd.toMillis(),
             periodKey: monthStart.toFormat('yyyy-LL'),
             label: interval === 1
-                ? formatLabel(monthStart, 'MMMM yyyy')
-                : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(inclusiveEnd, 'MMMM yyyy')}`,
+                ? formatLabel(monthStart, 'MM/yyyy')
+                : `${formatLabel(monthStart, 'MM/yyyy')} - ${formatLabel(inclusiveEnd, 'MM/yyyy')}`,
         };
     }
     throw new Error(`Unsupported cadence unit: ${unit}`);

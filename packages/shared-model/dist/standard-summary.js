@@ -34,9 +34,11 @@ function formatStandardSummary(minimum, unit, cadence, sessionConfig) {
         const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1
             ? sessionConfig.sessionLabel
             : `${sessionConfig.sessionLabel}s`;
-        return `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${normalizedUnit} = ${minimum} ${normalizedUnit} / ${cadenceStr}`;
+        const sessionVolumeText = (0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, sessionConfig.volumePerSession);
+        const minimumText = (0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, minimum);
+        return `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionVolumeText} = ${minimumText} / ${cadenceStr}`;
     }
     // Direct minimum mode (sessionsPerCadence === 1 or no sessionConfig): "minimum unit / cadence"
-    return `${minimum} ${normalizedUnit} / ${cadenceStr}`;
+    return `${(0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, minimum)} / ${cadenceStr}`;
 }
 //# sourceMappingURL=standard-summary.js.map

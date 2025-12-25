@@ -8,6 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import type { Standard } from '@minimum-standards/shared-model';
+import { formatUnitWithCount } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
 import { getStatusColors } from '../theme/colors';
@@ -72,14 +73,16 @@ export function StandardProgressCard({
   // Format volume/period: "75 minutes / week"
   const { interval, unit: cadenceUnit } = standard.cadence;
   const cadenceStr = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
-  const volumePeriodText = `${standard.minimum} ${standard.unit} / ${cadenceStr}`;
+  const minimumText = formatUnitWithCount(standard.unit, standard.minimum);
+  const volumePeriodText = `${minimumText} / ${cadenceStr}`;
   
   // Format session params: "5 sessions × 15 minutes"
   const sessionConfig = standard.sessionConfig;
   const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1 
     ? sessionConfig.sessionLabel 
     : `${sessionConfig.sessionLabel}s`;
-  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${standard.unit}`;
+  const sessionVolumeUnit = formatUnitWithCount(standard.unit, sessionConfig.volumePerSession);
+  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${sessionVolumeUnit}`;
   
   // Format summaries
   const periodSummary = `${currentTotalFormatted} / ${targetValueFormatted} ${unit}`;

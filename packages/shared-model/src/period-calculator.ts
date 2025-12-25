@@ -47,10 +47,10 @@ export function calculatePeriodWindow(
       periodKey: start.toFormat('yyyy-LL-dd'),
       label:
         interval === 1
-          ? formatLabel(start, 'MMMM d, yyyy')
-          : `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(
+          ? formatLabel(start, 'MM/dd/yyyy')
+          : `${formatLabel(start, 'MM/dd/yyyy')} - ${formatLabel(
               inclusiveEnd,
-              'MMMM d, yyyy'
+              'MM/dd/yyyy'
             )}`,
     };
   }
@@ -67,9 +67,9 @@ export function calculatePeriodWindow(
       startMs: start.toMillis(),
       endMs: end.toMillis(),
       periodKey: start.toFormat('yyyy-LL-dd'),
-      label: `${formatLabel(start, 'MMMM d, yyyy')} - ${formatLabel(
+      label: `${formatLabel(start, 'MM/dd/yyyy')} - ${formatLabel(
         inclusiveEnd,
-        'MMMM d, yyyy'
+        'MM/dd/yyyy'
       )}`,
     };
   }
@@ -85,10 +85,10 @@ export function calculatePeriodWindow(
       periodKey: monthStart.toFormat('yyyy-LL'),
       label:
         interval === 1
-          ? formatLabel(monthStart, 'MMMM yyyy')
-          : `${formatLabel(monthStart, 'MMMM yyyy')} - ${formatLabel(
+          ? formatLabel(monthStart, 'MM/yyyy')
+          : `${formatLabel(monthStart, 'MM/yyyy')} - ${formatLabel(
               inclusiveEnd,
-              'MMMM yyyy'
+              'MM/yyyy'
             )}`,
     };
   }

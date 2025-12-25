@@ -46,6 +46,21 @@ describe('formatStandardSummary', () => {
     expect(result).toBe('5 sessions × 15 minutes = 75 minutes / week');
   });
 
+  test('uses singular unit when session volume is 1', () => {
+    const result = formatStandardSummary(
+      2,
+      'minute',
+      { interval: 1, unit: 'week' },
+      { sessionLabel: 'session', sessionsPerCadence: 2, volumePerSession: 1 }
+    );
+    expect(result).toBe('2 sessions × 1 minute = 2 minutes / week');
+  });
+
+  test('uses singular unit when minimum is 1', () => {
+    const result = formatStandardSummary(1, 'minute', { interval: 1, unit: 'week' });
+    expect(result).toBe('1 minute / week');
+  });
+
   test('formats direct minimum mode when sessionsPerCadence === 1', () => {
     const result = formatStandardSummary(
       1000,

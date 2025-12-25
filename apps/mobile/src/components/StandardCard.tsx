@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions } from 'react-native';
-import { Standard } from '@minimum-standards/shared-model';
+import { Standard, formatUnitWithCount } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
@@ -35,13 +35,15 @@ export function StandardCard({
 
   const { interval, unit: cadenceUnit } = standard.cadence;
   const cadenceStr = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
-  const volumePeriodText = `${standard.minimum} ${standard.unit} / ${cadenceStr}`;
+  const minimumText = formatUnitWithCount(standard.unit, standard.minimum);
+  const volumePeriodText = `${minimumText} / ${cadenceStr}`;
 
   const sessionConfig = standard.sessionConfig;
   const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1
     ? sessionConfig.sessionLabel
     : `${sessionConfig.sessionLabel}s`;
-  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionConfig.volumePerSession} ${standard.unit}`;
+  const sessionVolumeText = formatUnitWithCount(standard.unit, sessionConfig.volumePerSession);
+  const sessionParamsText = `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionVolumeText}`;
 
   const handleToggle = useCallback((e: any) => {
     e.stopPropagation();
@@ -164,7 +166,6 @@ const localStyles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 2,
     overflow: 'hidden',
-    marginBottom: 12,
   },
   cardContent: { gap: 0 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, padding: 16 },

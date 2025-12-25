@@ -32,6 +32,7 @@ export interface StandardsLibraryScreenProps {
 }
 
 const CARD_SPACING = 16;
+const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 export function StandardsLibraryScreen({
   onBack,
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: CARD_SPACING,
-    gap: CARD_SPACING,
+    gap: CARD_VERTICAL_GAP,
   },
   card: {
     borderRadius: 16,

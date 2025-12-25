@@ -24,6 +24,7 @@ import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 
 const CARD_SPACING = 16;
+const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 export function ActiveStandardsDashboardScreen({
   onBack,
@@ -347,6 +348,6 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: CARD_SPACING,
-    gap: CARD_SPACING,
+    gap: CARD_VERTICAL_GAP,
   },
 });

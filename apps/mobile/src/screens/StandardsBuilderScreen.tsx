@@ -885,7 +885,12 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                   </Text>
                 </View>
               ) : (
-                <View style={styles.dropdownListContent}>
+                <ScrollView
+                  style={styles.dropdownList}
+                  contentContainerStyle={styles.dropdownListContent}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled
+                >
                   {activities.map((item) => (
                     <TouchableOpacity
                       key={item.id}
@@ -908,7 +913,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                       </View>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               )}
             </View>
           )}
@@ -1195,6 +1200,9 @@ const styles = StyleSheet.create({
   },
   dropdownListContent: {
     paddingVertical: 8,
+  },
+  dropdownList: {
+    maxHeight: 280,
   },
   activityDropdownItem: {
     paddingHorizontal: 16,

@@ -41,6 +41,7 @@ export interface ActivityLibraryScreenProps {
 }
 
 const CARD_SPACING = 16;
+const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 function logActivityLibraryEvent(label: string, data?: Record<string, unknown>) {
   if (__DEV__) {
@@ -603,7 +604,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: CARD_SPACING,
-    gap: CARD_SPACING,
+    gap: CARD_VERTICAL_GAP,
   },
   card: {
     borderRadius: 16,
