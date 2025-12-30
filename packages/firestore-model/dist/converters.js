@@ -4,6 +4,26 @@ exports.activityHistoryConverter = exports.dashboardPinsConverter = exports.acti
 const firestore_1 = require("firebase/firestore");
 const shared_model_1 = require("@minimum-standards/shared-model");
 const timestamps_1 = require("./timestamps");
+function coercePeriodStartPreference(preference) {
+    if (!preference || typeof preference !== 'object') {
+        return undefined;
+    }
+    const maybePreference = preference;
+    if (maybePreference.mode === 'default') {
+        return { mode: 'default' };
+    }
+    if (maybePreference.mode === 'weekDay' &&
+        typeof maybePreference.weekStartDay === 'number') {
+        const weekStartDay = maybePreference.weekStartDay;
+        if (weekStartDay >= 1 && weekStartDay <= 7) {
+            return {
+                mode: 'weekDay',
+                weekStartDay: weekStartDay,
+            };
+        }
+    }
+    return undefined;
+}
 function parseWith(schema, value) {
     return schema.parse(value);
 }
@@ -63,7 +83,7 @@ exports.standardConverter = {
     },
     fromFirestore(snapshot, options) {
         const data = snapshot.data(options);
-        return parseWith(shared_model_1.standardSchema, {
+        const rawStandard = {
             id: snapshot.id,
             activityId: data.activityId,
             minimum: data.minimum,
@@ -72,7 +92,7 @@ exports.standardConverter = {
             state: data.state,
             summary: data.summary,
             sessionConfig: data.sessionConfig,
-            periodStartPreference: data.periodStartPreference,
+            periodStartPreference: coercePeriodStartPreference(data.periodStartPreference),
             quickAddValues: Array.isArray(data.quickAddValues)
                 ? data.quickAddValues.filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0)
                 : undefined,
@@ -80,7 +100,8 @@ exports.standardConverter = {
             createdAtMs: (0, timestamps_1.timestampToMs)(data.createdAt),
             updatedAtMs: (0, timestamps_1.timestampToMs)(data.updatedAt),
             deletedAtMs: data.deletedAt == null ? null : (0, timestamps_1.timestampToMs)(data.deletedAt)
-        });
+        };
+        return parseWith(shared_model_1.standardSchema, rawStandard);
     }
 };
 exports.activityLogConverter = {
@@ -154,7 +175,11 @@ exports.activityHistoryConverter = {
         if (typeof referenceTimestampMs !== 'number') {
             throw new Error('[activityHistoryConverter] Document missing reference timestamp');
         }
-        return parseWith(shared_model_1.activityHistoryDocSchema, {
+        const normalizedSnapshot = {
+            ...data.standardSnapshot,
+            periodStartPreference: coercePeriodStartPreference(data.standardSnapshot?.periodStartPreference),
+        };
+        const rawHistoryDoc = {
             id: snapshot.id,
             activityId: data.activityId,
             standardId: data.standardId,
@@ -163,7 +188,7 @@ exports.activityHistoryConverter = {
             periodEndMs: data.periodEndMs,
             periodLabel: data.periodLabel,
             periodKey: data.periodKey,
-            standardSnapshot: data.standardSnapshot,
+            standardSnapshot: normalizedSnapshot,
             total: data.total,
             currentSessions: data.currentSessions,
             targetSessions: data.targetSessions,
@@ -171,7 +196,8 @@ exports.activityHistoryConverter = {
             progressPercent: data.progressPercent,
             generatedAtMs: data.generatedAtMs,
             source: data.source,
-        });
+        };
+        return parseWith(shared_model_1.activityHistoryDocSchema, rawHistoryDoc);
     }
 };
 //# sourceMappingURL=converters.js.map

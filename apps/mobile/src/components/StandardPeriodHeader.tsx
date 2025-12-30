@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { StandardSessionConfig } from '@minimum-standards/shared-model';
 
 export interface StandardPeriodHeaderProps {
   periodLabel: string;
@@ -14,6 +15,7 @@ export interface StandardPeriodHeaderProps {
   unit: string;
   progressPercent: number;
   activityName: string;
+  sessionConfig?: StandardSessionConfig;
 }
 
 export function StandardPeriodHeader({
@@ -23,6 +25,7 @@ export function StandardPeriodHeader({
   unit,
   progressPercent,
   activityName,
+  sessionConfig,
 }: StandardPeriodHeaderProps) {
   const theme = useTheme();
 
@@ -38,7 +41,7 @@ export function StandardPeriodHeader({
   return (
     <View style={[styles.container, { backgroundColor: theme.background.card, borderBottomColor: theme.border.secondary }]}>
       <View style={styles.content}>
-        <View style={styles.breadcrumb}>
+        <View style={[styles.breadcrumb, { alignSelf: 'center' }]}>
           <Text style={[styles.breadcrumbText, { color: theme.text.secondary }]}>
             {activityName}
           </Text>
@@ -65,6 +68,17 @@ export function StandardPeriodHeader({
             {progressText}
           </Text>
         </View>
+
+        {sessionConfig && sessionConfig.sessionsPerCadence > 1 && (
+          <View style={styles.sessionSection}>
+            <Text style={[styles.sessionTotal, { color: theme.text.primary }]}>
+              Total: {formatValue(currentTotal)} {unit}
+            </Text>
+            <Text style={[styles.sessionData, { color: theme.text.secondary }]}>
+              {sessionConfig.sessionsPerCadence} {sessionConfig.sessionsPerCadence === 1 ? sessionConfig.sessionLabel : `${sessionConfig.sessionLabel}s`} × {formatValue(sessionConfig.volumePerSession)} {unit}
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -114,5 +128,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     letterSpacing: 0.1,
+  },
+  sessionSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  sessionTotal: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  sessionData: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

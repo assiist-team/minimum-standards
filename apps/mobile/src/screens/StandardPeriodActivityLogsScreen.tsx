@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../theme/useTheme';
+import { typography } from '../theme/typography';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useStandardPeriodActivityLogs } from '../hooks/useStandardPeriodActivityLogs';
 import { useStandards } from '../hooks/useStandards';
@@ -18,6 +20,8 @@ import { useActivities } from '../hooks/useActivities';
 import { StandardPeriodHeader } from '../components/StandardPeriodHeader';
 import { ActivityLogsList } from '../components/ActivityLogsList';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
+
+const CARD_SPACING = 16;
 
 type RouteProps = RouteProp<RootStackParamList, 'StandardPeriodActivityLogs'>;
 
@@ -130,6 +134,7 @@ export function StandardPeriodActivityLogsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+      {/* Header */}
       <View
         style={[
           styles.header,
@@ -140,17 +145,22 @@ export function StandardPeriodActivityLogsScreen() {
           },
         ]}
       >
-        <TouchableOpacity onPress={handleBack} accessibilityRole="button">
-          <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
+        <TouchableOpacity 
+          onPress={handleBack} 
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <MaterialIcons name="arrow-back" size={24} color={theme.primary.main} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
-          Period Activity Logs
+          Activity Logs
         </Text>
         <View style={styles.headerSpacer} />
       </View>
 
       <ErrorBanner error={error} />
 
+      {/* Period Summary */}
       <StandardPeriodHeader
         periodLabel={periodInfo.label}
         currentTotal={totalValue}
@@ -158,8 +168,10 @@ export function StandardPeriodActivityLogsScreen() {
         unit={standard.unit}
         progressPercent={progressPercent}
         activityName={activity.name}
+        sessionConfig={standard.sessionConfig}
       />
 
+      {/* Activity Logs */}
       <ActivityLogsList
         logs={logs}
         loading={loading}
@@ -186,10 +198,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
-  backButton: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -197,17 +205,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerSpacer: {
-    width: 60, // Match back button width for centering
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  loadingText: {
-    fontSize: 16,
-    marginTop: 16,
-    textAlign: 'center',
+    width: 24, // Match back icon width for centering
   },
 });

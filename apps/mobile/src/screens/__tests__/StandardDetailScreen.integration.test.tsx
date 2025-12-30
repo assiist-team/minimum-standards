@@ -61,25 +61,6 @@ jest.mock('../../components/LogEntryModal', () => {
   };
 });
 
-jest.mock('../../components/PeriodLogsModal', () => {
-  // eslint-disable-next-line @typescript-eslint/no-shadow
-  const React = require('react');
-  const { View, Text, TouchableOpacity } = require('react-native');
-  return {
-    PeriodLogsModal: ({ visible, periodLabel, onClose }: any) => {
-      if (!visible) return null;
-      return (
-        <View testID="period-logs-modal">
-          <Text testID="modal-period-label">{periodLabel}</Text>
-          <TouchableOpacity testID="modal-close" onPress={onClose}>
-            <Text>Close</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    },
-  };
-});
-
 jest.mock('../../components/PeriodHistoryList', () => {
   // eslint-disable-next-line @typescript-eslint/no-shadow
   const React = require('react');

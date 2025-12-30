@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -55,7 +55,8 @@ export function LogEntryModal({
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [footerHeight, setFooterHeight] = useState(0);
-  
+  const valueInputRef = useRef<TextInput>(null);
+
   const { activeStandards, loading: standardsLoading } = useStandards();
 
   const isEditMode = !!logEntry;
@@ -119,6 +120,17 @@ export function LogEntryModal({
     }
     setSaveError(null);
   }, [visible, standard, logEntry]);
+
+  // Auto-focus the value input when entering the logging form
+  useEffect(() => {
+    if (visible && selectedStandard && !showPicker && !isEditMode) {
+      // Small delay to ensure the input is rendered before focusing
+      const timeoutId = setTimeout(() => {
+        valueInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [visible, selectedStandard, showPicker, isEditMode]);
 
   const handleStandardSelect = (selected: Standard) => {
     setSelectedStandard(selected);
@@ -384,6 +396,7 @@ export function LogEntryModal({
           
           <View style={styles.valueInputRow}>
             <TextInput
+              ref={valueInputRef}
               style={[
                 styles.input,
                 styles.valueInput,

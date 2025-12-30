@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,14 @@ export function ActivityLogsList({
   unit,
 }: ActivityLogsListProps) {
   const theme = useTheme();
+  const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    // Scroll to top when logs data is available
+    if (flatListRef.current && logs.length > 0) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: false });
+    }
+  }, [logs]);
 
   const renderItem = useCallback(({ item }: { item: ActivityLog }) => (
     <ActivityLogEntry
@@ -46,11 +54,14 @@ export function ActivityLogsList({
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
+      <View style={[styles.emptyIconContainer, { backgroundColor: theme.border.secondary }]}>
+        <Text style={styles.emptyIcon}>📝</Text>
+      </View>
       <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>
         No activity logs yet
       </Text>
       <Text style={[styles.emptySubtitle, { color: theme.text.secondary }]}>
-        Activity logs for this period will appear here.
+        Log an activity to track progress for this period
       </Text>
     </View>
   );
@@ -62,7 +73,7 @@ export function ActivityLogsList({
 
     return (
       <View style={styles.footer}>
-        <Text style={[styles.footerText, { color: theme.text.secondary }]}>
+        <Text style={[styles.footerText, { color: theme.text.tertiary }]}>
           Loading more...
         </Text>
       </View>
@@ -79,6 +90,7 @@ export function ActivityLogsList({
 
   return (
     <FlatList
+      ref={flatListRef}
       data={logs}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
@@ -101,7 +113,8 @@ export function ActivityLogsList({
 
 const styles = StyleSheet.create({
   contentContainer: {
-    paddingBottom: 16,
+    paddingVertical: 12,
+    paddingBottom: 24,
   },
   emptyContentContainer: {
     flex: 1,
@@ -109,23 +122,38 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 32,
+    paddingHorizontal: 40,
+    paddingVertical: 48,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  emptyIcon: {
+    fontSize: 40,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     marginBottom: 8,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 15,
     textAlign: 'center',
+    lineHeight: 22,
   },
   footer: {
-    padding: 16,
+    paddingVertical: 20,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 14,
+    fontWeight: '500',
   },
 });

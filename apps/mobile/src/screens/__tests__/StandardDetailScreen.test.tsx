@@ -45,10 +45,6 @@ jest.mock('../../components/LogEntryModal', () => {
   };
 });
 
-jest.mock('../../components/PeriodLogsModal', () => ({
-  PeriodLogsModal: () => null,
-}));
-
 jest.mock('../../components/PeriodHistoryList', () => ({
   PeriodHistoryList: () => null,
 }));

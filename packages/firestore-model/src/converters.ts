@@ -11,6 +11,9 @@ import {
   ActivityLog,
   Standard,
   ActivityHistoryDoc,
+  ActivityHistoryStandardSnapshot,
+  PeriodStartPreference,
+  Weekday,
   activityLogSchema,
   activitySchema,
   standardSchema,
@@ -54,8 +57,40 @@ type FirestoreDashboardPins = {
   updatedAt: Timestamp | null;
 };
 
-function parseWith<T>(schema: z.ZodType<T>, value: unknown): T {
-  return schema.parse(value);
+function coercePeriodStartPreference(
+  preference: unknown
+): PeriodStartPreference | undefined {
+  if (!preference || typeof preference !== 'object') {
+    return undefined;
+  }
+
+  const maybePreference = preference as {
+    mode?: string;
+    weekStartDay?: unknown;
+  };
+
+  if (maybePreference.mode === 'default') {
+    return { mode: 'default' };
+  }
+
+  if (
+    maybePreference.mode === 'weekDay' &&
+    typeof maybePreference.weekStartDay === 'number'
+  ) {
+    const weekStartDay = maybePreference.weekStartDay;
+    if (weekStartDay >= 1 && weekStartDay <= 7) {
+      return {
+        mode: 'weekDay',
+        weekStartDay: weekStartDay as Weekday,
+      };
+    }
+  }
+
+  return undefined;
+}
+
+function parseWith<T>(schema: z.ZodTypeAny, value: unknown): T {
+  return schema.parse(value) as T;
 }
 
 export const activityConverter: FirestoreDataConverter<Activity> = {
@@ -74,7 +109,7 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
   fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Activity {
     const data = snapshot.data(options) as FirestoreActivity;
 
-    const parsed = parseWith(activitySchema, {
+    const parsed = parseWith<Activity>(activitySchema, {
       id: snapshot.id,
       name: data.name,
       unit: data.unit,
@@ -119,7 +154,7 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
   fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Standard {
     const data = snapshot.data(options) as FirestoreStandard;
 
-    return parseWith(standardSchema, {
+    const rawStandard: Record<string, unknown> = {
       id: snapshot.id,
       activityId: data.activityId,
       minimum: data.minimum,
@@ -128,7 +163,7 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       state: data.state,
       summary: data.summary,
       sessionConfig: data.sessionConfig,
-      periodStartPreference: data.periodStartPreference,
+      periodStartPreference: coercePeriodStartPreference(data.periodStartPreference),
       quickAddValues: Array.isArray((data as any).quickAddValues)
         ? ((data as any).quickAddValues as unknown[]).filter(
             (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -138,7 +173,9 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
-    });
+    };
+
+    return parseWith<Standard>(standardSchema, rawStandard);
   }
 };
 
@@ -158,7 +195,7 @@ export const activityLogConverter: FirestoreDataConverter<ActivityLog> = {
   fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ActivityLog {
     const data = snapshot.data(options) as FirestoreActivityLog;
 
-    return parseWith(activityLogSchema, {
+    return parseWith<ActivityLog>(activityLogSchema, {
       id: snapshot.id,
       standardId: data.standardId,
       value: data.value,
@@ -181,7 +218,7 @@ export const dashboardPinsConverter: FirestoreDataConverter<DashboardPins> = {
   },
   fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): DashboardPins {
     const data = snapshot.data(options) as FirestoreDashboardPins;
-    return parseWith(dashboardPinsSchema, {
+    return parseWith<DashboardPins>(dashboardPinsSchema, {
       id: snapshot.id,
       pinnedStandardIds: Array.isArray(data.pinnedStandardIds)
         ? data.pinnedStandardIds
@@ -223,7 +260,14 @@ export const activityHistoryConverter: FirestoreDataConverter<ActivityHistoryDoc
       throw new Error('[activityHistoryConverter] Document missing reference timestamp');
     }
 
-    return parseWith(activityHistoryDocSchema, {
+    const normalizedSnapshot: ActivityHistoryStandardSnapshot = {
+      ...data.standardSnapshot,
+      periodStartPreference: coercePeriodStartPreference(
+        data.standardSnapshot?.periodStartPreference
+      ),
+    };
+
+    const rawHistoryDoc: Record<string, unknown> = {
       id: snapshot.id,
       activityId: data.activityId,
       standardId: data.standardId,
@@ -232,7 +276,7 @@ export const activityHistoryConverter: FirestoreDataConverter<ActivityHistoryDoc
       periodEndMs: data.periodEndMs,
       periodLabel: data.periodLabel,
       periodKey: data.periodKey,
-      standardSnapshot: data.standardSnapshot,
+      standardSnapshot: normalizedSnapshot,
       total: data.total,
       currentSessions: data.currentSessions,
       targetSessions: data.targetSessions,
@@ -240,6 +284,8 @@ export const activityHistoryConverter: FirestoreDataConverter<ActivityHistoryDoc
       progressPercent: data.progressPercent,
       generatedAtMs: data.generatedAtMs,
       source: data.source,
-    });
+    };
+
+    return parseWith<ActivityHistoryDoc>(activityHistoryDocSchema, rawHistoryDoc);
   }
 };

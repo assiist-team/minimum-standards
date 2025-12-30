@@ -14,7 +14,6 @@ import { useStandardHistory } from '../hooks/useStandardHistory';
 import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
 import { LogEntryModal } from '../components/LogEntryModal';
-import { PeriodLogsModal } from '../components/PeriodLogsModal';
 import { StandardProgressCard } from '../components/StandardProgressCard';
 import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { trackStandardEvent } from '../utils/analytics';
@@ -39,11 +38,6 @@ export function StandardDetailScreen({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [logModalVisible, setLogModalVisible] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState<{
-    startMs: number;
-    endMs: number;
-    label: string;
-  } | null>(null);
 
   const {
     standards,
@@ -157,31 +151,6 @@ export function StandardDetailScreen({
     setLogModalVisible(false);
   }, []);
 
-  const handlePeriodPress = useCallback(
-    (entry: PeriodHistoryEntry) => {
-      if (standard) {
-        try {
-          trackStandardEvent('standard_detail_period_tap', {
-            standardId: standard.id,
-            periodLabel: entry.periodLabel,
-          });
-        } catch (err) {
-          // Fail silently - analytics should not crash the app
-          console.warn('Analytics tracking failed:', err);
-        }
-      }
-      setSelectedPeriod({
-        startMs: entry.periodStartMs,
-        endMs: entry.periodEndMs,
-        label: entry.periodLabel,
-      });
-    },
-    [standard]
-  );
-
-  const handlePeriodModalClose = useCallback(() => {
-    setSelectedPeriod(null);
-  }, []);
 
   const handleEditPress = useCallback(() => {
     if (standard) {
@@ -334,7 +303,6 @@ export function StandardDetailScreen({
                     sessionLabel={standard.sessionConfig.sessionLabel}
                     unit={standard.unit}
                     showLogButton={false}
-                    onCardPress={() => handlePeriodPress(entry)}
                   />
                 );
               })}
@@ -382,17 +350,6 @@ export function StandardDetailScreen({
         onSave={handleLogSave}
         resolveActivityName={(activityId) => activityNameMap.get(activityId)}
       />
-
-      {selectedPeriod && (
-        <PeriodLogsModal
-          visible={true}
-          standardId={standardId}
-          periodStartMs={selectedPeriod.startMs}
-          periodEndMs={selectedPeriod.endMs}
-          periodLabel={selectedPeriod.label}
-          onClose={handlePeriodModalClose}
-        />
-      )}
     </View>
   );
 }
