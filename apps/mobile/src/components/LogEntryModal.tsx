@@ -199,13 +199,6 @@ export function LogEntryModal({
     return undefined;
   };
 
-  const quickAddValues =
-    selectedStandard && Array.isArray(selectedStandard.quickAddValues) && selectedStandard.quickAddValues.length > 0
-      ? selectedStandard.quickAddValues
-      : selectedStandard
-        ? buildDefaultQuickAddValues(selectedStandard)
-        : undefined;
-
   const sessionQuickFillValue = useMemo(() => {
     if (!selectedStandard) {
       return null;
@@ -216,6 +209,16 @@ export function LogEntryModal({
     const v = selectedStandard.sessionConfig.volumePerSession;
     return Number.isFinite(v) && v > 0 ? v : null;
   }, [selectedStandard]);
+
+  const quickAddValues =
+    selectedStandard && Array.isArray(selectedStandard.quickAddValues) && selectedStandard.quickAddValues.length > 0
+      ? selectedStandard.quickAddValues
+      : selectedStandard
+        ? buildDefaultQuickAddValues(selectedStandard)
+        : undefined;
+
+  // For session-based standards, don't show quick-add buttons when the session button is present
+  const effectiveQuickAddValues = sessionQuickFillValue !== null ? undefined : quickAddValues;
 
   const handleQuickAddPress = (quickValue: number) => {
     if (saving) {
@@ -371,7 +374,7 @@ export function LogEntryModal({
       return null;
     }
 
-    const hasQuickButtons = (quickAddValues && quickAddValues.length > 0) || sessionQuickFillValue !== null;
+    const hasQuickButtons = (effectiveQuickAddValues && effectiveQuickAddValues.length > 0) || sessionQuickFillValue !== null;
 
     return (
       <>
@@ -421,7 +424,7 @@ export function LogEntryModal({
                     </Text>
                   </TouchableOpacity>
                 )}
-                {quickAddValues && quickAddValues.length > 0 && quickAddValues.map((quickValue) => (
+                {effectiveQuickAddValues && effectiveQuickAddValues.length > 0 && effectiveQuickAddValues.map((quickValue) => (
                   <TouchableOpacity
                     key={String(quickValue)}
                     style={[styles.compactQuickButton, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary, borderWidth: 1 }]}
