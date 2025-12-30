@@ -88,10 +88,7 @@ export type ActivityHistoryDoc = {
   id: string;
   activityId: string;
   standardId: string;
-  periodStartMs: TimestampMs;
-  periodEndMs: TimestampMs;
-  periodLabel: string;
-  periodKey: string;
+  referenceTimestampMs: TimestampMs; // Durable reference used for boundary recalculation
   standardSnapshot: ActivityHistoryStandardSnapshot;
   total: number;
   currentSessions: number;
@@ -100,4 +97,9 @@ export type ActivityHistoryDoc = {
   progressPercent: number;
   generatedAtMs: TimestampMs;
   source: ActivityHistorySource;
+  // Legacy snapshot fields retained for backwards compatibility; derived in UI going forward.
+  periodStartMs?: TimestampMs;
+  periodEndMs?: TimestampMs;
+  periodLabel?: string;
+  periodKey?: string;
 };

@@ -315,6 +315,7 @@ service cloud.firestore {
         'id',
         'activityId',
         'standardId',
+        'referenceTimestampMs',
         'periodStartMs',
         'periodEndMs',
         'periodLabel',
@@ -334,15 +335,35 @@ service cloud.firestore {
       && data.activityId.size() >= 1
       && data.standardId is string
       && data.standardId.size() >= 1
-      && isTimestampMs(data.periodStartMs)
-      && isTimestampMs(data.periodEndMs)
-      && data.periodEndMs >= data.periodStartMs
-      && data.periodLabel is string
-      && data.periodLabel.size() >= 1
-      && data.periodLabel.size() <= 200
-      && data.periodKey is string
-      && data.periodKey.size() >= 1
-      && data.periodKey.size() <= 50
+      && ('referenceTimestampMs' in data)
+      && isTimestampMs(data.referenceTimestampMs)
+      && (
+        !('periodStartMs' in data)
+        || isTimestampMs(data.periodStartMs)
+      )
+      && (
+        !('periodEndMs' in data)
+        || (
+          isTimestampMs(data.periodEndMs)
+          && (!('periodStartMs' in data) || data.periodEndMs >= data.periodStartMs)
+        )
+      )
+      && (
+        !('periodLabel' in data)
+        || (
+          data.periodLabel is string
+          && data.periodLabel.size() >= 1
+          && data.periodLabel.size() <= 200
+        )
+      )
+      && (
+        !('periodKey' in data)
+        || (
+          data.periodKey is string
+          && data.periodKey.size() >= 1
+          && data.periodKey.size() <= 50
+        )
+      )
       && data.standardSnapshot is map
       && validActivityHistoryStandardSnapshot(data.standardSnapshot)
       && data.total is number

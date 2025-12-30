@@ -8,6 +8,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
 import { Standard, formatStandardSummary } from '@minimum-standards/shared-model';
 import { useActivityHistory } from '../hooks/useActivityHistory';
 import { useActivityLogs } from '../hooks/useActivityLogs';
@@ -34,6 +37,7 @@ export function ActivityHistoryScreen({
   activityId,
   onBack,
 }: ActivityHistoryScreenProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
@@ -88,11 +92,21 @@ export function ActivityHistoryScreen({
     return mergeActivityHistoryRows({
       persistedRows,
       syntheticRows,
+      timezone,
     });
-  }, [persistedRows, syntheticRows]);
+  }, [persistedRows, syntheticRows, timezone]);
 
   const loading = historyLoading || logsLoading;
   const error = historyError || logsError;
+
+  // Handle period card press - navigate to period activity logs
+  const handlePeriodPress = (row: MergedActivityHistoryRow) => {
+    navigation.navigate('StandardPeriodActivityLogs', {
+      standardId: row.standardId,
+      periodStartMs: row.periodStartMs,
+      periodEndMs: row.periodEndMs,
+    });
+  };
 
   // Create a Standard-like object from snapshot for rendering
   const createStandardFromSnapshot = (
@@ -106,7 +120,7 @@ export function ActivityHistoryScreen({
       snapshot.cadence,
       snapshot.sessionConfig
     );
-    
+
     return {
       id: standardId,
       activityId,
@@ -120,7 +134,7 @@ export function ActivityHistoryScreen({
       createdAtMs: 0,
       updatedAtMs: 0,
       deletedAtMs: null,
-      periodStartPreference: snapshot.periodStartPreference ?? null,
+      periodStartPreference: snapshot.periodStartPreference ?? undefined,
     };
   };
 
@@ -191,6 +205,7 @@ export function ActivityHistoryScreen({
                 sessionLabel={row.standardSnapshot.sessionConfig.sessionLabel}
                 unit={row.standardSnapshot.unit}
                 showLogButton={false}
+                onCardPress={() => handlePeriodPress(row)}
               />
             );
           })}

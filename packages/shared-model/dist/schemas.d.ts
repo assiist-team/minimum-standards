@@ -342,14 +342,11 @@ export declare const activityHistoryStandardSnapshotSchema: z.ZodObject<{
     } | undefined;
 }>;
 export declare const activityHistoryPeriodStatusSchema: z.ZodEnum<["Met", "In Progress", "Missed"]>;
-export declare const activityHistoryDocSchema: z.ZodObject<{
+export declare const activityHistoryDocSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
     activityId: z.ZodString;
     standardId: z.ZodString;
-    periodStartMs: z.ZodEffects<z.ZodNumber, number, number>;
-    periodEndMs: z.ZodEffects<z.ZodNumber, number, number>;
-    periodLabel: z.ZodString;
-    periodKey: z.ZodString;
+    referenceTimestampMs: z.ZodEffects<z.ZodNumber, number, number>;
     standardSnapshot: z.ZodObject<{
         minimum: z.ZodNumber;
         unit: z.ZodString;
@@ -439,15 +436,16 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
     progressPercent: z.ZodNumber;
     generatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     source: z.ZodEnum<["boundary", "resume"]>;
+    periodStartMs: z.ZodOptional<z.ZodEffects<z.ZodNumber, number, number>>;
+    periodEndMs: z.ZodOptional<z.ZodEffects<z.ZodNumber, number, number>>;
+    periodLabel: z.ZodOptional<z.ZodString>;
+    periodKey: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
     status: "Met" | "In Progress" | "Missed";
     id: string;
     activityId: string;
     standardId: string;
-    periodStartMs: number;
-    periodEndMs: number;
-    periodLabel: string;
-    periodKey: string;
+    referenceTimestampMs: number;
     standardSnapshot: {
         unit: string;
         minimum: number;
@@ -474,15 +472,16 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
     progressPercent: number;
     generatedAtMs: number;
     source: "boundary" | "resume";
+    periodStartMs?: number | undefined;
+    periodEndMs?: number | undefined;
+    periodLabel?: string | undefined;
+    periodKey?: string | undefined;
 }, {
     status: "Met" | "In Progress" | "Missed";
     id: string;
     activityId: string;
     standardId: string;
-    periodStartMs: number;
-    periodEndMs: number;
-    periodLabel: string;
-    periodKey: string;
+    referenceTimestampMs: number;
     standardSnapshot: {
         unit: string;
         minimum: number;
@@ -509,5 +508,81 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
     progressPercent: number;
     generatedAtMs: number;
     source: "boundary" | "resume";
+    periodStartMs?: number | undefined;
+    periodEndMs?: number | undefined;
+    periodLabel?: string | undefined;
+    periodKey?: string | undefined;
+}>, {
+    status: "Met" | "In Progress" | "Missed";
+    id: string;
+    activityId: string;
+    standardId: string;
+    referenceTimestampMs: number;
+    standardSnapshot: {
+        unit: string;
+        minimum: number;
+        cadence: {
+            interval: number;
+            unit: "day" | "week" | "month";
+        };
+        sessionConfig: {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        };
+        summary?: string | undefined;
+        periodStartPreference?: {
+            mode: "default";
+        } | {
+            mode: "weekDay";
+            weekStartDay: number;
+        } | undefined;
+    };
+    total: number;
+    currentSessions: number;
+    targetSessions: number;
+    progressPercent: number;
+    generatedAtMs: number;
+    source: "boundary" | "resume";
+    periodStartMs?: number | undefined;
+    periodEndMs?: number | undefined;
+    periodLabel?: string | undefined;
+    periodKey?: string | undefined;
+}, {
+    status: "Met" | "In Progress" | "Missed";
+    id: string;
+    activityId: string;
+    standardId: string;
+    referenceTimestampMs: number;
+    standardSnapshot: {
+        unit: string;
+        minimum: number;
+        cadence: {
+            interval: number;
+            unit: "day" | "week" | "month";
+        };
+        sessionConfig: {
+            sessionLabel: string;
+            sessionsPerCadence: number;
+            volumePerSession: number;
+        };
+        summary?: string | undefined;
+        periodStartPreference?: {
+            mode: "default";
+        } | {
+            mode: "weekDay";
+            weekStartDay: number;
+        } | undefined;
+    };
+    total: number;
+    currentSessions: number;
+    targetSessions: number;
+    progressPercent: number;
+    generatedAtMs: number;
+    source: "boundary" | "resume";
+    periodStartMs?: number | undefined;
+    periodEndMs?: number | undefined;
+    periodLabel?: string | undefined;
+    periodKey?: string | undefined;
 }>;
 export type ActivityHistoryDocSchema = z.infer<typeof activityHistoryDocSchema>;

@@ -156,6 +156,17 @@ Modify engine to store reference timestamps instead of calculated boundaries
 ### Step 5: Migration Plan
 Decide how to handle existing documents with wrong boundaries
 
+## Implementation Status
+
+- ✅ **UI boundary recalculation drives the entire feed**: `mergeActivityHistoryRows` now rewrites every persisted row with recalculated boundaries before sorting, deduping, or rendering React keys, so the UI never depends on frozen Firestore values.
+- ✅ **Reference timestamps are persisted**: `ActivityHistoryDoc`, Firestore rules, helper parsing, and the engine payload all read/write `referenceTimestampMs = window.startMs`, giving the UI a durable source when legacy fields are removed.
+- ⏳ **Engine still emits frozen boundary fields**: For backward compatibility the engine continues to write `periodStartMs/periodEndMs/periodLabel/periodKey`, and rollup totals remain tied to the legacy windows. Removing those fields (and optionally recalculating historical rollups) remains part of Phases 2–4.
+
+**Next actions**
+1. Decide when to stop storing the frozen boundary fields or make them derived-only to avoid future divergence.
+2. Plan the migration for any historical data or rollup accuracy follow-ups once we are confident all clients consume `referenceTimestampMs`.
+3. Document the outstanding rollup limitation (Option A vs B in Phase 4) so we can prioritize it separately.
+
 ## Testing Strategy
 
 ### Unit Tests

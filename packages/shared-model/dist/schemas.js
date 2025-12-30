@@ -124,14 +124,12 @@ exports.activityHistoryStandardSnapshotSchema = zod_1.z.object({
     periodStartPreference: periodStartPreferenceSchema.optional(),
 });
 exports.activityHistoryPeriodStatusSchema = zod_1.z.enum(['Met', 'In Progress', 'Missed']);
-exports.activityHistoryDocSchema = zod_1.z.object({
+exports.activityHistoryDocSchema = zod_1.z
+    .object({
     id: zod_1.z.string().min(1),
     activityId: zod_1.z.string().min(1),
     standardId: zod_1.z.string().min(1),
-    periodStartMs: timestampMsSchema,
-    periodEndMs: timestampMsSchema,
-    periodLabel: zod_1.z.string().min(1).max(200),
-    periodKey: zod_1.z.string().min(1).max(50),
+    referenceTimestampMs: timestampMsSchema,
     standardSnapshot: exports.activityHistoryStandardSnapshotSchema,
     total: zod_1.z.number().min(0),
     currentSessions: zod_1.z.number().int().nonnegative(),
@@ -140,5 +138,20 @@ exports.activityHistoryDocSchema = zod_1.z.object({
     progressPercent: zod_1.z.number().min(0).max(100),
     generatedAtMs: timestampMsSchema,
     source: exports.activityHistorySourceSchema,
+    periodStartMs: timestampMsSchema.optional(),
+    periodEndMs: timestampMsSchema.optional(),
+    periodLabel: zod_1.z.string().min(1).max(200).optional(),
+    periodKey: zod_1.z.string().min(1).max(50).optional(),
+})
+    .superRefine((data, ctx) => {
+    if (typeof data.periodStartMs === 'number' &&
+        typeof data.periodEndMs === 'number' &&
+        data.periodEndMs < data.periodStartMs) {
+        ctx.addIssue({
+            code: zod_1.z.ZodIssueCode.custom,
+            path: ['periodEndMs'],
+            message: 'periodEndMs must be greater than or equal to periodStartMs',
+        });
+    }
 });
 //# sourceMappingURL=schemas.js.map

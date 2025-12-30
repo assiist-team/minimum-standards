@@ -77,6 +77,7 @@ export type ActivityHistoryFirestoreBindings = CollectionBindings & {
 type RawActivityHistoryDoc = {
   activityId?: string;
   standardId?: string;
+  referenceTimestampMs?: number;
   periodStartMs?: number;
   periodEndMs?: number;
   periodLabel?: string;
@@ -99,9 +100,6 @@ function toActivityHistoryDoc(
     !data ||
     typeof data.activityId !== 'string' ||
     typeof data.standardId !== 'string' ||
-    typeof data.periodStartMs !== 'number' ||
-    typeof data.periodEndMs !== 'number' ||
-    typeof data.periodLabel !== 'string' ||
     !data.standardSnapshot ||
     typeof data.total !== 'number' ||
     typeof data.currentSessions !== 'number' ||
@@ -112,14 +110,26 @@ function toActivityHistoryDoc(
     return null;
   }
 
+  const referenceTimestamp =
+    typeof data.referenceTimestampMs === 'number'
+      ? data.referenceTimestampMs
+      : typeof data.periodStartMs === 'number'
+        ? data.periodStartMs
+        : null;
+
+  if (referenceTimestamp == null) {
+    return null;
+  }
+
   return {
     id: docId,
     activityId: data.activityId,
     standardId: data.standardId,
-    periodStartMs: data.periodStartMs,
-    periodEndMs: data.periodEndMs,
-    periodLabel: data.periodLabel,
-    periodKey: data.periodKey ?? '',
+    referenceTimestampMs: referenceTimestamp,
+    periodStartMs: typeof data.periodStartMs === 'number' ? data.periodStartMs : undefined,
+    periodEndMs: typeof data.periodEndMs === 'number' ? data.periodEndMs : undefined,
+    periodLabel: typeof data.periodLabel === 'string' ? data.periodLabel : undefined,
+    periodKey: typeof data.periodKey === 'string' ? data.periodKey : undefined,
     standardSnapshot: data.standardSnapshot,
     total: data.total,
     currentSessions: data.currentSessions,
@@ -170,10 +180,7 @@ export function createActivityHistoryHelpers(bindings: ActivityHistoryFirestoreB
       id: docId,
       activityId,
       standardId,
-      periodStartMs: window.startMs,
-      periodEndMs: window.endMs,
-      periodLabel: window.label,
-      periodKey: window.periodKey ?? '',
+      referenceTimestampMs: window.startMs,
       standardSnapshot,
       total: rollup.total,
       currentSessions: rollup.currentSessions,
@@ -233,7 +240,7 @@ export function createActivityHistoryHelpers(bindings: ActivityHistoryFirestoreB
     const historyQuery = query(
       collections.activityHistory,
       where('standardId', '==', standardId),
-      orderBy('periodStartMs', 'desc'),
+      orderBy('referenceTimestampMs', 'desc'),
       limit(1)
     );
 
@@ -259,7 +266,7 @@ export function createActivityHistoryHelpers(bindings: ActivityHistoryFirestoreB
     const historyQuery = query(
       collections.activityHistory,
       where('activityId', '==', activityId),
-      orderBy('periodEndMs', 'desc')
+      orderBy('referenceTimestampMs', 'desc')
     );
 
     return onSnapshot(

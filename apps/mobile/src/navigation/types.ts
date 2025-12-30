@@ -47,6 +47,11 @@ export type MainStackParamList = {
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainStackParamList>;
+  StandardPeriodActivityLogs: {
+    standardId: string;
+    periodStartMs?: number;
+    periodEndMs?: number;
+  };
 };
 
 declare global {

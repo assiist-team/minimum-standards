@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { AuthStack } from './AuthStack';
 import { MainStack } from './MainStack';
+import { StandardPeriodActivityLogsScreen } from '../screens/StandardPeriodActivityLogsScreen';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useAuthStore } from '../stores/authStore';
 
@@ -36,6 +37,14 @@ export function AppNavigator() {
         ) : (
           <RootStack.Screen name="Auth" component={AuthStack} />
         )}
+        <RootStack.Screen
+          name="StandardPeriodActivityLogs"
+          component={StandardPeriodActivityLogsScreen}
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </RootStack.Navigator>
     </NavigationContainer>
   );

@@ -13,6 +13,7 @@ import { usePeriodLogs } from '../hooks/usePeriodLogs';
 import type { PeriodLogEntry } from '../hooks/usePeriodLogs';
 import { LogEntryModal } from './LogEntryModal';
 import { useStandards } from '../hooks/useStandards';
+import { formatUnitWithCount } from '@minimum-standards/shared-model';
 import type { ActivityLog } from '@minimum-standards/shared-model';
 import { useActivities } from '../hooks/useActivities';
 import { useTheme } from '../theme/useTheme';
@@ -32,12 +33,14 @@ function LogItem({
   item,
   theme,
   canEdit,
+  unit,
   onEdit,
   onDelete,
 }: {
   item: PeriodLogEntry;
   theme: ReturnType<typeof useTheme>;
   canEdit: boolean;
+  unit: string;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -51,10 +54,12 @@ function LogItem({
     }).format(new Date(timestampMs));
   };
 
+  const formattedValue = `${item.value} ${formatUnitWithCount(unit, item.value)}`;
+
   return (
     <View style={[styles.logItem, { backgroundColor: theme.background.tertiary }]}>
       <View style={styles.logHeader}>
-        <Text style={[styles.logValue, { color: theme.text.primary }]}>{item.value}</Text>
+        <Text style={[styles.logValue, { color: theme.text.primary }]}>{formattedValue}</Text>
         <View style={styles.dateContainer}>
           <Text style={[styles.logDate, { color: theme.text.secondary }]}>
             {formatDateTime(item.occurredAtMs)}
@@ -218,6 +223,7 @@ export function PeriodLogsModal({
       item={item}
       theme={theme}
       canEdit={canEdit}
+      unit={standard?.unit || ''}
       onEdit={() => handleEditPress(item)}
       onDelete={() => handleDeletePress(item)}
     />

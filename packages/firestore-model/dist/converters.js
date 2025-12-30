@@ -49,6 +49,9 @@ exports.standardConverter = {
             state: model.state,
             summary: summary,
             sessionConfig: model.sessionConfig,
+            ...(model.periodStartPreference && model.periodStartPreference.mode !== 'default'
+                ? { periodStartPreference: model.periodStartPreference }
+                : {}),
             ...(Array.isArray(model.quickAddValues) && model.quickAddValues.length > 0
                 ? { quickAddValues: model.quickAddValues }
                 : {}),
@@ -69,6 +72,7 @@ exports.standardConverter = {
             state: data.state,
             summary: data.summary,
             sessionConfig: data.sessionConfig,
+            periodStartPreference: data.periodStartPreference,
             quickAddValues: Array.isArray(data.quickAddValues)
                 ? data.quickAddValues.filter((value) => typeof value === 'number' && Number.isFinite(value) && value > 0)
                 : undefined,
@@ -131,10 +135,7 @@ exports.activityHistoryConverter = {
         return {
             activityId: model.activityId,
             standardId: model.standardId,
-            periodStartMs: model.periodStartMs,
-            periodEndMs: model.periodEndMs,
-            periodLabel: model.periodLabel,
-            periodKey: model.periodKey,
+            referenceTimestampMs: model.referenceTimestampMs,
             standardSnapshot: model.standardSnapshot,
             total: model.total,
             currentSessions: model.currentSessions,
@@ -147,10 +148,17 @@ exports.activityHistoryConverter = {
     },
     fromFirestore(snapshot, options) {
         const data = snapshot.data(options);
+        const referenceTimestampMs = typeof data.referenceTimestampMs === 'number'
+            ? data.referenceTimestampMs
+            : data.periodStartMs;
+        if (typeof referenceTimestampMs !== 'number') {
+            throw new Error('[activityHistoryConverter] Document missing reference timestamp');
+        }
         return parseWith(shared_model_1.activityHistoryDocSchema, {
             id: snapshot.id,
             activityId: data.activityId,
             standardId: data.standardId,
+            referenceTimestampMs,
             periodStartMs: data.periodStartMs,
             periodEndMs: data.periodEndMs,
             periodLabel: data.periodLabel,

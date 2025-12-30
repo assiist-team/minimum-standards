@@ -142,22 +142,37 @@ export const activityHistoryStandardSnapshotSchema = z.object({
 
 export const activityHistoryPeriodStatusSchema = z.enum(['Met', 'In Progress', 'Missed']);
 
-export const activityHistoryDocSchema = z.object({
-  id: z.string().min(1),
-  activityId: z.string().min(1),
-  standardId: z.string().min(1),
-  periodStartMs: timestampMsSchema,
-  periodEndMs: timestampMsSchema,
-  periodLabel: z.string().min(1).max(200),
-  periodKey: z.string().min(1).max(50),
-  standardSnapshot: activityHistoryStandardSnapshotSchema,
-  total: z.number().min(0),
-  currentSessions: z.number().int().nonnegative(),
-  targetSessions: z.number().int().positive(),
-  status: activityHistoryPeriodStatusSchema,
-  progressPercent: z.number().min(0).max(100),
-  generatedAtMs: timestampMsSchema,
-  source: activityHistorySourceSchema,
-});
+export const activityHistoryDocSchema = z
+  .object({
+    id: z.string().min(1),
+    activityId: z.string().min(1),
+    standardId: z.string().min(1),
+    referenceTimestampMs: timestampMsSchema,
+    standardSnapshot: activityHistoryStandardSnapshotSchema,
+    total: z.number().min(0),
+    currentSessions: z.number().int().nonnegative(),
+    targetSessions: z.number().int().positive(),
+    status: activityHistoryPeriodStatusSchema,
+    progressPercent: z.number().min(0).max(100),
+    generatedAtMs: timestampMsSchema,
+    source: activityHistorySourceSchema,
+    periodStartMs: timestampMsSchema.optional(),
+    periodEndMs: timestampMsSchema.optional(),
+    periodLabel: z.string().min(1).max(200).optional(),
+    periodKey: z.string().min(1).max(50).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      typeof data.periodStartMs === 'number' &&
+      typeof data.periodEndMs === 'number' &&
+      data.periodEndMs < data.periodStartMs
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['periodEndMs'],
+        message: 'periodEndMs must be greater than or equal to periodStartMs',
+      });
+    }
+  });
 
 export type ActivityHistoryDocSchema = z.infer<typeof activityHistoryDocSchema>;

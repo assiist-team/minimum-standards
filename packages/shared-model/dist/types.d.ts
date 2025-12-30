@@ -71,10 +71,7 @@ export type ActivityHistoryDoc = {
     id: string;
     activityId: string;
     standardId: string;
-    periodStartMs: TimestampMs;
-    periodEndMs: TimestampMs;
-    periodLabel: string;
-    periodKey: string;
+    referenceTimestampMs: TimestampMs;
     standardSnapshot: ActivityHistoryStandardSnapshot;
     total: number;
     currentSessions: number;
@@ -83,4 +80,8 @@ export type ActivityHistoryDoc = {
     progressPercent: number;
     generatedAtMs: TimestampMs;
     source: ActivityHistorySource;
+    periodStartMs?: TimestampMs;
+    periodEndMs?: TimestampMs;
+    periodLabel?: string;
+    periodKey?: string;
 };

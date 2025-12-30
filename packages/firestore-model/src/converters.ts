@@ -201,10 +201,7 @@ export const activityHistoryConverter: FirestoreDataConverter<ActivityHistoryDoc
     return {
       activityId: model.activityId,
       standardId: model.standardId,
-      periodStartMs: model.periodStartMs,
-      periodEndMs: model.periodEndMs,
-      periodLabel: model.periodLabel,
-      periodKey: model.periodKey,
+      referenceTimestampMs: model.referenceTimestampMs,
       standardSnapshot: model.standardSnapshot,
       total: model.total,
       currentSessions: model.currentSessions,
@@ -217,10 +214,20 @@ export const activityHistoryConverter: FirestoreDataConverter<ActivityHistoryDoc
   },
   fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): ActivityHistoryDoc {
     const data = snapshot.data(options) as FirestoreActivityHistoryDoc;
+    const referenceTimestampMs =
+      typeof data.referenceTimestampMs === 'number'
+        ? data.referenceTimestampMs
+        : data.periodStartMs;
+
+    if (typeof referenceTimestampMs !== 'number') {
+      throw new Error('[activityHistoryConverter] Document missing reference timestamp');
+    }
+
     return parseWith(activityHistoryDocSchema, {
       id: snapshot.id,
       activityId: data.activityId,
       standardId: data.standardId,
+      referenceTimestampMs,
       periodStartMs: data.periodStartMs,
       periodEndMs: data.periodEndMs,
       periodLabel: data.periodLabel,

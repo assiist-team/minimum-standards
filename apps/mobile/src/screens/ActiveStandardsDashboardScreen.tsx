@@ -10,6 +10,9 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
 import type { Standard } from '@minimum-standards/shared-model';
 import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboard';
 import type { DashboardStandard } from '../hooks/useActiveStandardsDashboard';
@@ -26,6 +29,15 @@ import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 const CARD_SPACING = 16;
 const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
+export interface ActiveStandardsDashboardScreenProps {
+  onBack?: () => void;
+  onLaunchBuilder: () => void;
+  onOpenLogModal?: (standard: Standard) => void;
+  onNavigateToDetail?: (standardId: string) => void;
+  onEditStandard?: (standardId: string) => void;
+  backButtonLabel?: string;
+}
+
 export function ActiveStandardsDashboardScreen({
   onBack,
   onLaunchBuilder,
@@ -34,6 +46,7 @@ export function ActiveStandardsDashboardScreen({
   onEditStandard,
   backButtonLabel,
 }: ActiveStandardsDashboardScreenProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
@@ -119,24 +132,28 @@ export function ActiveStandardsDashboardScreen({
     }
   }, [archiveStandard]);
 
+  const handleCardPress = useCallback((standardId: string) => {
+    // Navigate to current period logs for active standards
+    navigation.navigate('StandardPeriodActivityLogs', {
+      standardId,
+      // No period boundaries - will calculate current period
+    });
+  }, [navigation]);
+
   const renderCard = useCallback(
     ({ item }: { item: DashboardStandard }) => {
       return (
         <StandardCard
           entry={item}
           onLogPress={() => handleLogPress(item)}
-          onCardPress={() => {
-            if (onNavigateToDetail) {
-              onNavigateToDetail(item.standard.id);
-            }
-          }}
+          onCardPress={() => handleCardPress(item.standard.id)}
           onEdit={() => handleEdit(item.standard.id)}
           onDeactivate={() => handleDeactivate(item.standard.id)}
           activityNameMap={activityNameMap}
         />
       );
     },
-    [handleLogPress, handleEdit, handleDeactivate, onNavigateToDetail, activityNameMap]
+    [handleLogPress, handleCardPress, handleEdit, handleDeactivate, activityNameMap]
   );
 
   const content = useMemo(() => {

@@ -134,13 +134,34 @@ export function useActivityHistoryEngine() {
             standardId: standard.id,
           });
 
-          console.log(`[useActivityHistoryEngine] Latest history for ${standard.id}:`, latestHistory ? `ends at ${new Date(latestHistory.periodEndMs).toISOString()}` : 'none');
+          let lastCompletedWindow: ReturnType<typeof calculatePeriodWindow> | null = null;
+          if (latestHistory) {
+            const lastReference =
+              latestHistory.referenceTimestampMs ?? latestHistory.periodStartMs;
+            if (typeof lastReference === 'number') {
+              lastCompletedWindow = calculatePeriodWindow(
+                lastReference,
+                latestHistory.standardSnapshot.cadence,
+                timezone,
+                { periodStartPreference: latestHistory.standardSnapshot.periodStartPreference }
+              );
+            }
+          }
+
+          console.log(
+            `[useActivityHistoryEngine] Latest history for ${standard.id}:`,
+            latestHistory
+              ? lastCompletedWindow
+                ? `ends at ${new Date(lastCompletedWindow.endMs).toISOString()}`
+                : 'reference missing'
+              : 'none'
+          );
 
           // Determine starting reference time
           let startReference: number;
-          if (latestHistory) {
+          if (latestHistory && lastCompletedWindow) {
             // Start from the end of the latest period (catch up from there)
-            startReference = latestHistory.periodEndMs;
+            startReference = lastCompletedWindow.endMs;
           } else {
             // No history exists - start from current period (no backfill)
             // We'll iterate forward but only generate completed periods
