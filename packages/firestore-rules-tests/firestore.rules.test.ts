@@ -17,6 +17,30 @@ function readRules(): string {
   return fs.readFileSync(rulesPath, 'utf8');
 }
 
+type StandardOverride = Record<string, unknown>;
+
+function buildStandardData(overrides: StandardOverride = {}) {
+  return {
+    activityId: 'a1',
+    minimum: 100,
+    unit: 'calls',
+    cadence: { interval: 1, unit: 'week' },
+    state: 'active',
+    summary: '100 calls / week',
+    sessionConfig: {
+      sessionLabel: 'session',
+      sessionsPerCadence: 1,
+      volumePerSession: 100,
+    },
+    quickAddValues: [1],
+    archivedAt: null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
 describe('Firestore security rules: user isolation', () => {
   let testEnv: RulesTestEnvironment;
 
@@ -67,18 +91,7 @@ describe('Firestore security rules: user isolation', () => {
     const db1 = u1.firestore();
 
     await assertSucceeds(
-      setDoc(doc(db1, 'users/u1/standards/s1'), {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
+      setDoc(doc(db1, 'users/u1/standards/s1'), buildStandardData())
     );
   });
 
@@ -103,18 +116,13 @@ describe('Firestore security rules: user isolation', () => {
     const db1 = u1.firestore();
 
     await assertSucceeds(
-      setDoc(doc(db1, 'users/u1/standards/s1'), {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'archived',
-        summary: '100 calls / week',
-        archivedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
+      setDoc(
+        doc(db1, 'users/u1/standards/s1'),
+        buildStandardData({
+          state: 'archived',
+          archivedAt: serverTimestamp(),
+        })
+      )
     );
 
     await assertFails(
@@ -137,18 +145,7 @@ describe('Firestore security rules: user isolation', () => {
     const standardRef = doc(db1, 'users/u1/standards/s1');
 
     await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
+      setDoc(standardRef, buildStandardData())
     );
 
     const existingDoc = await getDoc(standardRef);
@@ -170,18 +167,13 @@ describe('Firestore security rules: user isolation', () => {
     const standardRef = doc(db1, 'users/u1/standards/s1');
 
     await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'archived',
-        summary: '100 calls / week',
-        archivedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
+      setDoc(
+        standardRef,
+        buildStandardData({
+          state: 'archived',
+          archivedAt: serverTimestamp(),
+        })
+      )
     );
 
     const archivedDoc = await getDoc(standardRef);
@@ -202,18 +194,13 @@ describe('Firestore security rules: user isolation', () => {
     const standardRef = doc(db1, 'users/u1/standards/s1');
 
     await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'archived',
-        summary: '100 calls / week',
-        archivedAt: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
+      setDoc(
+        standardRef,
+        buildStandardData({
+          state: 'archived',
+          archivedAt: serverTimestamp(),
+        })
+      )
     );
 
     const archivedDoc = await getDoc(standardRef);
@@ -226,6 +213,40 @@ describe('Firestore security rules: user isolation', () => {
         archivedAt: null,
         updatedAt: serverTimestamp()
       })
+    );
+  });
+
+  test('allows saving a standard with a weekday period start preference', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+
+    await assertSucceeds(
+      setDoc(
+        doc(db1, 'users/u1/standards/s1'),
+        buildStandardData({
+          periodStartPreference: {
+            mode: 'weekDay',
+            weekStartDay: 3,
+          },
+        })
+      )
+    );
+  });
+
+  test('rejects an invalid period start preference payload', async () => {
+    const u1 = testEnv.authenticatedContext('u1');
+    const db1 = u1.firestore();
+
+    await assertFails(
+      setDoc(
+        doc(db1, 'users/u1/standards/s1'),
+        buildStandardData({
+          periodStartPreference: {
+            mode: 'weekDay',
+            weekStartDay: 9,
+          },
+        })
+      )
     );
   });
 });
@@ -255,20 +276,7 @@ describe('Firestore security rules: activity log updates', () => {
     const logRef = doc(db1, 'users/u1/activityLogs/log-1');
 
     // Create an active standard
-    await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
-    );
+    await assertSucceeds(setDoc(standardRef, buildStandardData()));
 
     // Create a log entry
     await assertSucceeds(
@@ -303,20 +311,7 @@ describe('Firestore security rules: activity log updates', () => {
     const logRef = doc(db1, 'users/u1/activityLogs/log-1');
 
     // Create an active standard
-    await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
-    );
+    await assertSucceeds(setDoc(standardRef, buildStandardData()));
 
     // Create a log entry
     await assertSucceeds(
@@ -356,20 +351,7 @@ describe('Firestore security rules: activity log updates', () => {
     const logRef = doc(db1, 'users/u1/activityLogs/log-1');
 
     // Create an active standard
-    await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
-    );
+    await assertSucceeds(setDoc(standardRef, buildStandardData()));
 
     // Create a log entry
     await assertSucceeds(
@@ -404,20 +386,7 @@ describe('Firestore security rules: activity log updates', () => {
     const logRef = doc(db1, 'users/u1/activityLogs/log-1');
 
     // Create an active standard
-    await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
-    );
+    await assertSucceeds(setDoc(standardRef, buildStandardData()));
 
     // Create a log entry
     await assertSucceeds(
@@ -452,20 +421,7 @@ describe('Firestore security rules: activity log updates', () => {
     const logRef = doc(db1, 'users/u1/activityLogs/log-1');
 
     // Create an active standard
-    await assertSucceeds(
-      setDoc(standardRef, {
-        activityId: 'a1',
-        minimum: 100,
-        unit: 'calls',
-        cadence: { interval: 1, unit: 'week' },
-        state: 'active',
-        summary: '100 calls / week',
-        archivedAt: null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        deletedAt: null
-      })
-    );
+    await assertSucceeds(setDoc(standardRef, buildStandardData()));
 
     // Create a log entry
     await assertSucceeds(

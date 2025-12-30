@@ -13,6 +13,7 @@ const standard = (overrides: Partial<Standard> = {}): Standard => ({
   createdAtMs: 1,
   updatedAtMs: 1,
   deletedAtMs: null,
+  periodStartPreference: null,
   ...overrides,
 });
 
@@ -48,6 +49,37 @@ describe('computeStandardHistory', () => {
       expect(history[0].total).toBe(50);
       expect(history[1].total).toBe(75);
       expect(history[2].total).toBe(100);
+    });
+
+    test('aligns history calculations to custom weekday starts', () => {
+      const now = new Date('2025-12-11T12:00:00Z').getTime();
+      const logs: PeriodHistoryLogSlice[] = [
+        {
+          id: 'log-1',
+          standardId: 'std-1',
+          value: 5,
+          occurredAtMs: new Date('2025-12-09T10:00:00Z').getTime(), // Tuesday
+        },
+        {
+          id: 'log-2',
+          standardId: 'std-1',
+          value: 15,
+          occurredAtMs: new Date('2025-12-10T10:00:00Z').getTime(), // Wednesday
+        },
+      ];
+
+      const history = computeStandardHistory(
+        standard({
+          periodStartPreference: { mode: 'weekDay', weekStartDay: 3 },
+        }),
+        logs,
+        'UTC',
+        now
+      );
+
+      expect(history.length).toBeGreaterThanOrEqual(1);
+      expect(history[0].total).toBe(15);
+      expect(history[0].periodStartMs).toBe(new Date('2025-12-10T00:00:00Z').getTime());
     });
 
     test('handles daily cadence periods correctly', () => {

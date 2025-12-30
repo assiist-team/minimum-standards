@@ -56,7 +56,8 @@ export function buildDashboardProgressMap(params: {
     const window = calculatePeriodWindow(
       referenceTimestamp,
       standard.cadence,
-      timezone
+      timezone,
+      { periodStartPreference: standard.periodStartPreference }
     );
     const windowLogs = logs.filter(
       (log) =>

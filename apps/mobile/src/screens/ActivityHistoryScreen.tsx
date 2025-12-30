@@ -120,6 +120,7 @@ export function ActivityHistoryScreen({
       createdAtMs: 0,
       updatedAtMs: 0,
       deletedAtMs: null,
+      periodStartPreference: snapshot.periodStartPreference ?? null,
     };
   };
 

@@ -5,6 +5,14 @@ export type StandardCadence = {
     unit: CadenceUnit;
 };
 export type StandardState = 'active' | 'archived';
+export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type PeriodStartPreference = {
+    mode: 'default';
+} | {
+    mode: 'weekDay';
+    weekStartDay: Weekday;
+};
+export declare const DEFAULT_PERIOD_START_PREFERENCE: PeriodStartPreference;
 export type StandardSessionConfig = {
     sessionLabel: string;
     sessionsPerCadence: number;
@@ -34,6 +42,7 @@ export type Standard = SoftDelete & AuditTimestamps & {
     archivedAtMs: TimestampMs | null;
     quickAddValues?: number[];
     sessionConfig: StandardSessionConfig;
+    periodStartPreference?: PeriodStartPreference;
 };
 export type ActivityLog = SoftDelete & AuditTimestamps & {
     id: string;
@@ -55,6 +64,7 @@ export type ActivityHistoryStandardSnapshot = {
     cadence: StandardCadence;
     sessionConfig: StandardSessionConfig;
     summary?: string;
+    periodStartPreference?: PeriodStartPreference;
 };
 export type ActivityHistoryPeriodStatus = 'Met' | 'In Progress' | 'Missed';
 export type ActivityHistoryDoc = {

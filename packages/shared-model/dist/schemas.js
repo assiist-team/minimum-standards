@@ -27,6 +27,13 @@ exports.standardSessionConfigSchema = zod_1.z.object({
     sessionsPerCadence: zod_1.z.number().int().positive(),
     volumePerSession: zod_1.z.number().positive(),
 });
+const periodStartPreferenceSchema = zod_1.z.discriminatedUnion('mode', [
+    zod_1.z.object({ mode: zod_1.z.literal('default') }),
+    zod_1.z.object({
+        mode: zod_1.z.literal('weekDay'),
+        weekStartDay: zod_1.z.number().int().min(1).max(7),
+    }),
+]);
 exports.activitySchema = zod_1.z.object({
     id: zod_1.z.string().min(1),
     name: zod_1.z.string().min(1).max(120),
@@ -83,6 +90,7 @@ exports.standardSchema = zod_1.z.object({
     archivedAtMs: timestampMsSchema.nullable(), // Timestamp when archived, null if active
     quickAddValues: zod_1.z.array(zod_1.z.number().positive()).max(5).optional(),
     sessionConfig: exports.standardSessionConfigSchema, // Required: session-based configuration
+    periodStartPreference: periodStartPreferenceSchema.optional(),
     createdAtMs: timestampMsSchema,
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()
@@ -113,6 +121,7 @@ exports.activityHistoryStandardSnapshotSchema = zod_1.z.object({
     cadence: exports.standardCadenceSchema,
     sessionConfig: exports.standardSessionConfigSchema,
     summary: zod_1.z.string().max(200).optional(),
+    periodStartPreference: periodStartPreferenceSchema.optional(),
 });
 exports.activityHistoryPeriodStatusSchema = zod_1.z.enum(['Met', 'In Progress', 'Missed']);
 exports.activityHistoryDocSchema = zod_1.z.object({

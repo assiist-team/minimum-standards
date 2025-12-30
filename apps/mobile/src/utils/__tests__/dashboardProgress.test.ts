@@ -13,6 +13,7 @@ const standard = (overrides: Partial<Standard> = {}): Standard => ({
   createdAtMs: 1,
   updatedAtMs: 1,
   deletedAtMs: null,
+  periodStartPreference: null,
   sessionConfig: {
     sessionLabel: 'session',
     sessionsPerCadence: 1,
@@ -117,6 +118,38 @@ describe('buildDashboardProgressMap', () => {
     expect(progress['std-1'].currentTotalFormatted).toBe('0');
     expect(progress['std-1'].progressPercent).toBe(0);
     expect(progress['std-1'].status).toBe('In Progress'); // Current period, not ended yet
+  });
+
+  test('respects weekday preference when filtering weekly logs', () => {
+    const now = new Date('2025-12-11T12:00:00Z').getTime();
+    const logs = [
+      {
+        id: 'log-1',
+        standardId: 'std-1',
+        value: 10,
+        occurredAtMs: new Date('2025-12-09T12:00:00Z').getTime(),
+      },
+      {
+        id: 'log-2',
+        standardId: 'std-1',
+        value: 20,
+        occurredAtMs: new Date('2025-12-10T10:00:00Z').getTime(),
+      },
+    ];
+
+    const weeklyStandard = standard({
+      periodStartPreference: { mode: 'weekDay', weekStartDay: 3 },
+    });
+
+    const progress = buildDashboardProgressMap({
+      standards: [weeklyStandard],
+      logs,
+      timezone: 'UTC',
+      nowMs: now,
+    });
+
+    expect(progress['std-1'].currentTotal).toBe(20);
+    expect(progress['std-1'].periodLabel).toContain('December 10');
   });
 
   describe('windowReferenceMs behavior', () => {

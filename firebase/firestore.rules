@@ -51,6 +51,21 @@ service cloud.firestore {
         && sessionConfig.volumePerSession > 0;
     }
 
+    function validPeriodStartPreference(preference) {
+      return preference is map
+        && ('mode' in preference)
+        && (
+          preference.mode == 'default'
+          || (
+            preference.mode == 'weekDay'
+            && 'weekStartDay' in preference
+            && preference.weekStartDay is int
+            && preference.weekStartDay >= 1
+            && preference.weekStartDay <= 7
+          )
+        );
+    }
+
     function isCreateWithServerTimestamps() {
       // Enforces client use of serverTimestamp(); in rules it resolves to request.time.
       return request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
@@ -122,6 +137,7 @@ service cloud.firestore {
         'state',
         'summary',
         'sessionConfig',
+        'periodStartPreference',
         'quickAddValues',
         'archivedAt',
         'createdAt',
@@ -154,6 +170,10 @@ service cloud.firestore {
       && request.resource.data.summary.size() <= 200
       && ('sessionConfig' in request.resource.data)
       && validSessionConfig(request.resource.data.sessionConfig)
+      && (
+        !('periodStartPreference' in request.resource.data)
+        || validPeriodStartPreference(request.resource.data.periodStartPreference)
+      )
       && isTimestamp(request.resource.data.createdAt)
       && isTimestamp(request.resource.data.updatedAt)
       && isOptionalTimestampField('deletedAt')
@@ -262,7 +282,8 @@ service cloud.firestore {
           'unit',
           'cadence',
           'sessionConfig',
-          'summary'
+          'summary',
+          'periodStartPreference'
         ])
         && snapshot.minimum is number
         && snapshot.minimum >= 0
@@ -281,6 +302,10 @@ service cloud.firestore {
             snapshot.summary is string
             && snapshot.summary.size() <= 200
           )
+        )
+        && (
+          !('periodStartPreference' in snapshot)
+          || validPeriodStartPreference(snapshot.periodStartPreference)
         );
     }
 

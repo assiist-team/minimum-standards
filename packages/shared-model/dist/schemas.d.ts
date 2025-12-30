@@ -82,6 +82,22 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         sessionsPerCadence: number;
         volumePerSession: number;
     }>;
+    periodStartPreference: z.ZodOptional<z.ZodDiscriminatedUnion<"mode", [z.ZodObject<{
+        mode: z.ZodLiteral<"default">;
+    }, "strip", z.ZodTypeAny, {
+        mode: "default";
+    }, {
+        mode: "default";
+    }>, z.ZodObject<{
+        mode: z.ZodLiteral<"weekDay">;
+        weekStartDay: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        mode: "weekDay";
+        weekStartDay: number;
+    }, {
+        mode: "weekDay";
+        weekStartDay: number;
+    }>]>>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
@@ -106,6 +122,12 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         volumePerSession: number;
     };
     quickAddValues?: number[] | undefined;
+    periodStartPreference?: {
+        mode: "default";
+    } | {
+        mode: "weekDay";
+        weekStartDay: number;
+    } | undefined;
 }, {
     unit: string;
     minimum: number;
@@ -127,6 +149,12 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         volumePerSession: number;
     };
     quickAddValues?: number[] | undefined;
+    periodStartPreference?: {
+        mode: "default";
+    } | {
+        mode: "weekDay";
+        weekStartDay: number;
+    } | undefined;
 }>, {
     unit: string;
     minimum: number;
@@ -148,6 +176,12 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         volumePerSession: number;
     };
     quickAddValues?: number[] | undefined;
+    periodStartPreference?: {
+        mode: "default";
+    } | {
+        mode: "weekDay";
+        weekStartDay: number;
+    } | undefined;
 }, {
     unit: string;
     minimum: number;
@@ -169,6 +203,12 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         volumePerSession: number;
     };
     quickAddValues?: number[] | undefined;
+    periodStartPreference?: {
+        mode: "default";
+    } | {
+        mode: "weekDay";
+        weekStartDay: number;
+    } | undefined;
 }>;
 export declare const activityLogSchema: z.ZodObject<{
     id: z.ZodString;
@@ -246,6 +286,22 @@ export declare const activityHistoryStandardSnapshotSchema: z.ZodObject<{
         volumePerSession: number;
     }>;
     summary: z.ZodOptional<z.ZodString>;
+    periodStartPreference: z.ZodOptional<z.ZodDiscriminatedUnion<"mode", [z.ZodObject<{
+        mode: z.ZodLiteral<"default">;
+    }, "strip", z.ZodTypeAny, {
+        mode: "default";
+    }, {
+        mode: "default";
+    }>, z.ZodObject<{
+        mode: z.ZodLiteral<"weekDay">;
+        weekStartDay: z.ZodNumber;
+    }, "strip", z.ZodTypeAny, {
+        mode: "weekDay";
+        weekStartDay: number;
+    }, {
+        mode: "weekDay";
+        weekStartDay: number;
+    }>]>>;
 }, "strip", z.ZodTypeAny, {
     unit: string;
     minimum: number;
@@ -259,6 +315,12 @@ export declare const activityHistoryStandardSnapshotSchema: z.ZodObject<{
         volumePerSession: number;
     };
     summary?: string | undefined;
+    periodStartPreference?: {
+        mode: "default";
+    } | {
+        mode: "weekDay";
+        weekStartDay: number;
+    } | undefined;
 }, {
     unit: string;
     minimum: number;
@@ -272,6 +334,12 @@ export declare const activityHistoryStandardSnapshotSchema: z.ZodObject<{
         volumePerSession: number;
     };
     summary?: string | undefined;
+    periodStartPreference?: {
+        mode: "default";
+    } | {
+        mode: "weekDay";
+        weekStartDay: number;
+    } | undefined;
 }>;
 export declare const activityHistoryPeriodStatusSchema: z.ZodEnum<["Met", "In Progress", "Missed"]>;
 export declare const activityHistoryDocSchema: z.ZodObject<{
@@ -309,6 +377,22 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
             volumePerSession: number;
         }>;
         summary: z.ZodOptional<z.ZodString>;
+        periodStartPreference: z.ZodOptional<z.ZodDiscriminatedUnion<"mode", [z.ZodObject<{
+            mode: z.ZodLiteral<"default">;
+        }, "strip", z.ZodTypeAny, {
+            mode: "default";
+        }, {
+            mode: "default";
+        }>, z.ZodObject<{
+            mode: z.ZodLiteral<"weekDay">;
+            weekStartDay: z.ZodNumber;
+        }, "strip", z.ZodTypeAny, {
+            mode: "weekDay";
+            weekStartDay: number;
+        }, {
+            mode: "weekDay";
+            weekStartDay: number;
+        }>]>>;
     }, "strip", z.ZodTypeAny, {
         unit: string;
         minimum: number;
@@ -322,6 +406,12 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
             volumePerSession: number;
         };
         summary?: string | undefined;
+        periodStartPreference?: {
+            mode: "default";
+        } | {
+            mode: "weekDay";
+            weekStartDay: number;
+        } | undefined;
     }, {
         unit: string;
         minimum: number;
@@ -335,6 +425,12 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
             volumePerSession: number;
         };
         summary?: string | undefined;
+        periodStartPreference?: {
+            mode: "default";
+        } | {
+            mode: "weekDay";
+            weekStartDay: number;
+        } | undefined;
     }>;
     total: z.ZodNumber;
     currentSessions: z.ZodNumber;
@@ -365,6 +461,12 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
             volumePerSession: number;
         };
         summary?: string | undefined;
+        periodStartPreference?: {
+            mode: "default";
+        } | {
+            mode: "weekDay";
+            weekStartDay: number;
+        } | undefined;
     };
     total: number;
     currentSessions: number;
@@ -394,6 +496,12 @@ export declare const activityHistoryDocSchema: z.ZodObject<{
             volumePerSession: number;
         };
         summary?: string | undefined;
+        periodStartPreference?: {
+            mode: "default";
+        } | {
+            mode: "weekDay";
+            weekStartDay: number;
+        } | undefined;
     };
     total: number;
     currentSessions: number;

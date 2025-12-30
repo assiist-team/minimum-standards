@@ -18,6 +18,7 @@ export type FirestoreStandardData = {
   createdAt: FirebaseFirestoreTypes.Timestamp | null;
   updatedAt: FirebaseFirestoreTypes.Timestamp | null;
   deletedAt: FirebaseFirestoreTypes.Timestamp | null;
+  periodStartPreference?: Standard['periodStartPreference'];
 };
 
 /**
@@ -41,6 +42,7 @@ export function fromFirestoreStandard(
     state: data.state,
     summary: data.summary,
     sessionConfig: data.sessionConfig,
+      periodStartPreference: data.periodStartPreference,
     quickAddValues: Array.isArray(data.quickAddValues)
       ? data.quickAddValues.filter(
           (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0

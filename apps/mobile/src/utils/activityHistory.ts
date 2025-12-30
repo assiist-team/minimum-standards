@@ -55,7 +55,12 @@ export function computeSyntheticCurrentRows(params: {
   );
 
   for (const standard of relevantStandards) {
-    const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+    const window = calculatePeriodWindow(
+      nowMs,
+      standard.cadence,
+      timezone,
+      { periodStartPreference: standard.periodStartPreference }
+    );
 
     // Query logs within the current period window [startMs, nowMs)
     const periodLogs = logs.filter(
@@ -84,6 +89,7 @@ export function computeSyntheticCurrentRows(params: {
         unit: standard.unit,
         cadence: standard.cadence,
         sessionConfig: standard.sessionConfig,
+        periodStartPreference: standard.periodStartPreference,
       },
       total,
       currentSessions,

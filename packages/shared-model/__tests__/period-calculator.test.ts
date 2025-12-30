@@ -200,6 +200,24 @@ describe('period-calculator', () => {
     });
   });
 
+  describe('calculatePeriodWindow - period start preferences', () => {
+    test('weekly cadence respects custom weekday start', () => {
+      const referenceDate = new Date('2025-12-10T14:30:00Z').getTime(); // Wednesday
+      const window = calculatePeriodWindow(
+        referenceDate,
+        { interval: 1, unit: 'week' },
+        'UTC',
+        { periodStartPreference: { mode: 'weekDay', weekStartDay: 3 } }
+      );
+
+      expect(window.startMs).toBe(new Date('2025-12-10T00:00:00Z').getTime());
+      expect(window.endMs).toBe(new Date('2025-12-17T00:00:00Z').getTime());
+      expect(window.periodKey).toBe('2025-12-10');
+      expect(window.label).toContain('December 10');
+    });
+
+  });
+
   describe('derivePeriodStatus', () => {
     test('returns Met when total >= minimum', () => {
       const status = derivePeriodStatus(100, 50, Date.now(), Date.now() + 1000);

@@ -34,6 +34,7 @@ type FirestoreStandard = Omit<Standard, 'id' | 'createdAtMs' | 'updatedAtMs' | '
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;
   archivedAt: Timestamp | null;
+  periodStartPreference?: Standard['periodStartPreference'];
 };
 
 type FirestoreActivityLog = Omit<
@@ -103,6 +104,9 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       state: model.state,
       summary: summary,
       sessionConfig: model.sessionConfig,
+      ...(model.periodStartPreference && model.periodStartPreference.mode !== 'default'
+        ? { periodStartPreference: model.periodStartPreference }
+        : {}),
       ...(Array.isArray(model.quickAddValues) && model.quickAddValues.length > 0
         ? { quickAddValues: model.quickAddValues }
         : {}),
@@ -124,6 +128,7 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
       state: data.state,
       summary: data.summary,
       sessionConfig: data.sessionConfig,
+      periodStartPreference: data.periodStartPreference,
       quickAddValues: Array.isArray((data as any).quickAddValues)
         ? ((data as any).quickAddValues as unknown[]).filter(
             (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0

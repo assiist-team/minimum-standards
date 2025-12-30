@@ -7,6 +7,16 @@ export type StandardCadence = {
 };
 export type StandardState = 'active' | 'archived';
 
+export type Weekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
+export type PeriodStartPreference =
+  | { mode: 'default' }
+  | {
+      mode: 'weekDay';
+      weekStartDay: Weekday;
+    };
+
+export const DEFAULT_PERIOD_START_PREFERENCE: PeriodStartPreference = { mode: 'default' };
+
 export type StandardSessionConfig = {
   sessionLabel: string; // User-friendly label for the "count" dimension (e.g., "session", "run", "workout")
   sessionsPerCadence: number; // e.g., 5 sessions per week
@@ -42,6 +52,7 @@ export type Standard = SoftDelete &
     archivedAtMs: TimestampMs | null; // Timestamp when archived, null if active
     quickAddValues?: number[]; // Optional preset chips for fast logging (e.g., [1])
     sessionConfig: StandardSessionConfig; // Required: session-based configuration
+    periodStartPreference?: PeriodStartPreference;
   };
 
 export type ActivityLog = SoftDelete &
@@ -68,6 +79,7 @@ export type ActivityHistoryStandardSnapshot = {
   cadence: StandardCadence;
   sessionConfig: StandardSessionConfig;
   summary?: string;
+  periodStartPreference?: PeriodStartPreference;
 };
 
 export type ActivityHistoryPeriodStatus = 'Met' | 'In Progress' | 'Missed';

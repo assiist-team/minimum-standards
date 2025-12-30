@@ -34,16 +34,24 @@ export function formatStandardSummary(
     cadenceStr = `${interval} ${cadenceUnit}s`;
   }
   
+  const formatValueWithUnit = (value: number) =>
+    `${value} ${formatUnitWithCount(normalizedUnit, value)}`;
+
   // If session config is provided and sessionsPerCadence > 1, show session breakdown
   if (sessionConfig && sessionConfig.sessionsPerCadence > 1) {
-    const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1 
-      ? sessionConfig.sessionLabel 
-      : `${sessionConfig.sessionLabel}s`;
-    const sessionVolumeText = formatUnitWithCount(normalizedUnit, sessionConfig.volumePerSession);
-    const minimumText = formatUnitWithCount(normalizedUnit, minimum);
+    const sessionLabelPlural =
+      sessionConfig.sessionsPerCadence === 1
+        ? sessionConfig.sessionLabel
+        : `${sessionConfig.sessionLabel}s`;
+    const sessionVolumeText = `${sessionConfig.volumePerSession} ${formatUnitWithCount(
+      normalizedUnit,
+      sessionConfig.volumePerSession
+    )}`;
+    const minimumText = formatValueWithUnit(minimum);
+
     return `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionVolumeText} = ${minimumText} / ${cadenceStr}`;
   }
-  
+
   // Direct minimum mode (sessionsPerCadence === 1 or no sessionConfig): "minimum unit / cadence"
-  return `${formatUnitWithCount(normalizedUnit, minimum)} / ${cadenceStr}`;
+  return `${formatValueWithUnit(minimum)} / ${cadenceStr}`;
 }

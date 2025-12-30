@@ -56,7 +56,12 @@ export function computeStandardHistory(
   let iterations = 0;
 
   while (iterations < maxIterations) {
-    const window = calculatePeriodWindow(referenceTimestamp, standard.cadence, timezone);
+    const window = calculatePeriodWindow(
+      referenceTimestamp,
+      standard.cadence,
+      timezone,
+      { periodStartPreference: standard.periodStartPreference }
+    );
     const periodKey = window.periodKey;
 
     // Skip if we've already processed this period

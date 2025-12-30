@@ -35,7 +35,12 @@ function computeEarliestStart(
   }
 
   return standards.reduce((min, standard) => {
-    const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+    const window = calculatePeriodWindow(
+      nowMs,
+      standard.cadence,
+      timezone,
+      { periodStartPreference: standard.periodStartPreference }
+    );
     return Math.min(min, window.startMs);
   }, nowMs);
 }
@@ -139,7 +144,12 @@ export function useActiveStandardsDashboard() {
     let nextBoundaryMs: number | null = null;
 
     for (const standard of orderedActiveStandards) {
-      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone);
+      const window = calculatePeriodWindow(
+        windowReferenceMs,
+        standard.cadence,
+        timezone,
+        { periodStartPreference: standard.periodStartPreference }
+      );
       if (nextBoundaryMs === null || window.endMs < nextBoundaryMs) {
         nextBoundaryMs = window.endMs;
       }

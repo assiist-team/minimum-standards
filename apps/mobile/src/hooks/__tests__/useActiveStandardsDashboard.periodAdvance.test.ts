@@ -115,6 +115,7 @@ const createStandard = (overrides: Partial<Standard> = {}): Standard => ({
     sessionsPerCadence: 1,
     volumePerSession: 100,
   },
+  periodStartPreference: null,
   ...overrides,
 });
 

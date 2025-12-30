@@ -90,7 +90,9 @@ export function StandardDetailScreen({
     if (!standard) return null;
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
     const nowMs = Date.now();
-    return calculatePeriodWindow(nowMs, standard.cadence, timezone);
+    return calculatePeriodWindow(nowMs, standard.cadence, timezone, {
+      periodStartPreference: standard.periodStartPreference,
+    });
   }, [standard]);
 
   // Compute current period progress

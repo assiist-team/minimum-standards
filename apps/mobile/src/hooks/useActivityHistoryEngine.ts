@@ -11,6 +11,7 @@ import {
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import { useStandards } from './useStandards';
 import {
+  ActivityHistoryStandardSnapshot,
   Standard,
   calculatePeriodWindow,
   derivePeriodStatus,
@@ -101,7 +102,10 @@ export function useActivityHistoryEngine() {
    */
   const runCatchUp = useCallback(
     async (source: 'boundary' | 'resume') => {
+      console.log(`[useActivityHistoryEngine] Starting catch-up (${source}) for ${orderedActiveStandards.length} standards`);
+
       if (!userId || orderedActiveStandards.length === 0) {
+        console.log('[useActivityHistoryEngine] Skipping catch-up: no user or standards');
         return;
       }
 
@@ -116,8 +120,11 @@ export function useActivityHistoryEngine() {
 
       try {
         for (const standard of orderedActiveStandards) {
+          console.log(`[useActivityHistoryEngine] Processing standard ${standard.id} (${standard.activityId})`);
+
           // Only process active standards
           if (standard.state !== 'active') {
+            console.log(`[useActivityHistoryEngine] Skipping inactive standard ${standard.id}`);
             continue;
           }
 
@@ -127,6 +134,8 @@ export function useActivityHistoryEngine() {
             standardId: standard.id,
           });
 
+          console.log(`[useActivityHistoryEngine] Latest history for ${standard.id}:`, latestHistory ? `ends at ${new Date(latestHistory.periodEndMs).toISOString()}` : 'none');
+
           // Determine starting reference time
           let startReference: number;
           if (latestHistory) {
@@ -135,7 +144,12 @@ export function useActivityHistoryEngine() {
           } else {
             // No history exists - start from current period (no backfill)
             // We'll iterate forward but only generate completed periods
-            const currentWindow = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+            const currentWindow = calculatePeriodWindow(
+              nowMs,
+              standard.cadence,
+              timezone,
+              { periodStartPreference: standard.periodStartPreference }
+            );
             startReference = currentWindow.startMs;
           }
 
@@ -144,45 +158,70 @@ export function useActivityHistoryEngine() {
           let iterations = 0;
           let currentReference = startReference;
 
+          console.log(`[useActivityHistoryEngine] Starting period iteration for ${standard.id} from ${new Date(startReference).toISOString()}`);
+
           while (iterations < maxIterations) {
-            const window = calculatePeriodWindow(currentReference, standard.cadence, timezone);
+            const window = calculatePeriodWindow(
+              currentReference,
+              standard.cadence,
+              timezone,
+              { periodStartPreference: standard.periodStartPreference }
+            );
+
+            console.log(`[useActivityHistoryEngine] Calculated window for ${standard.id}: ${new Date(window.startMs).toISOString()} to ${new Date(window.endMs).toISOString()}`);
 
             // Stop when we reach the current period (window includes now)
             if (window.startMs <= nowMs && window.endMs > nowMs) {
+              console.log(`[useActivityHistoryEngine] Reached current period for ${standard.id}, stopping`);
               break;
             }
 
             // Only write for fully completed periods
             if (window.endMs <= nowMs) {
+              console.log(`[useActivityHistoryEngine] Processing completed period for ${standard.id}: ${window.label}`);
+
               // Compute rollups
               const rollup = await computeRollupsForPeriod(standard, window, nowMs);
+              console.log(`[useActivityHistoryEngine] Computed rollup for ${standard.id}: ${rollup.total} total`);
 
               // Write history document
+              const standardSnapshot: ActivityHistoryStandardSnapshot = {
+                minimum: standard.minimum,
+                unit: standard.unit,
+                cadence: standard.cadence,
+                sessionConfig: standard.sessionConfig,
+                summary: standard.summary,
+              };
+
+              if (standard.periodStartPreference) {
+                standardSnapshot.periodStartPreference =
+                  standard.periodStartPreference;
+              }
+
+              console.log(`[useActivityHistoryEngine] Writing history document for ${standard.id}`);
               await writeActivityHistoryPeriod({
                 userId,
                 activityId: standard.activityId,
                 standardId: standard.id,
                 window,
-                standardSnapshot: {
-                  minimum: standard.minimum,
-                  unit: standard.unit,
-                  cadence: standard.cadence,
-                  sessionConfig: standard.sessionConfig,
-                  summary: standard.summary,
-                },
+                standardSnapshot,
                 rollup,
                 source,
               });
+              console.log(`[useActivityHistoryEngine] Successfully wrote history document for ${standard.id}`);
 
               // Move to next period after writing
               currentReference = window.endMs;
             } else {
               // Window hasn't completed yet, stop
+              console.log(`[useActivityHistoryEngine] Period not completed yet for ${standard.id}, stopping`);
               break;
             }
 
             iterations++;
           }
+
+          console.log(`[useActivityHistoryEngine] Finished processing ${standard.id} after ${iterations} iterations`);
         }
       } catch (error) {
         // Enhanced error logging to help diagnose stale bundle issues
@@ -229,18 +268,27 @@ export function useActivityHistoryEngine() {
 
     const nowMs = Date.now();
     let nextBoundaryMs: number | null = null;
+    console.log(`[useActivityHistoryEngine] Calculating next boundary for ${orderedActiveStandards.length} standards`);
 
     // Find the earliest boundary across all active standards
-    for (const standard of orderedActiveStandards) {
+      for (const standard of orderedActiveStandards) {
       if (standard.state !== 'active') {
         continue;
       }
 
-      const window = calculatePeriodWindow(nowMs, standard.cadence, timezone);
+        const window = calculatePeriodWindow(
+          nowMs,
+          standard.cadence,
+          timezone,
+          { periodStartPreference: standard.periodStartPreference }
+        );
+        console.log(`[useActivityHistoryEngine] Standard ${standard.id} next boundary: ${new Date(window.endMs).toISOString()}`);
       if (nextBoundaryMs === null || window.endMs < nextBoundaryMs) {
         nextBoundaryMs = window.endMs;
       }
     }
+
+    console.log(`[useActivityHistoryEngine] Next boundary scheduled for: ${nextBoundaryMs ? new Date(nextBoundaryMs).toISOString() : 'none'}`);
 
     if (nextBoundaryMs === null) {
       return;
@@ -255,10 +303,13 @@ export function useActivityHistoryEngine() {
     }
 
     const delayMs = nextBoundaryMs - nowMs;
+    console.log(`[useActivityHistoryEngine] Scheduling boundary catch-up in ${delayMs}ms (at ${new Date(nextBoundaryMs).toISOString()})`);
 
     // Schedule timeout to trigger catch-up at boundary
     timeoutRef.current = setTimeout(() => {
+      console.log('[useActivityHistoryEngine] Boundary timer fired, running catch-up');
       runCatchUp('boundary').then(() => {
+        console.log('[useActivityHistoryEngine] Boundary catch-up completed');
         scheduleNextBoundary(); // Reschedule for next boundary
       });
     }, delayMs);
@@ -284,8 +335,10 @@ export function useActivityHistoryEngine() {
       return;
     }
 
+    console.log(`[useActivityHistoryEngine] Triggering initial catch-up for ${orderedActiveStandards.length} standards`);
     hasRunInitialCatchUpRef.current = true;
     runCatchUp('boundary').then(() => {
+      console.log('[useActivityHistoryEngine] Initial catch-up completed, scheduling boundary timer');
       scheduleNextBoundary();
     });
   }, [userId, orderedActiveStandards.length, runCatchUp, scheduleNextBoundary]);

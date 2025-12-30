@@ -3,6 +3,7 @@ import {
   Activity,
   CadenceUnit,
   StandardCadence,
+  Weekday,
 } from '@minimum-standards/shared-model';
 import {
   View,
@@ -37,6 +38,16 @@ import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
+const WEEKDAY_OPTIONS: Array<{ label: string; value: Weekday; full: string }> = [
+  { label: 'Mo', value: 1, full: 'Monday' },
+  { label: 'Tu', value: 2, full: 'Tuesday' },
+  { label: 'We', value: 3, full: 'Wednesday' },
+  { label: 'Th', value: 4, full: 'Thursday' },
+  { label: 'Fr', value: 5, full: 'Friday' },
+  { label: 'Sa', value: 6, full: 'Saturday' },
+  { label: 'Su', value: 7, full: 'Sunday' },
+];
+
 export interface StandardsBuilderScreenProps {
   onBack: () => void;
   standardId?: string;
@@ -64,6 +75,8 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     setSessionsPerCadence,
     volumePerSession,
     setVolumePerSession,
+    periodStartPreference,
+    setPeriodStartPreference,
     getSummaryPreview,
     generatePayload,
     reset,
@@ -89,6 +102,10 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   const isEditMode = !!standardId;
   const standardToEdit = standardId ? standards.find((s) => s.id === standardId) : null;
   const hasPrefilledRef = useRef<string | null>(null);
+  const selectedWeekday = periodStartPreference?.mode === 'weekDay' ? periodStartPreference.weekStartDay : 1; // Default to Monday
+  
+  // Check if cadence is not daily to show weekday picker
+  const showWeekdayPicker = cadence && cadence.unit !== 'day';
 
   // Pre-fill form when editing
   useEffect(() => {
@@ -151,6 +168,8 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
       setGoalTotal(standardToEdit.minimum);
     }
 
+    setPeriodStartPreference(standardToEdit.periodStartPreference ?? null);
+
     hasPrefilledRef.current = standardId;
   }, [
     activities,
@@ -163,6 +182,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     setSessionsPerCadence,
     setUnitOverride,
     setVolumePerSession,
+    setPeriodStartPreference,
     standardId,
     standardToEdit,
   ]);
@@ -172,6 +192,13 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
       setGoalTotalError(null);
     }
   }, [goalTotal, goalTotalError]);
+
+  // Set Monday as default when weekday picker appears and no preference is set
+  useEffect(() => {
+    if (showWeekdayPicker && !periodStartPreference) {
+      setPeriodStartPreference({ mode: 'weekDay', weekStartDay: 1 });
+    }
+  }, [showWeekdayPicker, periodStartPreference, setPeriodStartPreference]);
 
   const handleActivitySelect = (activity: Activity) => {
     setSelectedActivity(activity);
@@ -188,6 +215,13 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   ): Promise<Activity> => {
     return await createActivity(activityData);
   };
+
+  const handleWeekdaySelect = useCallback(
+    (day: Weekday) => {
+      setPeriodStartPreference({ mode: 'weekDay', weekStartDay: day });
+    },
+    [setPeriodStartPreference]
+  );
 
   const handleStandardSelect = (standard: Standard) => {
     // Find the activity by activityId
@@ -215,6 +249,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     }
     
     setStandardsLibraryVisible(false);
+    setPeriodStartPreference(standard.periodStartPreference ?? null);
   };
 
   const handlePresetPress = useCallback(
@@ -363,14 +398,24 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
       return;
     }
 
+    const {
+      periodStartPreference: preference,
+      ...standardPayload
+    } = payload;
+
     setSaving(true);
     let shouldCloseAfterSave = false;
     try {
       if (isEditMode && standardId) {
         // Update existing standard
+        const shouldClearPeriodPreference =
+          !!standardToEdit?.periodStartPreference && !preference;
+
         await updateStandard({
           standardId,
-          ...payload,
+          ...standardPayload,
+          periodStartPreference: preference,
+          clearPeriodStartPreference: shouldClearPeriodPreference,
         });
         trackStandardEvent('standard_edit', {
           standardId,
@@ -408,7 +453,10 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
           }
         } else {
           // No duplicate found: create new Standard
-          await createStandard(payload);
+          await createStandard({
+            ...standardPayload,
+            periodStartPreference: preference,
+          });
           trackStandardEvent('standard_create', {
             activityId: payload.activityId,
             archived: false,
@@ -595,8 +643,8 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
 
           {activePreset === null && (
             <View style={styles.customCadenceRow}>
-              <View style={styles.customField}>
-                <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Custom interval</Text>
+              <View style={styles.customIntervalField}>
+                <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Interval</Text>
                 <TextInput
                   value={customIntervalInput}
                   onChangeText={handleCustomIntervalChange}
@@ -651,6 +699,41 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
             </View>
           )}
           {cadenceError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{cadenceError}</Text>}
+          
+          {showWeekdayPicker && (
+            <View style={styles.alignmentSection}>
+              <Text style={[styles.inputLabel, { color: theme.text.secondary }]}>Start on a specific weekday</Text>
+              <View style={styles.weekdayRow}>
+                {WEEKDAY_OPTIONS.map((option) => {
+                  const isActive = selectedWeekday === option.value;
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.weekdayButton,
+                        {
+                          borderColor: isActive ? theme.link : theme.border.primary,
+                          backgroundColor: isActive ? theme.background.tertiary : 'transparent',
+                        },
+                      ]}
+                      onPress={() => handleWeekdaySelect(option.value)}
+                    >
+                      <Text
+                        style={[
+                          styles.weekdayButtonText,
+                          {
+                            color: isActive ? theme.link : theme.text.secondary,
+                          },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
@@ -1053,6 +1136,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
   },
+  customIntervalField: {
+    flex: 0.4,
+    gap: 6,
+  },
   customField: {
     flex: 1,
     gap: 6,
@@ -1095,6 +1182,34 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 20,
     fontWeight: '700',
+  },
+  alignmentSection: {
+    gap: 8,
+  },
+  weekdayRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  weekdayButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderRadius: 8,
+  },
+  weekdayButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  alignmentHelperText: {
+    fontSize: 13,
+  },
+  clearAlignmentButton: {
+    marginTop: 8,
+  },
+  clearAlignmentText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   buttonRow: {
     flexDirection: 'row',

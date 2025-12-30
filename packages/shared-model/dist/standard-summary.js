@@ -29,16 +29,17 @@ function formatStandardSummary(minimum, unit, cadence, sessionConfig) {
     else {
         cadenceStr = `${interval} ${cadenceUnit}s`;
     }
+    const formatValueWithUnit = (value) => `${value} ${(0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, value)}`;
     // If session config is provided and sessionsPerCadence > 1, show session breakdown
     if (sessionConfig && sessionConfig.sessionsPerCadence > 1) {
         const sessionLabelPlural = sessionConfig.sessionsPerCadence === 1
             ? sessionConfig.sessionLabel
             : `${sessionConfig.sessionLabel}s`;
-        const sessionVolumeText = (0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, sessionConfig.volumePerSession);
-        const minimumText = (0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, minimum);
+        const sessionVolumeText = `${sessionConfig.volumePerSession} ${(0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, sessionConfig.volumePerSession)}`;
+        const minimumText = formatValueWithUnit(minimum);
         return `${sessionConfig.sessionsPerCadence} ${sessionLabelPlural} × ${sessionVolumeText} = ${minimumText} / ${cadenceStr}`;
     }
     // Direct minimum mode (sessionsPerCadence === 1 or no sessionConfig): "minimum unit / cadence"
-    return `${(0, unit_normalization_1.formatUnitWithCount)(normalizedUnit, minimum)} / ${cadenceStr}`;
+    return `${formatValueWithUnit(minimum)} / ${cadenceStr}`;
 }
 //# sourceMappingURL=standard-summary.js.map

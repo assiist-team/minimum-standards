@@ -66,7 +66,9 @@ export function useActivityLogs(
     let pendingStandards = activeStandards.length;
 
     const subscriptions = activeStandards.map((standard) => {
-      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone);
+      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone, {
+        periodStartPreference: standard.periodStartPreference,
+      });
       const logsQuery = query(
         collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
         where('standardId', '==', standard.id),
@@ -146,7 +148,9 @@ export function useActivityLogs(
     let nextBoundaryMs: number | null = null;
 
     for (const standard of activeStandards) {
-      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone);
+      const window = calculatePeriodWindow(windowReferenceMs, standard.cadence, timezone, {
+        periodStartPreference: standard.periodStartPreference,
+      });
       if (nextBoundaryMs === null || window.endMs < nextBoundaryMs) {
         nextBoundaryMs = window.endMs;
       }

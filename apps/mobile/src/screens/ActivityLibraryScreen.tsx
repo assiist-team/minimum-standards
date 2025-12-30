@@ -440,18 +440,7 @@ function ActivityCard({
                   accessibilityRole="button"
                   accessibilityLabel={`View history for ${activity.name}`}
                 >
-                  <Text
-                    style={[
-                      styles.viewHistoryButtonText,
-                      {
-                        fontSize: typography.button.primary.fontSize,
-                        fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'],
-                        color: theme.button.primary.text,
-                      }]
-                    }
-                  >
-                    History
-                  </Text>
+                  <MaterialIcons name="show-chart" size={20} color={theme.button.primary.text} />
                 </TouchableOpacity>
                 {!hideDestructiveControls && (
                   <View ref={menuButtonRef}>
