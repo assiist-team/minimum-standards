@@ -42,13 +42,13 @@ export function StandardPeriodHeader({
           <Text style={[styles.breadcrumbText, { color: theme.text.secondary }]}>
             {activityName}
           </Text>
-          <Text style={[styles.breadcrumbSeparator, { color: theme.text.secondary }]}> › </Text>
+          <Text style={[styles.breadcrumbSeparator, { color: theme.text.tertiary }]}> › </Text>
           <Text style={[styles.breadcrumbText, { color: theme.text.primary }]}>
             Period Logs
           </Text>
         </View>
 
-        <Text style={[styles.periodLabel, { color: theme.text.primary }]}>
+        <Text style={[styles.periodLabel, { color: theme.text.primary, textAlign: 'center' }]}>
           {periodLabel}
         </Text>
 
@@ -57,7 +57,7 @@ export function StandardPeriodHeader({
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.min(progressPercent, 100)}%`, backgroundColor: theme.primary.main }
+                { width: `${Math.min(progressPercent, 100)}%`, backgroundColor: progressPercent >= 100 ? '#4A7C59' : theme.button.primary.background }
               ]}
             />
           </View>
@@ -73,41 +73,46 @@ export function StandardPeriodHeader({
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   content: {
-    gap: 12,
+    gap: 16,
   },
   breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   breadcrumbText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
+    letterSpacing: 0.2,
   },
   breadcrumbSeparator: {
-    fontSize: 14,
+    fontSize: 13,
   },
   periodLabel: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
+    letterSpacing: -0.5,
   },
   progressSection: {
-    gap: 8,
+    gap: 10,
   },
   progressBar: {
-    height: 6,
-    borderRadius: 3,
+    height: 8,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
   },
   progressText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
+    letterSpacing: 0.1,
   },
 });
