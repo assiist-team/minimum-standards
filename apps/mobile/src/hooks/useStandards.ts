@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  FieldValue,
   collection,
   doc,
   query,
@@ -13,6 +14,7 @@ import {
   StandardCadence,
   StandardSessionConfig,
   formatStandardSummary,
+  PeriodStartPreference,
 } from '@minimum-standards/shared-model';
 import {
   FirestoreStandardData,
@@ -28,6 +30,7 @@ export interface CreateStandardInput {
   unit: string;
   cadence: StandardCadence;
   sessionConfig: StandardSessionConfig;
+  periodStartPreference?: PeriodStartPreference;
 }
 
 function buildDefaultQuickAddValues(params: { minimum: number; unit: string }): number[] | undefined {
@@ -78,6 +81,8 @@ export interface UpdateStandardInput {
   unit: string;
   cadence: StandardCadence;
   sessionConfig: StandardSessionConfig;
+  periodStartPreference?: PeriodStartPreference;
+  clearPeriodStartPreference?: boolean;
 }
 
 export interface UseStandardsResult {
@@ -211,6 +216,9 @@ export function useStandards(): UseStandardsResult {
         ),
         sessionConfig: input.sessionConfig,
         ...(quickAddValues ? { quickAddValues } : {}),
+        ...(input.periodStartPreference
+          ? { periodStartPreference: input.periodStartPreference }
+          : {}),
         archivedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -248,7 +256,7 @@ export function useStandards(): UseStandardsResult {
         unit: input.unit,
       });
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         activityId: input.activityId,
         minimum: input.minimum,
         unit: input.unit,
@@ -263,6 +271,14 @@ export function useStandards(): UseStandardsResult {
         ...(quickAddValues ? { quickAddValues } : {}),
         updatedAt: serverTimestamp(),
       };
+
+      if (input.periodStartPreference !== undefined) {
+        payload.periodStartPreference = input.periodStartPreference;
+      }
+
+      if (input.clearPeriodStartPreference) {
+        payload.periodStartPreference = FieldValue.delete();
+      }
 
       await retryFirestoreWrite(async () => {
         await standardRef.update(payload);

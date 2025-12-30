@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { Activity, StandardCadence, formatStandardSummary, StandardSessionConfig } from '@minimum-standards/shared-model';
+import {
+  Activity,
+  PeriodStartPreference,
+  StandardCadence,
+  formatStandardSummary,
+  StandardSessionConfig,
+} from '@minimum-standards/shared-model';
 
 export interface StandardsBuilderState {
   // Activity selection
@@ -26,6 +32,10 @@ export interface StandardsBuilderState {
   volumePerSession: number | null;
   setVolumePerSession: (volume: number | null) => void;
 
+  // Period alignment preference
+  periodStartPreference: PeriodStartPreference | null;
+  setPeriodStartPreference: (preference: PeriodStartPreference | null) => void;
+
   // Reset store
   reset: () => void;
 
@@ -43,6 +53,7 @@ export interface StandardsBuilderState {
     cadence: StandardCadence;
     summary: string;
     sessionConfig: StandardSessionConfig;
+    periodStartPreference?: PeriodStartPreference | null;
   } | null;
 }
 
@@ -60,6 +71,7 @@ const initialState = {
   sessionLabel: 'session',
   sessionsPerCadence: null,
   volumePerSession: null,
+  periodStartPreference: null,
 };
 
 type SessionGoalInputs = Pick<
@@ -95,6 +107,10 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
 
   return {
     ...initialState,
+
+    setPeriodStartPreference: (preference) => {
+      set({ periodStartPreference: preference });
+    },
 
   setSelectedActivity: (activity) => {
     set({ selectedActivity: activity });
@@ -149,7 +165,7 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
     
     if (!effectiveUnit || !state.cadence) {
       return null;
-    }
+        }
 
     // Calculate session config based on current state
     let sessionConfig: StandardSessionConfig | undefined;
@@ -230,6 +246,8 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
       sessionConfig
     );
 
+    const preference = state.periodStartPreference;
+
     return {
       activityId: state.selectedActivity.id,
       minimum,
@@ -237,6 +255,7 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
       cadence: state.cadence,
       summary,
       sessionConfig,
+      periodStartPreference: preference,
     };
   },
 
