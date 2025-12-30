@@ -65,10 +65,8 @@ export function StandardProgressCard({
   const [menuButtonLayout, setMenuButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const menuButtonRef = useRef<View>(null);
   
-  // Use green (met) color for progress bar when status is Met, otherwise use inProgress color
-  const progressBarColor = status === 'Met' 
-    ? getStatusColors(theme, 'Met').bar 
-    : getStatusColors(theme, 'In Progress').bar;
+  // Always use the normal brown color for progress bars
+  const progressBarColor = getStatusColors(theme, 'Met').bar;
   
   // Format volume/period: "1800 minutes / week" (derive from standard data)
   const { interval, unit: cadenceUnit } = standard.cadence;
