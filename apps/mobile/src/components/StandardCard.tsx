@@ -90,7 +90,7 @@ export function StandardCard({
         onPress={onSelect ?? (() => onSelectStandard?.(standard))}
         activeOpacity={onSelect ? 0.7 : 1}
         accessibilityRole={onSelect ? 'button' : undefined}
-        accessibilityLabel={onSelect ? `Select ${activityName}` : undefined}
+        accessibilityLabel={onSelect ? `Edit ${activityName} standard` : undefined}
       >
         <View style={localStyles.cardContent}>
           <View style={localStyles.cardHeader}>

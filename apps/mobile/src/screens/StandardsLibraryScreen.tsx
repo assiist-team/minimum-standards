@@ -118,13 +118,15 @@ export function StandardsLibraryScreen({
   }, [deleteStandard]);
 
   const handleSelect = useCallback((standard: Standard) => {
-    if (onSelectStandard) {
-      onSelectStandard(standard);
+    if (onEditStandard) {
+      onEditStandard(standard.id);
       // Note: onBack() is not called here because:
       // - When used as a modal (StandardsLibraryModal), the modal wrapper handles closing
       // - When used as a main screen, we navigate forward and shouldn't go back
+    } else if (onSelectStandard) {
+      onSelectStandard(standard);
     }
-  }, [onSelectStandard]);
+  }, [onEditStandard, onSelectStandard]);
 
   const handleRetry = useCallback(() => {
     // Refresh standards if needed
