@@ -41,7 +41,7 @@ export function StandardPeriodHeader({
   return (
     <View style={[styles.container, { backgroundColor: theme.background.card, borderBottomColor: theme.border.secondary }]}>
       <View style={styles.content}>
-        <View style={[styles.breadcrumb, { alignSelf: 'center' }]}>
+        <View style={[styles.breadcrumb]}>
           <Text style={[styles.breadcrumbText, { color: theme.text.secondary }]}>
             {activityName}
           </Text>
@@ -49,11 +49,11 @@ export function StandardPeriodHeader({
           <Text style={[styles.breadcrumbText, { color: theme.text.primary }]}>
             Period Logs
           </Text>
+          <View style={styles.spacer} />
+          <Text style={[styles.breadcrumbText, { color: theme.text.primary }]}>
+            {periodLabel}
+          </Text>
         </View>
-
-        <Text style={[styles.periodLabel, { color: theme.text.primary, textAlign: 'center' }]}>
-          {periodLabel}
-        </Text>
 
         <View style={styles.progressSection}>
           <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
@@ -64,21 +64,17 @@ export function StandardPeriodHeader({
               ]}
             />
           </View>
-          <Text style={[styles.progressText, { color: theme.text.secondary }]}>
-            {progressText}
-          </Text>
-        </View>
-
-        {sessionConfig && sessionConfig.sessionsPerCadence > 1 && (
-          <View style={styles.sessionSection}>
-            <Text style={[styles.sessionTotal, { color: theme.text.primary }]}>
-              Total: {formatValue(currentTotal)} {unit}
+          <View style={styles.progressAndSessionRow}>
+            <Text style={[styles.sessionData, { color: theme.text.secondary, textAlign: 'left' }]}>
+              {progressText}
             </Text>
-            <Text style={[styles.sessionData, { color: theme.text.secondary }]}>
-              {sessionConfig.sessionsPerCadence} {sessionConfig.sessionsPerCadence === 1 ? sessionConfig.sessionLabel : `${sessionConfig.sessionLabel}s`} × {formatValue(sessionConfig.volumePerSession)} {unit}
-            </Text>
+            {sessionConfig && sessionConfig.sessionsPerCadence > 1 && (
+              <Text style={[styles.sessionData, { color: theme.text.secondary }]}>
+                {sessionConfig.sessionsPerCadence} {sessionConfig.sessionsPerCadence === 1 ? sessionConfig.sessionLabel : `${sessionConfig.sessionLabel}s`} × {formatValue(sessionConfig.volumePerSession)} {unit}
+              </Text>
+            )}
           </View>
-        )}
+        </View>
       </View>
     </View>
   );
@@ -97,6 +93,9 @@ const styles = StyleSheet.create({
   breadcrumb: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  spacer: {
+    flex: 1,
   },
   breadcrumbText: {
     fontSize: 13,
@@ -126,18 +125,14 @@ const styles = StyleSheet.create({
   progressText: {
     fontSize: 15,
     fontWeight: '600',
-    textAlign: 'center',
+    textAlign: 'left',
     letterSpacing: 0.1,
+    flex: 1,
   },
-  sessionSection: {
+  progressAndSessionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 8,
-  },
-  sessionTotal: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   sessionData: {
     fontSize: 13,

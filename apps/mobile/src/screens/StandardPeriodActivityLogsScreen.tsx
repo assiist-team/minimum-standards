@@ -1,27 +1,24 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { RootStackParamList } from '../navigation/types';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useStandardPeriodActivityLogs } from '../hooks/useStandardPeriodActivityLogs';
 import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
 import { StandardPeriodHeader } from '../components/StandardPeriodHeader';
 import { ActivityLogsList } from '../components/ActivityLogsList';
+import { LogEntryModal } from '../components/LogEntryModal';
+import { ActivityLog } from '../hooks/useStandardPeriodActivityLogs';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
-
-const CARD_SPACING = 16;
 
 type RouteProps = RouteProp<RootStackParamList, 'StandardPeriodActivityLogs'>;
 
@@ -33,8 +30,12 @@ export function StandardPeriodActivityLogsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
+  // Modal state for editing logs
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingLog, setEditingLog] = useState<ActivityLog | null>(null);
+
   // Get standard and activity information
-  const { standards } = useStandards();
+  const { standards, updateLogEntry } = useStandards();
   const { activities } = useActivities();
 
   const standard = useMemo(
@@ -110,9 +111,35 @@ export function StandardPeriodActivityLogsScreen() {
     }
   };
 
-  const handleEditLog = (log: any) => {
-    // TODO: Implement log editing
-    console.log('Edit log:', log);
+  const handleEditLog = (log: ActivityLog) => {
+    setEditingLog(log);
+    setEditModalVisible(true);
+  };
+
+  const handleLogSave = async (
+    logStandardId: string,
+    value: number,
+    occurredAtMs: number,
+    note?: string | null,
+    logEntryId?: string
+  ) => {
+    if (logEntryId && updateLogEntry) {
+      await updateLogEntry({
+        logEntryId,
+        standardId: logStandardId,
+        value,
+        occurredAtMs,
+        note,
+      });
+    }
+    // Close modal after save
+    setEditModalVisible(false);
+    setEditingLog(null);
+  };
+
+  const handleModalClose = () => {
+    setEditModalVisible(false);
+    setEditingLog(null);
   };
 
   const handleDeleteLog = (log: any) => {
@@ -141,7 +168,7 @@ export function StandardPeriodActivityLogsScreen() {
           {
             backgroundColor: theme.background.chrome,
             borderBottomColor: theme.border.secondary,
-            paddingTop: Math.max(insets.top, 12),
+            paddingTop: 12,
           },
         ]}
       >
@@ -181,6 +208,19 @@ export function StandardPeriodActivityLogsScreen() {
         onEditLog={handleEditLog}
         onDeleteLog={handleDeleteLog}
         unit={standard.unit}
+      />
+
+      {/* Edit Log Modal */}
+      <LogEntryModal
+        visible={editModalVisible}
+        standard={standard}
+        logEntry={editingLog as any}
+        onClose={handleModalClose}
+        onSave={handleLogSave}
+        resolveActivityName={(activityId) => {
+          const activity = activities.find(a => a.id === activityId);
+          return activity?.name;
+        }}
       />
     </View>
   );
