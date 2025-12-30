@@ -388,8 +388,7 @@ function ActivityCard({
     onDelete(activity);
   };
 
-  const handleViewHistoryPress = (e: any) => {
-    e.stopPropagation();
+  const handleViewHistoryPress = () => {
     navigation.navigate('ActivityHistory', { activityId: activity.id });
   };
 
@@ -404,10 +403,10 @@ function ActivityCard({
             opacity: cardOpacity,
           },
         ]}
-        onPress={onSelectActivity ? () => onSelect(activity) : undefined}
-        activeOpacity={onSelectActivity ? 0.7 : 1}
-        accessibilityRole={onSelectActivity ? 'button' : undefined}
-        accessibilityLabel={onSelectActivity ? `Select ${activity.name}` : undefined}
+        onPress={onSelectActivity ? () => onSelect(activity) : handleViewHistoryPress}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel={onSelectActivity ? `Select ${activity.name}` : `View history for ${activity.name}`}
       >
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
@@ -427,35 +426,20 @@ function ActivityCard({
                 {activity.unit}
               </Text>
             </View>
-            <View style={styles.headerActions}>
-              <View style={styles.actionButtonsRow}>
-                <TouchableOpacity
-                  onPress={handleViewHistoryPress}
-                  style={[
-                    styles.viewHistoryButton,
-                    {
-                      backgroundColor: theme.button.primary.background,
-                    },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel={`View history for ${activity.name}`}
-                >
-                  <MaterialIcons name="show-chart" size={20} color={theme.button.primary.text} />
-                </TouchableOpacity>
-                {!hideDestructiveControls && (
-                  <View ref={menuButtonRef}>
-                    <TouchableOpacity
-                      onPress={handleMenuPress}
-                      style={styles.menuButton}
-                      accessibilityRole="button"
-                      accessibilityLabel={`More options for ${activity.name}`}
-                    >
-                      <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
-                    </TouchableOpacity>
-                  </View>
-                )}
+            {!hideDestructiveControls && (
+              <View style={styles.headerActions}>
+                <View ref={menuButtonRef}>
+                  <TouchableOpacity
+                    onPress={handleMenuPress}
+                    style={styles.menuButton}
+                    accessibilityRole="button"
+                    accessibilityLabel={`More options for ${activity.name}`}
+                  >
+                    <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -631,16 +615,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
-  },
-  viewHistoryButton: {
-    borderRadius: BUTTON_BORDER_RADIUS,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewHistoryButtonText: {
-    // fontSize and fontWeight come from typography.button.primary
   },
   menuButton: {
     padding: 6,
