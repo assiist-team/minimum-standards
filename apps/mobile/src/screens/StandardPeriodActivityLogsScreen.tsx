@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -35,7 +36,7 @@ export function StandardPeriodActivityLogsScreen() {
   const [editingLog, setEditingLog] = useState<ActivityLog | null>(null);
 
   // Get standard and activity information
-  const { standards, updateLogEntry } = useStandards();
+  const { standards, updateLogEntry, deleteLogEntry } = useStandards();
   const { activities } = useActivities();
 
   const standard = useMemo(
@@ -142,9 +143,16 @@ export function StandardPeriodActivityLogsScreen() {
     setEditingLog(null);
   };
 
-  const handleDeleteLog = (log: any) => {
-    // TODO: Implement log deletion
-    console.log('Delete log:', log);
+  const handleDeleteLog = async (log: ActivityLog) => {
+    if (!deleteLogEntry) {
+      return;
+    }
+
+    try {
+      await deleteLogEntry(log.id, log.standardId);
+    } catch (error) {
+      console.error('Failed to delete log:', error);
+    }
   };
 
   if (!standard || !activity || !periodInfo) {
@@ -168,7 +176,7 @@ export function StandardPeriodActivityLogsScreen() {
           {
             backgroundColor: theme.background.chrome,
             borderBottomColor: theme.border.secondary,
-            paddingTop: 12,
+            paddingTop: Math.max(insets.top, 12),
           },
         ]}
       >
@@ -187,18 +195,7 @@ export function StandardPeriodActivityLogsScreen() {
 
       <ErrorBanner error={error} />
 
-      {/* Period Summary */}
-      <StandardPeriodHeader
-        periodLabel={periodInfo.label}
-        currentTotal={totalValue}
-        targetValue={standard.minimum}
-        unit={standard.unit}
-        progressPercent={progressPercent}
-        activityName={activity.name}
-        sessionConfig={standard.sessionConfig}
-      />
-
-      {/* Activity Logs */}
+      {/* Activity Logs with header included */}
       <ActivityLogsList
         logs={logs}
         loading={loading}
@@ -208,13 +205,22 @@ export function StandardPeriodActivityLogsScreen() {
         onEditLog={handleEditLog}
         onDeleteLog={handleDeleteLog}
         unit={standard.unit}
+        periodHeaderProps={{
+          periodLabel: periodInfo.label,
+          currentTotal: totalValue,
+          targetValue: standard.minimum,
+          unit: standard.unit,
+          progressPercent,
+          activityName: activity.name,
+          sessionConfig: standard.sessionConfig,
+        }}
       />
 
       {/* Edit Log Modal */}
       <LogEntryModal
         visible={editModalVisible}
         standard={standard}
-        logEntry={editingLog as any}
+        logEntry={editingLog}
         onClose={handleModalClose}
         onSave={handleLogSave}
         resolveActivityName={(activityId) => {

@@ -236,7 +236,24 @@ export function ActivityLibraryScreen({
     <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
       <ErrorBanner error={error} />
 
-      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome, paddingTop: Math.max(insets.top, 16) }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.background.chrome,
+            borderBottomColor: theme.border.secondary,
+            paddingTop: Math.max(insets.top, 12),
+          },
+        ]}
+      >
+        <View style={styles.headerSpacer} />
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
+          Activity Library
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome }]}>
         <View style={styles.searchRow}>
           <TextInput
             style={[
@@ -516,6 +533,23 @@ function ActivityCard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  headerSpacer: {
+    width: 24, // Match back icon width for centering
   },
   searchContainer: {
     padding: 16,

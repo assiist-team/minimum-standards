@@ -40,10 +40,6 @@ export function AppNavigator() {
         <RootStack.Screen
           name="StandardPeriodActivityLogs"
           component={StandardPeriodActivityLogsScreen}
-          options={{
-            presentation: 'modal',
-            animation: 'slide_from_bottom',
-          }}
         />
       </RootStack.Navigator>
     </NavigationContainer>

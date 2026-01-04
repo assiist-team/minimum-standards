@@ -25,9 +25,12 @@ import { StandardProgressCard } from '../components/StandardProgressCard';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const CARD_SPACING = 16;
 const CARD_VERTICAL_GAP = CARD_SPACING / 3;
+
+type SortOption = 'completion' | 'alpha';
 
 export interface ActiveStandardsDashboardScreenProps {
   onBack?: () => void;
@@ -51,6 +54,8 @@ export function ActiveStandardsDashboardScreen({
   const insets = useSafeAreaInsets();
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [logModalVisible, setLogModalVisible] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('completion');
+  const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   
   const {
     dashboardStandards,
@@ -140,6 +145,22 @@ export function ActiveStandardsDashboardScreen({
     });
   }, [navigation]);
 
+  const sortedDashboardStandards = useMemo(() => {
+    return [...dashboardStandards].sort((a, b) => {
+      if (sortOption === 'completion') {
+        // Sort by completion percentage ascending (lowest first)
+        const aProgress = a.progress?.progressPercent ?? 0;
+        const bProgress = b.progress?.progressPercent ?? 0;
+        return aProgress - bProgress;
+      } else {
+        // Sort alphabetically by activity name
+        const aName = activityNameMap.get(a.standard.activityId) ?? a.standard.activityId;
+        const bName = activityNameMap.get(b.standard.activityId) ?? b.standard.activityId;
+        return aName.localeCompare(bName);
+      }
+    });
+  }, [dashboardStandards, sortOption, activityNameMap]);
+
   const renderCard = useCallback(
     ({ item }: { item: DashboardStandard }) => {
       return (
@@ -191,7 +212,7 @@ export function ActiveStandardsDashboardScreen({
     return (
       <FlatList
         testID="dashboard-list"
-        data={dashboardStandards}
+        data={sortedDashboardStandards}
         renderItem={renderCard}
         keyExtractor={(item) => item.standard.id}
         contentContainerStyle={styles.listContent}
@@ -207,6 +228,7 @@ export function ActiveStandardsDashboardScreen({
     refreshProgress,
     renderCard,
     theme,
+    sortedDashboardStandards,
   ]);
 
   return (
@@ -220,7 +242,18 @@ export function ActiveStandardsDashboardScreen({
           <View style={styles.headerSpacer} />
         )}
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Active Standards</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          onPress={() => setSortDropdownVisible(true)}
+          style={styles.sortButton}
+          accessibilityRole="button"
+          accessibilityLabel="Sort options"
+        >
+          <MaterialIcons name="swap-vert" size={20} color={theme.text.secondary} />
+          <Text style={[styles.sortButtonText, { color: theme.text.secondary }]}>
+            {sortOption === 'completion' ? 'Completion' : 'Alpha'}
+          </Text>
+          <MaterialIcons name="arrow-drop-down" size={20} color={theme.text.secondary} />
+        </TouchableOpacity>
       </View>
 
       <ErrorBanner error={error} onRetry={handleRetry} />
@@ -234,6 +267,50 @@ export function ActiveStandardsDashboardScreen({
         onSave={handleLogSave}
         resolveActivityName={(activityId) => activityNameMap.get(activityId)}
       />
+
+      {/* Sort Options Dropdown */}
+      {sortDropdownVisible && (
+        <TouchableOpacity
+          style={[styles.dropdownOverlay, { paddingTop: Math.max(insets.top, 12) + 44 }]}
+          activeOpacity={1}
+          onPress={() => setSortDropdownVisible(false)}
+        >
+          <View style={[styles.dropdownContainer, { backgroundColor: theme.background.modal, borderColor: theme.border.secondary }]}>
+            <TouchableOpacity
+              onPress={() => {
+                setSortOption('completion');
+                setSortDropdownVisible(false);
+              }}
+              style={styles.dropdownItem}
+              accessibilityRole="button"
+              accessibilityLabel="Sort by completion percentage"
+            >
+              <Text style={[styles.dropdownItemText, { color: theme.text.primary }]}>
+                Completion
+              </Text>
+              {sortOption === 'completion' && (
+                <MaterialIcons name="check" size={20} color={theme.primary.main} />
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setSortOption('alpha');
+                setSortDropdownVisible(false);
+              }}
+              style={styles.dropdownItem}
+              accessibilityRole="button"
+              accessibilityLabel="Sort alphabetically"
+            >
+              <Text style={[styles.dropdownItemText, { color: theme.text.primary }]}>
+                Alpha
+              </Text>
+              {sortOption === 'alpha' && (
+                <MaterialIcons name="check" size={20} color={theme.primary.main} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -321,6 +398,50 @@ const styles = StyleSheet.create({
   },
   headerSpacer: {
     width: 64,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: BUTTON_BORDER_RADIUS,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  dropdownOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingRight: 16,
+  },
+  dropdownContainer: {
+    borderRadius: 8,
+    borderWidth: 1,
+    minWidth: 120,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'transparent',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   skeletonContainer: {
     padding: CARD_SPACING,

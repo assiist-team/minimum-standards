@@ -211,48 +211,43 @@ export function StandardsLibraryScreen({
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
       <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
-        {onBack ? (
-          <TouchableOpacity onPress={onBack} accessibilityRole="button">
-            <Text style={[styles.backButton, { color: theme.primary.main }]}>Back</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
+        <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards Library</Text>
-        {onNavigateToBuilder ? (
-          <TouchableOpacity
-            onPress={onNavigateToBuilder}
-            style={[styles.headerButton, { backgroundColor: theme.button.primary.background }]}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.headerButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ New</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
+        <View style={styles.headerSpacer} />
       </View>
 
       <ErrorBanner error={error} onRetry={handleRetry} />
 
       {/* Search Input */}
       <View style={[styles.searchContainer, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome }]}>
-        <TextInput
-          style={[
-            styles.searchInput,
-            {
-              backgroundColor: theme.input.background,
-              borderColor: theme.input.border,
-              color: theme.input.text,
-            },
-          ]}
-          placeholder="Search standards..."
-          placeholderTextColor={theme.input.placeholder}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-          accessibilityLabel="Standards search input"
-        />
+        <View style={styles.searchRow}>
+          <TextInput
+            style={[
+              styles.searchInput,
+              {
+                backgroundColor: theme.input.background,
+                borderColor: theme.input.border,
+                color: theme.input.text,
+              },
+            ]}
+            placeholder="Search standards..."
+            placeholderTextColor={theme.input.placeholder}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Standards search input"
+          />
+          {onNavigateToBuilder && (
+            <TouchableOpacity
+              style={[styles.inlineCreateButton, { backgroundColor: theme.button.primary.background }]}
+              onPress={onNavigateToBuilder}
+              accessibilityRole="button"
+            >
+              <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as any, color: theme.button.primary.text }]}>+ New</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {content}
@@ -298,11 +293,25 @@ const styles = StyleSheet.create({
     padding: CARD_SPACING,
     borderBottomWidth: 1,
   },
+  searchRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
   searchInput: {
+    flex: 1,
     borderWidth: 1,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  inlineCreateButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: BUTTON_BORDER_RADIUS,
+  },
+  inlineCreateButtonText: {
+    // fontSize and fontWeight come from typography.button.primary
   },
   skeletonContainer: {
     padding: CARD_SPACING,

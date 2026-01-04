@@ -30,6 +30,10 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
     return map;
   }, [allActivities]);
 
+  // Only show the sticky log button on the Dashboard tab
+  const currentRoute = props.state.routes[props.state.index]?.name;
+  const showStickyLogButton = currentRoute === 'Dashboard';
+
   return (
     <View
       style={[
@@ -37,11 +41,13 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
         { backgroundColor: theme.tabBar.background, borderTopColor: theme.tabBar.border },
       ]}
     >
-      <StickyLogButton
-        onCreateLogEntry={createLogEntry}
-        onUpdateLogEntry={updateLogEntry}
-        resolveActivityName={(activityId) => activityNameMap.get(activityId)}
-      />
+      {showStickyLogButton && (
+        <StickyLogButton
+          onCreateLogEntry={createLogEntry}
+          onUpdateLogEntry={updateLogEntry}
+          resolveActivityName={(activityId) => activityNameMap.get(activityId)}
+        />
+      )}
       <BottomTabBar {...props} />
     </View>
   );

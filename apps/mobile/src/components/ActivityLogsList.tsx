@@ -9,6 +9,10 @@ import {
 import { ActivityLogEntry } from './ActivityLogEntry';
 import { ActivityLog } from '../hooks/useStandardPeriodActivityLogs';
 import { useTheme } from '../theme/useTheme';
+import { StandardPeriodHeader, StandardPeriodHeaderProps } from './StandardPeriodHeader';
+
+const CARD_SPACING = 16;
+const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 export interface ActivityLogsListProps {
   logs: ActivityLog[];
@@ -19,6 +23,7 @@ export interface ActivityLogsListProps {
   onEditLog?: (log: ActivityLog) => void;
   onDeleteLog?: (log: ActivityLog) => void;
   unit: string;
+  periodHeaderProps?: StandardPeriodHeaderProps;
 }
 
 export function ActivityLogsList({
@@ -30,6 +35,7 @@ export function ActivityLogsList({
   onEditLog,
   onDeleteLog,
   unit,
+  periodHeaderProps,
 }: ActivityLogsListProps) {
   const theme = useTheme();
   const flatListRef = useRef<FlatList>(null);
@@ -94,6 +100,7 @@ export function ActivityLogsList({
       data={logs}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
+      ListHeaderComponent={periodHeaderProps ? <StandardPeriodHeader {...periodHeaderProps} /> : null}
       ListEmptyComponent={renderEmpty}
       ListFooterComponent={renderFooter}
       refreshControl={
@@ -113,12 +120,13 @@ export function ActivityLogsList({
 
 const styles = StyleSheet.create({
   contentContainer: {
-    paddingVertical: 12,
-    paddingBottom: 24,
+    padding: CARD_SPACING,
+    gap: CARD_VERTICAL_GAP,
   },
   emptyContentContainer: {
     flex: 1,
     justifyContent: 'center',
+    padding: CARD_SPACING,
   },
   emptyContainer: {
     alignItems: 'center',

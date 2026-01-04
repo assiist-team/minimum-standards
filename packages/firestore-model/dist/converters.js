@@ -135,17 +135,19 @@ exports.activityLogConverter = {
 exports.dashboardPinsConverter = {
     toFirestore(model) {
         return {
-            pinnedStandardIds: model.pinnedStandardIds,
+            orderedStandardIds: model.orderedStandardIds,
             updatedAt: (0, firestore_1.serverTimestamp)()
         };
     },
     fromFirestore(snapshot, options) {
-        const data = snapshot.data(options);
+        const data = snapshot.data(options); // Allow any for backward compatibility
         return parseWith(shared_model_1.dashboardPinsSchema, {
             id: snapshot.id,
-            pinnedStandardIds: Array.isArray(data.pinnedStandardIds)
-                ? data.pinnedStandardIds
-                : [],
+            orderedStandardIds: Array.isArray(data.orderedStandardIds)
+                ? data.orderedStandardIds
+                : Array.isArray(data.pinnedStandardIds) // Backward compatibility
+                    ? data.pinnedStandardIds
+                    : [],
             updatedAtMs: data.updatedAt == null ? Date.now() : (0, timestamps_1.timestampToMs)(data.updatedAt)
         });
     }

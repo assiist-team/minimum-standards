@@ -8,6 +8,8 @@ import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { StandardSessionConfig } from '@minimum-standards/shared-model';
 
+const CARD_SPACING = 16;
+
 export interface StandardPeriodHeaderProps {
   periodLabel: string;
   currentTotal: number;
@@ -47,10 +49,6 @@ export function StandardPeriodHeader({
           </Text>
           <Text style={[styles.breadcrumbSeparator, { color: theme.text.tertiary }]}> › </Text>
           <Text style={[styles.breadcrumbText, { color: theme.text.primary }]}>
-            Period Logs
-          </Text>
-          <View style={styles.spacer} />
-          <Text style={[styles.breadcrumbText, { color: theme.text.primary }]}>
             {periodLabel}
           </Text>
         </View>
@@ -83,9 +81,10 @@ export function StandardPeriodHeader({
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 20,
+    paddingHorizontal: CARD_SPACING,
+    paddingTop: CARD_SPACING,
+    paddingBottom: CARD_SPACING,
+    marginHorizontal: -CARD_SPACING,
   },
   content: {
     gap: 16,
@@ -115,12 +114,12 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    borderRadius: 4,
+    borderRadius: 8,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: 8,
   },
   progressText: {
     fontSize: 15,

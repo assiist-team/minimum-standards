@@ -17,17 +17,24 @@ import {
   LayoutChangeEvent,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import type { Standard, ActivityLog } from '@minimum-standards/shared-model';
+import type { Standard } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardCard } from './StandardCard';
 
+export interface EditLogEntry {
+  id: string;
+  value: number;
+  occurredAtMs: number;
+  note: string | null;
+}
+
 export interface LogEntryModalProps {
   visible: boolean;
   standard: Standard | null | undefined;
-  logEntry?: ActivityLog | null; // Optional log entry for edit mode
+  logEntry?: EditLogEntry | null; // Optional log entry for edit mode
   onClose: () => void;
   onSave: (standardId: string, value: number, occurredAtMs: number, note?: string | null, logEntryId?: string) => Promise<void>;
   onCreateStandard?: () => void; // Callback to create a new standard from empty state

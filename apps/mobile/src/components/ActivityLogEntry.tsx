@@ -6,10 +6,14 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  InteractionManager,
 } from 'react-native';
 import { formatUnitWithCount } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
+
+const CARD_SPACING = 16;
+const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 export interface ActivityLogEntryProps {
   value: number;
@@ -55,14 +59,37 @@ export function ActivityLogEntry({
     }
   };
 
-  const handleEditPress = () => {
+  const pendingActionRef = useRef<(() => void) | null>(null);
+
+  const closeMenuAndQueueAction = (action?: () => void) => {
+    if (!action) {
+      setMenuVisible(false);
+      return;
+    }
+
+    if (!menuVisible) {
+      InteractionManager.runAfterInteractions(action);
+      return;
+    }
+
+    pendingActionRef.current = action;
     setMenuVisible(false);
-    onEdit?.();
+  };
+
+  const handleEditPress = () => {
+    closeMenuAndQueueAction(onEdit);
   };
 
   const handleDeletePress = () => {
-    setMenuVisible(false);
-    onDelete?.();
+    closeMenuAndQueueAction(onDelete);
+  };
+
+  const handleMenuDismiss = () => {
+    if (pendingActionRef.current) {
+      const action = pendingActionRef.current;
+      pendingActionRef.current = null;
+      InteractionManager.runAfterInteractions(action);
+    }
   };
 
   const formattedValue = `${value} ${formatUnitWithCount(unit, value)}`;
@@ -109,12 +136,13 @@ export function ActivityLogEntry({
       visible={menuVisible}
       transparent={true}
       animationType="fade"
-      onRequestClose={() => setMenuVisible(false)}
+      onRequestClose={() => closeMenuAndQueueAction()}
+      onDismiss={handleMenuDismiss}
     >
       <TouchableOpacity
         style={styles.menuOverlay}
         activeOpacity={1}
-        onPress={() => setMenuVisible(false)}
+        onPress={() => closeMenuAndQueueAction()}
       >
         {menuButtonLayout && (() => {
           const screenWidth = Dimensions.get('window').width;
@@ -170,8 +198,7 @@ const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
     borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 6,
+    marginVertical: 0,
     overflow: 'hidden',
   },
   content: {
