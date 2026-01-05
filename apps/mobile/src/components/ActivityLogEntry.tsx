@@ -100,7 +100,13 @@ export function ActivityLogEntry({
   return (
     <>
     <View style={[styles.container, { backgroundColor: theme.background.card, borderColor: theme.border.secondary }]}>
-      <View style={styles.content}>
+      <TouchableOpacity
+        style={styles.content}
+        onPress={onEdit}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Edit log entry"
+      >
         <View style={styles.header}>
           <View style={styles.leftSection}>
             <Text style={[styles.value, { color: theme.text.primary }]}>
@@ -129,7 +135,7 @@ export function ActivityLogEntry({
             {note}
           </Text>
         )}
-      </View>
+      </TouchableOpacity>
     </View>
 
     <Modal
