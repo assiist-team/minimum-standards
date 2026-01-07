@@ -28,7 +28,7 @@ const mockStandard: Standard = {
 
 const resolveActivityName = (activityId: string) => {
   if (activityId === 'act1') {
-    return 'Sales Calls';
+    return 'Cold Calls';
   }
   return undefined;
 };
@@ -71,7 +71,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      expect(getByText('Log Sales Calls')).toBeTruthy();
+      expect(getByText('Log Cold Calls')).toBeTruthy();
       expect(getByText(mockStandard.summary)).toBeTruthy();
     });
   });
@@ -104,7 +104,7 @@ describe('LogEntryModal', () => {
 
       // Should now show the logging form
       await waitFor(() => {
-        expect(getByText('Log Sales Calls')).toBeTruthy();
+        expect(getByText('Log Cold Calls')).toBeTruthy();
       });
     });
   });
@@ -464,7 +464,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      expect(getByText('Edit Sales Calls')).toBeTruthy();
+      expect(getByText('Edit Cold Calls')).toBeTruthy();
       
       // Form should be pre-filled
       expect(getByDisplayValue('50')).toBeTruthy();
@@ -509,7 +509,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      expect(getByText('Log Sales Calls')).toBeTruthy();
+      expect(getByText('Log Cold Calls')).toBeTruthy();
     });
 
     test('calls onSave with logEntryId in edit mode', async () => {

@@ -37,7 +37,7 @@ const mockActiveStandards: Standard[] = [
 ];
 
 const resolveActivityName = (activityId: string) => {
-  if (activityId === 'act1') return 'Sales Calls';
+  if (activityId === 'act1') return 'Cold Calls';
   if (activityId === 'act2') return 'Emails';
   return undefined;
 };
@@ -113,7 +113,7 @@ describe('LogEntryModal Integration Tests', () => {
 
       // Should now show form
       await waitFor(() => {
-        expect(getByText('Log Sales Calls')).toBeTruthy();
+        expect(getByText('Log Cold Calls')).toBeTruthy();
       });
 
       // Enter value and save

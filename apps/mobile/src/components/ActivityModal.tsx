@@ -176,14 +176,13 @@ export function ActivityModal({
       <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={insets.bottom + 16}
           style={styles.keyboardAvoider}
         >
           <Animated.View
             style={[
               styles.modalContent,
               {
-                backgroundColor: theme.background.screen,
+                backgroundColor: theme.background.chrome,
                 transform: [{ translateX: slideAnim }],
               },
             ]}
@@ -207,10 +206,10 @@ export function ActivityModal({
             </View>
 
             <ScrollView
-              style={styles.formScroll}
+              style={[styles.formScroll, { backgroundColor: theme.background.chrome }]}
               contentContainerStyle={[
                 styles.form,
-                { paddingBottom: 32 + insets.bottom },
+                { paddingBottom: 16 },
               ]}
               keyboardShouldPersistTaps="handled"
               bounces={false}
@@ -234,7 +233,7 @@ export function ActivityModal({
                       setErrors({ ...errors, name: undefined });
                     }
                   }}
-                  placeholder="e.g., Sales Calls"
+                  placeholder="e.g., Cold Calling"
                   placeholderTextColor={theme.input.placeholder}
                   maxLength={120}
                   editable={!saving}
@@ -262,7 +261,7 @@ export function ActivityModal({
                       setErrors({ ...errors, unit: undefined });
                     }
                   }}
-                  placeholder="e.g., calls (will be pluralized)"
+                  placeholder="e.g., calls"
                   placeholderTextColor={theme.input.placeholder}
                   maxLength={40}
                   editable={!saving}
@@ -303,8 +302,19 @@ export function ActivityModal({
 
               {/* Save error */}
               {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+            </ScrollView>
 
-              {/* Save button */}
+            {/* Sticky Footer */}
+            <View
+              style={[
+                styles.footer,
+                {
+                  backgroundColor: theme.background.chrome,
+                  borderTopColor: theme.border.primary,
+                  paddingBottom: Math.max(insets.bottom, 16),
+                },
+              ]}
+            >
               <TouchableOpacity
                 style={[
                   styles.saveButton,
@@ -325,7 +335,7 @@ export function ActivityModal({
                   </Text>
                 )}
               </TouchableOpacity>
-            </ScrollView>
+            </View>
           </Animated.View>
         </KeyboardAvoidingView>
       </View>
@@ -368,6 +378,7 @@ const styles = StyleSheet.create({
   },
   formScroll: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   form: {
     gap: 16,
@@ -401,10 +412,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: 8,
   },
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  footer: {
+    padding: 16,
+    borderTopWidth: 1,
   },
 });

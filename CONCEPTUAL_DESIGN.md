@@ -21,9 +21,9 @@ Non-goals (at least initially):
 
 ## Terminology (canonical)
 
-- **Activity**: the thing the user does and can repeatedly log (e.g., “Sales Calls”, “Workout”, “Pages Read”).
+- **Activity**: the thing the user does and can repeatedly log (e.g., “Cold Calling”, “Workout”, “Pages Read”).
   - Synonyms not used in-product: “action”.
-- **Standard**: a commitment definition that binds an Activity to a minimum requirement over a cadence (e.g., “Sales Calls — 1000 / week”).
+- **Standard**: a commitment definition that binds an Activity to a minimum requirement over a cadence (e.g., “Cold Calling — 1000 / week”).
 - **Log**: a single event entry of progress (e.g., “14 calls”, “24 calls”). Multiple logs roll up into a period.
 - **Cadence**: the time window the Standard is evaluated against (Daily / Weekly / Monthly; custom later).
 - **Period**: a specific instance of a cadence window (e.g., “2025‑12‑11”, “Week of 2025‑12‑08”, “Dec 2025”).
@@ -48,12 +48,12 @@ Non-goals (at least initially):
 Reusable building block.
 
 Fields (conceptual):
-- **name**: short label (“Sales Calls”)
+- **name**: short label (“Cold Calling”)
 - **unit**: “calls”, “minutes”, “pages”, “dollars” (free text, later: suggestions)
 - optional: **category**, **notes**, **aliases**
 
 Notes:
-- Activities are reusable so “Sales Calls” stays consistent across Standards.
+- Activities are reusable so “Cold Calling” stays consistent across Standards.
 
 ### Standard
 

@@ -17,7 +17,7 @@ jest.mock('@minimum-standards/shared-model', () => ({
 describe('ActivityModal', () => {
   const mockActivity: Activity = {
     id: 'a1',
-    name: 'Sales Calls',
+    name: 'Cold Calls',
     unit: 'calls',
     createdAtMs: 1000,
     updatedAtMs: 2000,
@@ -33,7 +33,7 @@ describe('ActivityModal', () => {
     );
 
     expect(getByText('Add Activity')).toBeTruthy();
-    expect(getByPlaceholderText('e.g., Sales Calls')).toBeTruthy();
+    expect(getByPlaceholderText('e.g., Cold Calls')).toBeTruthy();
   });
 
   test('renders edit mode correctly', () => {
@@ -50,7 +50,7 @@ describe('ActivityModal', () => {
     );
 
     expect(getByText('Edit Activity')).toBeTruthy();
-    expect(getByDisplayValue('Sales Calls')).toBeTruthy();
+    expect(getByDisplayValue('Cold Calls')).toBeTruthy();
     expect(getByDisplayValue('calls')).toBeTruthy();
   });
 
@@ -81,8 +81,8 @@ describe('ActivityModal', () => {
       <ActivityModal visible={true} onClose={onClose} onSave={onSave} />
     );
 
-    const nameInput = getByPlaceholderText('e.g., Sales Calls');
-    const unitInput = getByPlaceholderText('e.g., calls (will be pluralized)');
+    const nameInput = getByPlaceholderText('e.g., Cold Calls');
+    const unitInput = getByPlaceholderText('e.g., calls');
     const saveButton = getByText('Save');
 
     fireEvent.changeText(nameInput, 'Workouts');
@@ -115,8 +115,8 @@ describe('ActivityModal', () => {
       />
     );
 
-    const nameInput = getByPlaceholderText('e.g., Sales Calls');
-    const unitInput = getByPlaceholderText('e.g., calls (will be pluralized)');
+    const nameInput = getByPlaceholderText('e.g., Cold Calls');
+    const unitInput = getByPlaceholderText('e.g., calls');
     const saveButton = getByText('Save');
 
     fireEvent.changeText(nameInput, 'Workouts');
@@ -137,8 +137,8 @@ describe('ActivityModal', () => {
       <ActivityModal visible={true} onClose={onClose} onSave={onSave} />
     );
 
-    const nameInput = getByPlaceholderText('e.g., Sales Calls');
-    const unitInput = getByPlaceholderText('e.g., calls (will be pluralized)');
+    const nameInput = getByPlaceholderText('e.g., Cold Calls');
+    const unitInput = getByPlaceholderText('e.g., calls');
     const saveButton = getByText('Save');
 
     fireEvent.changeText(nameInput, 'Workouts');

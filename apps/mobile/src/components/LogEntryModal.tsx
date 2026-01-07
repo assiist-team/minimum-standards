@@ -643,12 +643,12 @@ export function LogEntryModal({
           style={[
             styles.modalContent,
             {
-              backgroundColor: showPicker ? theme.background.screen : theme.background.modal,
-              paddingTop: 20 + insets.top,
+              backgroundColor: theme.background.chrome,
+              paddingTop: Math.max(insets.top, 20),
             },
           ]}
         >
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader, { backgroundColor: theme.background.chrome }]}>
               <View style={styles.headerContent}>
                 <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
                   {showPicker
@@ -674,12 +674,12 @@ export function LogEntryModal({
             </View>
 
             {showPicker ? (
-              <View style={styles.pickerContainer}>
+              <View style={[styles.pickerContainer, { backgroundColor: theme.background.chrome }]}>
                 {renderStandardPicker()}
               </View>
             ) : (
               <ScrollView
-                style={styles.formScroll}
+                style={[styles.formScroll, { backgroundColor: theme.background.chrome }]}
                 contentContainerStyle={[
                   styles.form,
                   { paddingBottom: 16 + footerHeight + effectiveKeyboardHeight },
