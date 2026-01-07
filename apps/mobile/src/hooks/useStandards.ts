@@ -33,31 +33,6 @@ export interface CreateStandardInput {
   periodStartPreference?: PeriodStartPreference;
 }
 
-function buildDefaultQuickAddValues(params: { minimum: number; unit: string }): number[] | undefined {
-  const { minimum, unit } = params;
-  const normalizedUnit = unit.trim().toLowerCase();
-
-  const countLikeUnits = new Set([
-    'session',
-    'sessions',
-    'call',
-    'calls',
-    'workout',
-    'workouts',
-    'rep',
-    'reps',
-    'time',
-    'times',
-    'pomodoro',
-    'pomodoros',
-  ]);
-
-  if (countLikeUnits.has(normalizedUnit) || minimum <= 10) {
-    return [1];
-  }
-
-  return undefined;
-}
 
 export interface CreateLogInput {
   standardId: string;
@@ -197,10 +172,6 @@ export function useStandards(): UseStandardsResult {
       );
 
       const docRef = doc(standardsCollection);
-      const quickAddValues = buildDefaultQuickAddValues({
-        minimum: input.minimum,
-        unit: input.unit,
-      });
 
       const payload = {
         activityId: input.activityId,
@@ -215,7 +186,6 @@ export function useStandards(): UseStandardsResult {
           input.sessionConfig
         ),
         sessionConfig: input.sessionConfig,
-        ...(quickAddValues ? { quickAddValues } : {}),
         ...(input.periodStartPreference
           ? { periodStartPreference: input.periodStartPreference }
           : {}),
@@ -251,11 +221,6 @@ export function useStandards(): UseStandardsResult {
         input.standardId
       );
 
-      const quickAddValues = buildDefaultQuickAddValues({
-        minimum: input.minimum,
-        unit: input.unit,
-      });
-
       const payload: Record<string, unknown> = {
         activityId: input.activityId,
         minimum: input.minimum,
@@ -268,7 +233,6 @@ export function useStandards(): UseStandardsResult {
           input.sessionConfig
         ),
         sessionConfig: input.sessionConfig,
-        ...(quickAddValues ? { quickAddValues } : {}),
         updatedAt: serverTimestamp(),
       };
 

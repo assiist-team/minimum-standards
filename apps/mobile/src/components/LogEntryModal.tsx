@@ -194,30 +194,6 @@ export function LogEntryModal({
     }
   };
 
-  const buildDefaultQuickAddValues = (targetStandard: Standard): number[] | undefined => {
-    const normalizedUnit = targetStandard.unit.trim().toLowerCase();
-    const countLikeUnits = new Set([
-      'session',
-      'sessions',
-      'call',
-      'calls',
-      'workout',
-      'workouts',
-      'rep',
-      'reps',
-      'time',
-      'times',
-      'pomodoro',
-      'pomodoros',
-    ]);
-
-    if (countLikeUnits.has(normalizedUnit) || targetStandard.minimum <= 10) {
-      return [1];
-    }
-
-    return undefined;
-  };
-
   const sessionQuickFillValue = useMemo(() => {
     if (!selectedStandard) {
       return null;
@@ -232,9 +208,7 @@ export function LogEntryModal({
   const quickAddValues =
     selectedStandard && Array.isArray(selectedStandard.quickAddValues) && selectedStandard.quickAddValues.length > 0
       ? selectedStandard.quickAddValues
-      : selectedStandard
-        ? buildDefaultQuickAddValues(selectedStandard)
-        : undefined;
+      : undefined;
 
   // For session-based standards, don't show quick-add buttons when the session button is present
   const effectiveQuickAddValues = sessionQuickFillValue !== null ? undefined : quickAddValues;
