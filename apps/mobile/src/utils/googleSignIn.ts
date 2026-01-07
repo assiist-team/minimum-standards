@@ -26,7 +26,7 @@ export function initializeGoogleSignIn() {
     GoogleSignin.configure({
       webClientId, // Required for Firebase authentication
       iosClientId: '1055581806274-1n5keauch2qufmqirdcnvrdl8221q6m6.apps.googleusercontent.com', // iOS OAuth client ID
-      offlineAccess: true, // If you want to access Google API on behalf of the user FROM YOUR SERVER
+      offlineAccess: false, // Set to false to reduce permission prompts if server-side access isn't needed
       scopes: ['email', 'profile'], // What API you want to access on behalf of the user
     });
     console.log('[Google Sign-In] Google Sign-In configured successfully');

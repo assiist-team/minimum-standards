@@ -7,5 +7,7 @@ module.exports = {
       '<rootDir>/test/mocks/reactNativeFirebaseAuth.js',
     '^@react-native-firebase/app$':
       '<rootDir>/test/mocks/reactNativeFirebaseApp.js',
+    '^@react-native-google-signin/google-signin$':
+      '<rootDir>/test/mocks/reactNativeGoogleSignin.js',
   },
 };

@@ -22,6 +22,7 @@ import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { firebaseAuth } from '../firebase/firebaseApp';
+import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
@@ -92,14 +93,17 @@ export function SignUpScreen() {
       console.log('[Google Sign-Up] Calling GoogleSignin.signIn()...');
       const signInResult = await GoogleSignin.signIn();
 
-      if (signInResult.type !== 'success') {
+      const normalizedResult = normalizeGoogleSignInResult(signInResult);
+      if (!normalizedResult.success || !normalizedResult.data) {
         console.log('[Google Sign-Up] User cancelled sign-in during success response');
         return;
       }
 
       const {
-        data: { idToken: embeddedIdToken, user },
-      } = signInResult;
+        idToken: embeddedIdToken,
+        accessToken: embeddedAccessToken,
+        user,
+      } = normalizedResult.data;
 
       console.log('[Google Sign-Up] Sign-in result received:', {
         hasEmbeddedIdToken: !!embeddedIdToken,
@@ -111,9 +115,14 @@ export function SignUpScreen() {
           : null,
       });
 
-      const tokens = await GoogleSignin.getTokens();
+      let tokens: { idToken?: string | null; accessToken?: string | null } = {};
+      try {
+        tokens = await GoogleSignin.getTokens();
+      } catch (tokenError) {
+        console.warn('[Google Sign-Up] Failed to fetch tokens via getTokens:', tokenError);
+      }
       const resolvedIdToken = tokens.idToken || embeddedIdToken;
-      const resolvedAccessToken = tokens.accessToken || undefined;
+      const resolvedAccessToken = tokens.accessToken || embeddedAccessToken || undefined;
 
       if (!resolvedIdToken) {
         console.error('[Google Sign-Up] No ID token available after Google Sign-In');

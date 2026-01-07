@@ -22,6 +22,7 @@ import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { firebaseAuth } from '../firebase/firebaseApp';
+import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
@@ -89,16 +90,29 @@ export function SignInScreen() {
 
       // Get the user's ID token
       console.log('[Google Sign-In] Calling GoogleSignin.signIn()...');
-      const signInResult = await GoogleSignin.signIn();
+      
+      // Try silent sign-in first to see if we can avoid the system prompt
+      let signInResult: unknown;
+      try {
+        console.log('[Google Sign-In] Attempting silent sign-in first...');
+        signInResult = await GoogleSignin.signInSilently();
+        console.log('[Google Sign-In] Silent sign-in successful');
+      } catch (silentError) {
+        console.log('[Google Sign-In] Silent sign-in unavailable, proceeding to interactive sign-in');
+        signInResult = await GoogleSignin.signIn();
+      }
 
-      if (signInResult.type !== 'success') {
+      const normalizedResult = normalizeGoogleSignInResult(signInResult);
+      if (!normalizedResult.success || !normalizedResult.data) {
         console.log('[Google Sign-In] User cancelled sign-in during success response');
         return;
       }
 
       const {
-        data: { idToken: embeddedIdToken, user },
-      } = signInResult;
+        idToken: embeddedIdToken,
+        accessToken: embeddedAccessToken,
+        user,
+      } = normalizedResult.data;
 
       console.log('[Google Sign-In] Sign-in result received:', {
         hasEmbeddedIdToken: !!embeddedIdToken,
@@ -110,9 +124,14 @@ export function SignInScreen() {
           : null,
       });
 
-      const tokens = await GoogleSignin.getTokens();
+      let tokens: { idToken?: string | null; accessToken?: string | null } = {};
+      try {
+        tokens = await GoogleSignin.getTokens();
+      } catch (tokenError) {
+        console.warn('[Google Sign-In] Failed to fetch tokens via getTokens:', tokenError);
+      }
       const resolvedIdToken = tokens.idToken || embeddedIdToken;
-      const resolvedAccessToken = tokens.accessToken || undefined;
+      const resolvedAccessToken = tokens.accessToken || embeddedAccessToken || undefined;
 
       if (!resolvedIdToken) {
         console.error('[Google Sign-In] No ID token available after Google Sign-In');

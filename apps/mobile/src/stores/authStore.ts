@@ -3,8 +3,11 @@ import {
   FirebaseAuthTypes,
   onAuthStateChanged,
   signOut as firebaseSignOut,
+  GoogleAuthProvider,
 } from '@react-native-firebase/auth';
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 import { firebaseAuth } from '../firebase/firebaseApp';
+import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
 
 export interface AuthState {
   // Current authenticated user
@@ -29,8 +32,9 @@ const initialState = {
 
 // Store the unsubscribe function globally to prevent duplicate listeners
 let unsubscribeAuthState: (() => void) | null = null;
+let hasAttemptedSilentSignIn = false;
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   ...initialState,
 
   setUser: (user) => {
@@ -42,12 +46,26 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: async () => {
-    await firebaseSignOut(firebaseAuth);
+    console.log('[AuthStore] Signing out...');
+    try {
+      // Sign out from Firebase
+      await firebaseSignOut(firebaseAuth);
+      
+      // Also sign out from Google to ensure the user can switch accounts
+      // and to prevent automatic silent sign-in on next app launch
+      if (await GoogleSignin.isSignedIn()) {
+        await GoogleSignin.signOut();
+      }
+    } catch (error) {
+      console.error('[AuthStore] Error during sign out:', error);
+    }
+    hasAttemptedSilentSignIn = false;
     set({ user: null });
   },
 
   initialize: () => {
     console.log('[AuthStore] Starting auth initialization...');
+    hasAttemptedSilentSignIn = false;
     
     // Prevent duplicate listeners
     if (unsubscribeAuthState) {
@@ -70,40 +88,83 @@ export const useAuthStore = create<AuthState>((set) => ({
         console.log('[AuthStore] Setting initial state with current user');
         set({ user: currentUser, isInitialized: true });
       } else {
-        console.warn('[AuthStore] No authenticated user - Firestore operations will fail');
+        console.warn('[AuthStore] No authenticated user found in synchronous check');
       }
     } catch (error) {
       console.error('[AuthStore] ERROR: Failed to check current user:', error);
       // Continue with initialization even if current user check fails
     }
 
-    // Timeout fallback: if onAuthStateChanged doesn't fire within 3 seconds,
+    // Timeout fallback: if onAuthStateChanged doesn't fire within 10 seconds,
     // assume no user and proceed (prevents infinite loading screen)
-    console.log('[AuthStore] Setting up 3s timeout fallback...');
+    // Increased from 3s to 10s to give more time for network and silent sign-in
+    console.log('[AuthStore] Setting up 10s timeout fallback...');
     const timeoutId = setTimeout(() => {
       console.log('[AuthStore] Timeout fired - checking initialization state...');
-      const state = useAuthStore.getState();
+      const state = get();
       if (!state.isInitialized) {
         console.warn('[AuthStore] Auth initialization timeout - proceeding without auth state');
         set({ user: null, isInitialized: true });
       } else {
         console.log('[AuthStore] Timeout fired but already initialized, ignoring');
       }
-    }, 3000);
+    }, 10000);
+
+    // Helper to attempt a Google silent sign-in if Firebase has no user
+    const attemptSilentGoogleSignIn = async () => {
+      if (hasAttemptedSilentSignIn) {
+        return;
+      }
+      hasAttemptedSilentSignIn = true;
+      console.log('[AuthStore] Attempting Google silent sign-in to restore session...');
+
+      try {
+        const silentResult = await GoogleSignin.signInSilently();
+        const normalizedResult = normalizeGoogleSignInResult(silentResult);
+        const idToken = normalizedResult.data?.idToken;
+        const accessToken = normalizedResult.data?.accessToken ?? undefined;
+
+        if (!idToken) {
+          console.warn('[AuthStore] Silent sign-in succeeded but no ID token was returned');
+          return;
+        }
+
+        const credential = GoogleAuthProvider.credential(idToken, accessToken || undefined);
+        await firebaseAuth.signInWithCredential(credential);
+        console.log('[AuthStore] Silent Google sign-in succeeded - Firebase credential applied');
+      } catch (error: any) {
+        const errorCode = error?.code;
+        if (
+          errorCode === statusCodes.SIGN_IN_REQUIRED ||
+          errorCode === 'SIGN_IN_REQUIRED' ||
+          errorCode === '4'
+        ) {
+          console.log('[AuthStore] No cached Google session to restore silently');
+        } else {
+          console.warn('[AuthStore] Google silent sign-in failed:', errorCode, error?.message || error);
+        }
+      }
+    };
 
     // Set up auth state listener for future changes
-    // Note: onAuthStateChanged fires immediately with current auth state,
-    // so if currentUser was null, the listener will fire with null and set isInitialized: true
     console.log('[AuthStore] Setting up onAuthStateChanged listener...');
     try {
-      unsubscribeAuthState = onAuthStateChanged(firebaseAuth, (user) => {
+      unsubscribeAuthState = onAuthStateChanged(firebaseAuth, async (user) => {
         const uid = user?.uid;
         console.log('[AuthStore] onAuthStateChanged callback fired:', uid ? `User ID: ${uid}` : 'No user');
+        
+        // If no Firebase user is found, try to sign in silently with Google
+        // This handles cases where the Firebase session expired but the Google session is still valid
+        if (!user) {
+          await attemptSilentGoogleSignIn();
+        }
+
         if (uid) {
           console.log('[AuthStore] Authenticated user UID available for Firestore operations:', uid);
         } else {
           console.warn('[AuthStore] No authenticated user - Firestore operations will fail');
         }
+        
         clearTimeout(timeoutId);
         set({ user, isInitialized: true });
         console.log('[AuthStore] Auth state updated, isInitialized: true');

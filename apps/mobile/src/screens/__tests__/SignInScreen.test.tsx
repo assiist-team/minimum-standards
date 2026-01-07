@@ -6,6 +6,12 @@ import { logAuthErrorToCrashlytics } from '../../utils/crashlytics';
 jest.mock('@react-native-google-signin/google-signin', () => ({
   GoogleSignin: {
     hasPlayServices: jest.fn(() => Promise.resolve()),
+    signInSilently: jest.fn(() =>
+      Promise.reject({
+        code: 'SIGN_IN_REQUIRED',
+        message: 'No cached session',
+      })
+    ),
     signIn: jest.fn(() =>
       Promise.resolve({
         type: 'success',
@@ -66,11 +72,11 @@ describe('SignInScreen', () => {
       message: 'Invalid credential',
     });
 
-    const { getByPlaceholderText, getByText } = render(<SignInScreen />);
+    const { getByPlaceholderText, getAllByText } = render(<SignInScreen />);
 
     const emailInput = getByPlaceholderText('Enter your email');
     const passwordInput = getByPlaceholderText('Enter your password');
-    const submitButton = getByText('Sign In');
+    const [, submitButton] = getAllByText('Sign In');
 
     fireEvent.changeText(emailInput, 'test@example.com');
     fireEvent.changeText(passwordInput, 'wrongpassword');
