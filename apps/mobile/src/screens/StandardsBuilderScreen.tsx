@@ -504,7 +504,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                 styles.pillButtonText,
                 {
                   fontSize: typography.button.pill.fontSize,
-                  fontWeight: typography.button.pill.fontWeight as TextStyle['fontWeight'],
+                  fontWeight: typography.button.pill.fontWeight,
                   color: isActive ? theme.button.primary.text : theme.text.secondary,
                 },
               ]}
@@ -532,7 +532,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               styles.pillButtonText,
               {
                 fontSize: typography.button.pill.fontSize,
-                fontWeight: typography.button.pill.fontWeight as TextStyle['fontWeight'],
+                fontWeight: typography.button.pill.fontWeight,
                 color: isCustomActive ? theme.button.primary.text : theme.text.secondary,
               },
             ]}
@@ -554,7 +554,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     >
       <View style={[styles.header, { borderBottomColor: theme.border.primary, backgroundColor: theme.background.chrome, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack}>
-          <Text style={[styles.backButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.link }]}>← Back</Text>
+          <Text style={[styles.backButton, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.link }]}>← Back</Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
           {isEditMode ? 'Edit Standard' : 'Create Standard'}
@@ -627,7 +627,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               style={[styles.createActivityButton, { backgroundColor: theme.button.primary.background }]}
               onPress={() => setActivityModalVisible(true)}
             >
-              <Text style={[styles.createActivityButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.button.primary.text }]}>
+              <Text style={[styles.createActivityButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
                 Create
               </Text>
             </TouchableOpacity>
@@ -684,7 +684,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                             styles.unitButtonText,
                             {
                               fontSize: typography.button.secondary.fontSize,
-                              fontWeight: typography.button.secondary.fontWeight as TextStyle['fontWeight'],
+                              fontWeight: typography.button.secondary.fontWeight,
                               color: isActive ? theme.link : theme.text.secondary,
                             },
                           ]}
@@ -926,7 +926,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
           {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
           <View style={styles.actionsRow}>
             <TouchableOpacity style={[styles.secondaryButton, { borderColor: theme.border.primary }]} onPress={resetForm}>
-              <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight as TextStyle['fontWeight'], color: theme.text.primary }]}>Reset</Text>
+              <Text style={[styles.secondaryButtonText, { fontSize: typography.button.secondary.fontSize, fontWeight: typography.button.secondary.fontWeight, color: theme.text.primary }]}>Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -937,7 +937,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
               onPress={handleSave}
               disabled={saving}
             >
-              <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as TextStyle['fontWeight'], color: theme.button.primary.text }]}>
+              <Text style={[styles.primaryButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
                 {saving ? 'Saving…' : 'Save'}
               </Text>
             </TouchableOpacity>

@@ -1,28 +1,11 @@
+import { TextStyle } from 'react-native';
+
 /**
  * Centralized typography theme for the application.
  * All font sizes and weights should be defined here and referenced throughout the app.
  */
 
-type FontWeight =
-  | 'normal'
-  | 'bold'
-  | '100'
-  | '200'
-  | '300'
-  | '400'
-  | '500'
-  | '600'
-  | '700'
-  | '800'
-  | '900'
-  | 'ultralight'
-  | 'thin'
-  | 'light'
-  | 'medium'
-  | 'semibold'
-  | 'demibold'
-  | 'extrabold'
-  | 'black';
+export type FontWeight = TextStyle['fontWeight'];
 
 export interface TypographyTheme {
   // Button typography

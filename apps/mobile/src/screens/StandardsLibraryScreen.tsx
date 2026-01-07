@@ -244,7 +244,7 @@ export function StandardsLibraryScreen({
               onPress={onNavigateToBuilder}
               accessibilityRole="button"
             >
-              <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight as any, color: theme.button.primary.text }]}>+ New</Text>
+              <Text style={[styles.inlineCreateButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>+ Create</Text>
             </TouchableOpacity>
           )}
         </View>
