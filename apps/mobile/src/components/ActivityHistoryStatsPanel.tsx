@@ -89,11 +89,13 @@ export function ActivityHistoryStatsPanel({
         <StatItem
           label={`Total ${unit}`}
           value={totalValue}
+          valueColor={theme.status.met.text}
           onHelp={() => showHelp(`Total ${unit}`, `Sum of all logs for this activity in the selected range.`)}
         />
         <StatItem
           label="% Met"
           value={`${percentMet}%`}
+          valueColor={percentMet >= 90 ? theme.status.met.barComplete : theme.status.met.text}
           onHelp={() => showHelp('% Met', 'Percentage of periods where the minimum standard was achieved. In-progress periods are excluded.')}
         />
         {/* 
@@ -184,6 +186,7 @@ function StatItem({
   onPress,
   hasMore,
   badge,
+  valueColor,
 }: {
   label: string;
   value: string;
@@ -191,6 +194,7 @@ function StatItem({
   onPress?: () => void;
   hasMore?: boolean;
   badge?: string;
+  valueColor?: string;
 }) {
   const theme = useTheme();
   return (
@@ -209,7 +213,7 @@ function StatItem({
         </TouchableOpacity>
       </View>
       <View style={styles.valueRow}>
-        <Text style={[styles.statValue, { color: theme.text.primary }]} numberOfLines={1}>
+        <Text style={[styles.statValue, { color: valueColor || theme.text.primary }]} numberOfLines={1}>
           {value}
         </Text>
         {hasMore && (

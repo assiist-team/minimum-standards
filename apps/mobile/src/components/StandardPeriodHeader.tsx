@@ -58,7 +58,7 @@ export function StandardPeriodHeader({
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.min(progressPercent, 100)}%`, backgroundColor: progressPercent >= 100 ? '#4A7C59' : theme.button.primary.background }
+                { width: `${Math.min(progressPercent, 100)}%`, backgroundColor: progressPercent >= 100 ? theme.status.met.barComplete : theme.status.met.bar }
               ]}
             />
           </View>

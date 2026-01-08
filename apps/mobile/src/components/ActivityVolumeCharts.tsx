@@ -10,6 +10,7 @@ import {
   Modal,
   TouchableWithoutFeedback,
 } from 'react-native';
+import { DateTime } from 'luxon';
 import { useTheme } from '../theme/useTheme';
 import { DailyVolumeData, DailyProgressData } from '../utils/activityCharts';
 import { useUIPreferencesStore, ChartType } from '../stores/uiPreferencesStore';
@@ -27,9 +28,9 @@ const CHART_TYPES: ChartType[] = [
 ];
 
 const CHART_DESCRIPTIONS: Record<ChartType, string> = {
-  'Daily Volume': 'Daily activity totals showing your day-to-day pace and consistency.',
-  'Daily Progress': 'Cumulative progress through each period toward your minimum standard.',
-  'Period Progress': 'Comparison of total volume vs. goal across historical periods.',
+  'Daily Volume': 'Total volume per day',
+  'Daily Progress': 'Cumulative daily volume per period',
+  'Period Progress': 'Total volume per period',
   'Standards Progress': 'Your minimum standards over time.',
 };
 
@@ -283,38 +284,77 @@ function DailyVolumeChart({
   onSelectPeriodForDate?: (date: string) => void;
 }) {
   const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeYear, setActiveYear] = useState<number | null>(data.length > 0 ? data[0].year : null);
+
+  const handleScroll = (event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const viewportWidth = event.nativeEvent.layoutMeasurement.width;
+    const centerX = scrollX + viewportWidth / 2;
+    
+    // Calculate which bar is at the center of the viewport
+    const barWidth = BAR_WIDTH + 8; // BAR_WIDTH + marginHorizontal
+    const centerIndex = Math.round(centerX / barWidth);
+    const index = Math.max(0, Math.min(centerIndex, data.length - 1));
+    
+    if (data[index]) {
+      setActiveYear(data[index].year);
+    }
+  };
+
+  useEffect(() => {
+    if (data.length > 0 && activeYear === null) {
+      setActiveYear(data[0].year);
+    }
+  }, [data, activeYear]);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScroll}>
-      <View style={styles.barContainer}>
-        {data.map((item, index) => {
-          const isMet = metDates.has(item.date);
-          return (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.barWrapper}
-              onPress={() => {
-                onShowTooltip(`${item.label}`, `${item.value} ${unit}${isMet ? ' (Goal Met)' : ''}`, item.date);
-                onSelectPeriodForDate?.(item.date);
-              }}
-            >
-              <View
-                style={[
-                  styles.bar,
-                  {
-                    height: (item.value / maxVal) * CHART_HEIGHT,
-                    backgroundColor: isMet ? theme.status.met.bar : theme.primary.main,
-                  },
-                ]}
-              />
-              <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+    <View>
+      <ScrollView 
+        ref={scrollViewRef}
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.chartScroll}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.barContainer}>
+          {data.map((item, index) => {
+            const isMet = metDates.has(item.date);
+            return (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.barWrapper}
+                onPress={() => {
+                  onShowTooltip(`${item.label}`, `${item.value} ${unit}${isMet ? ' (Goal Met)' : ''}`, item.date);
+                  onSelectPeriodForDate?.(item.date);
+                }}
+              >
+                <View
+                  style={[
+                    styles.bar,
+                    {
+                      height: (item.value / maxVal) * CHART_HEIGHT,
+                      backgroundColor: isMet ? theme.status.met.barComplete : theme.status.met.bar,
+                    },
+                  ]}
+                />
+                <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+      {activeYear !== null && (
+        <View style={styles.yearIndicatorContainer}>
+          <Text style={[styles.yearLabel, { color: theme.text.tertiary }]}>
+            {activeYear}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -345,174 +385,310 @@ function DailyProgressChart({
   if (currentPeriod.length > 0) periods.push(currentPeriod);
 
   const maxVal = Math.max(...data.map((d) => Math.max(d.cumulativeValue, d.goalValue)), 1);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeYear, setActiveYear] = useState<number | null>(data.length > 0 ? data[0].year : null);
+
+  const handleScroll = (event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const viewportWidth = event.nativeEvent.layoutMeasurement.width;
+    const centerX = scrollX + viewportWidth / 2;
+    
+    // Calculate which bar is at the center of the viewport
+    const barWidth = BAR_WIDTH + 8; // BAR_WIDTH + marginHorizontal
+    const centerIndex = Math.round(centerX / barWidth);
+    const index = Math.max(0, Math.min(centerIndex, data.length - 1));
+    
+    if (data[index]) {
+      setActiveYear(data[index].year);
+    }
+  };
+
+  useEffect(() => {
+    if (data.length > 0 && activeYear === null) {
+      setActiveYear(data[0].year);
+    }
+  }, [data, activeYear]);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScroll}>
-      <View style={styles.barContainer}>
-        {periods.map((period, pIdx) => (
-          <View 
-            key={pIdx} 
-            style={[
-              styles.periodGroup, 
-              { 
-                backgroundColor: pIdx % 2 === 0 ? 'transparent' : theme.background.tertiary,
-                borderRightColor: theme.border.secondary,
-              }
-            ]}
-          >
-            {period.map((item, index) => {
-                const isMet = item.cumulativeValue >= item.goalValue;
-                const goalY = (item.goalValue / maxVal) * CHART_HEIGHT;
-                const remaining = Math.max(item.goalValue - item.cumulativeValue, 0);
+    <View>
+      <ScrollView 
+        ref={scrollViewRef}
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.chartScroll}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.barContainer}>
+          {periods.map((period, pIdx) => (
+            <View 
+              key={pIdx} 
+              style={[
+                styles.periodGroup, 
+                { 
+                  backgroundColor: pIdx % 2 === 0 ? 'transparent' : theme.background.tertiary,
+                  borderRightColor: theme.border.secondary,
+                }
+              ]}
+            >
+              {period.map((item, index) => {
+                  const isMet = item.cumulativeValue >= item.goalValue;
+                  const goalY = (item.goalValue / maxVal) * CHART_HEIGHT;
+                  const remaining = Math.max(item.goalValue - item.cumulativeValue, 0);
 
-                return (
-                  <TouchableOpacity 
-                    key={index} 
-                    style={styles.barWrapper}
-                    onPress={() => {
-                      onShowTooltip(
-                        `${item.label}`, 
-                        `Progress: ${item.cumulativeValue} / ${item.goalValue} ${unit}\n${isMet ? 'Goal Met!' : `${remaining} ${unit} remaining to goal`}`,
-                        item.date
-                      );
-                      // Direct sync to period on tap
-                      if (onSelectPeriod && item.periodStartMs) {
-                        onSelectPeriod(item.periodStartMs);
-                      }
-                    }}
-                  >
-                    <View
-                      style={[
-                        styles.bar,
-                        {
-                          height: (item.cumulativeValue / maxVal) * CHART_HEIGHT,
-                          backgroundColor: isMet ? theme.status.met.bar : theme.primary.main,
-                          opacity: 0.8,
-                        },
-                      ]}
-                    />
-                    {/* Goal line segment */}
-                    <View style={[styles.goalLine, { bottom: goalY, backgroundColor: theme.text.tertiary, borderStyle: 'dashed', borderWidth: 1 }]} />
-                    <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-            })}
-          </View>
-        ))}
-      </View>
-    </ScrollView>
+                  return (
+                    <TouchableOpacity 
+                      key={index} 
+                      style={styles.barWrapper}
+                      onPress={() => {
+                        onShowTooltip(
+                          `${item.label}`, 
+                          `Progress: ${item.cumulativeValue} / ${item.goalValue} ${unit}\n${isMet ? 'Goal Met!' : `${remaining} ${unit} remaining to goal`}`,
+                          item.date
+                        );
+                        // Direct sync to period on tap
+                        if (onSelectPeriod && item.periodStartMs) {
+                          onSelectPeriod(item.periodStartMs);
+                        }
+                      }}
+                    >
+                      <View
+                        style={[
+                          styles.bar,
+                          {
+                            height: (item.cumulativeValue / maxVal) * CHART_HEIGHT,
+                            backgroundColor: isMet ? theme.status.met.barComplete : theme.status.met.bar,
+                            opacity: 0.8,
+                          },
+                        ]}
+                      />
+                      {/* Goal line segment */}
+                      <View style={[styles.goalLine, { bottom: goalY, backgroundColor: theme.text.tertiary, borderStyle: 'dashed', borderWidth: 1 }]} />
+                      <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+      {activeYear !== null && (
+        <View style={styles.yearIndicatorContainer}>
+          <Text style={[styles.yearLabel, { color: theme.text.tertiary }]}>
+            {activeYear}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: any; onSelect?: (startMs: number) => void }) {
   const maxVal = Math.max(...data.map((d) => Math.max(d.actual, d.goal)), 1);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeYear, setActiveYear] = useState<number | null>(
+    data.length > 0 && data[0].periodStartMs ? new Date(data[0].periodStartMs).getFullYear() : null
+  );
+
+  const handleScroll = (event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const viewportWidth = event.nativeEvent.layoutMeasurement.width;
+    const centerX = scrollX + viewportWidth / 2;
+    
+    // Calculate which bar is at the center of the viewport
+    const barWidth = BAR_WIDTH + 8; // BAR_WIDTH + marginHorizontal
+    const centerIndex = Math.round(centerX / barWidth);
+    const index = Math.max(0, Math.min(centerIndex, data.length - 1));
+    
+    if (data[index]?.periodStartMs) {
+      setActiveYear(new Date(data[index].periodStartMs).getFullYear());
+    }
+  };
+
+  useEffect(() => {
+    if (data.length > 0 && data[0].periodStartMs && activeYear === null) {
+      setActiveYear(new Date(data[0].periodStartMs).getFullYear());
+    }
+  }, [data, activeYear]);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScroll}>
-      <View style={styles.barContainer}>
-        {data.map((item, index) => {
-          const isMet = item.actual >= item.goal;
-          const isCurrent = item.status === 'In Progress';
-          return (
-            <TouchableOpacity 
-              key={index} 
-              style={[styles.barWrapper, isCurrent && styles.currentBarWrapper]}
-              onPress={() => item.periodStartMs && onSelect?.(item.periodStartMs)}
-            >
-              {isCurrent && <View style={[styles.currentGlow, { backgroundColor: theme.primary.main }]} />}
-              <View style={[styles.goalBar, { height: (item.goal / maxVal) * CHART_HEIGHT, backgroundColor: theme.border.primary }]}>
+    <View>
+      <ScrollView 
+        ref={scrollViewRef}
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.chartScroll}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.barContainer}>
+          {data.map((item, index) => {
+            const isMet = item.actual >= item.goal;
+            const isCurrent = item.status === 'In Progress';
+            const goalHeight = (item.goal / maxVal) * CHART_HEIGHT;
+            const actualHeight = (item.actual / maxVal) * CHART_HEIGHT;
+            return (
+              <TouchableOpacity 
+                key={index} 
+                style={[styles.barWrapper, isCurrent && styles.currentBarWrapper]}
+                onPress={() => item.periodStartMs && onSelect?.(item.periodStartMs)}
+              >
+                {isCurrent && <View style={[styles.currentGlow, { backgroundColor: theme.primary.main }]} />}
+                <View style={styles.stackedBar}>
+                  {goalHeight > 0 && (
+                    <View
+                      style={[
+                        styles.goalBar,
+                        {
+                          height: goalHeight,
+                          borderColor: theme.border.primary,
+                          backgroundColor: theme.background.tertiary,
+                        },
+                      ]}
+                    />
+                  )}
                   <View
                     style={[
-                        styles.actualBar,
-                        {
-                            height: ((Math.min(item.actual, item.goal) / item.goal) * 100 + '%') as any,
-                            backgroundColor: isMet ? theme.status.met.bar : theme.primary.main,
-                        },
+                      styles.actualBar,
+                      {
+                        height: actualHeight,
+                        backgroundColor: isMet ? theme.status.met.barComplete : theme.status.met.bar,
+                      },
                     ]}
                   />
-                  {item.actual > item.goal && (
-                      <View 
-                        style={[
-                            styles.overflowBar,
-                            {
-                                height: (((item.actual - item.goal) / item.goal) * 100 + '%') as any,
-                                backgroundColor: theme.status.met.bar,
-                                bottom: '100%',
-                            }
-                        ]}
-                      />
+                  {goalHeight > 0 && (
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.goalMarker,
+                        {
+                          bottom: goalHeight,
+                          backgroundColor: theme.border.primary,
+                        },
+                      ]}
+                    />
                   )}
-              </View>
-              <Text style={[styles.label, { color: theme.text.tertiary, fontWeight: isCurrent ? '700' : '400' }]} numberOfLines={1}>
-                {item.label}{isCurrent ? '*' : ''}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+                </View>
+                <Text style={[styles.label, { color: theme.text.tertiary, fontWeight: isCurrent ? '700' : '400' }]} numberOfLines={1}>
+                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('dd/MM') : item.label}{isCurrent ? '*' : ''}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+      {activeYear !== null && (
+        <View style={styles.yearIndicatorContainer}>
+          <Text style={[styles.yearLabel, { color: theme.text.tertiary }]}>
+            {activeYear}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
 function StandardsProgressChart({ data, theme, onSelect }: { data: any[]; theme: any; onSelect?: (startMs?: number) => void }) {
-  const maxVal = Math.max(...data.map((d) => d.value), 1);
+  const chartData = useMemo(() => {
+    if (data.length === 0) return [];
+    // Prepend a (0,0) point to show progress from origin
+    return [{ value: 0, label: '', periodStartMs: undefined }, ...data];
+  }, [data]);
+
+  const maxVal = Math.max(...chartData.map((d) => d.value), 1);
+  const CHART_CONTENT_HEIGHT = CHART_HEIGHT - 20;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeYear, setActiveYear] = useState<number | null>(
+    chartData.length > 0 && chartData[chartData.length - 1].periodStartMs 
+      ? new Date(chartData[chartData.length - 1].periodStartMs).getFullYear() 
+      : null
+  );
+
+  const handleScroll = (event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const viewportWidth = event.nativeEvent.layoutMeasurement.width;
+    const centerX = scrollX + viewportWidth / 2;
+    
+    // Calculate which bar is at the center of the viewport
+    const barWidth = BAR_WIDTH + 8; // BAR_WIDTH + marginHorizontal
+    const centerIndex = Math.round(centerX / barWidth);
+    const index = Math.max(0, Math.min(centerIndex, chartData.length - 1));
+    
+    if (chartData[index]?.periodStartMs) {
+      setActiveYear(new Date(chartData[index].periodStartMs).getFullYear());
+    }
+  };
+
+  useEffect(() => {
+    const lastItem = chartData[chartData.length - 1];
+    if (lastItem?.periodStartMs && activeYear === null) {
+      setActiveYear(new Date(lastItem.periodStartMs).getFullYear());
+    }
+  }, [chartData, activeYear]);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chartScroll}>
-      <View style={[styles.barContainer, { alignItems: 'flex-end', paddingBottom: 20 }]}>
-        {data.map((item, index) => {
-          const y = (item.value / maxVal) * (CHART_HEIGHT - 20);
-          const prevY = index > 0 ? (data[index - 1].value / maxVal) * (CHART_HEIGHT - 20) : y;
-          
-          return (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.barWrapper}
-              onPress={() => onSelect?.(item.periodStartMs)}
-              activeOpacity={0.8}
-            >
-              {/* Horizontal line from previous dot to current X position */}
-              {index > 0 && (
-                <View 
-                  style={[
-                    styles.horizontalConnector, 
-                    { 
-                      bottom: prevY,
-                      backgroundColor: theme.primary.main,
-                      width: BAR_WIDTH + 8,
-                      left: - (BAR_WIDTH + 8) / 2,
-                    }
-                  ]} 
-                />
-              )}
-              
-              {/* Vertical connector if value changed */}
-              {index > 0 && item.value !== data[index - 1].value && (
-                <View 
-                  style={[
-                    styles.connector, 
-                    { 
-                      bottom: Math.min(y, prevY),
-                      height: Math.abs(y - prevY),
-                      backgroundColor: theme.primary.main,
-                      left: -4,
-                    }
-                  ]} 
-                />
-              )}
+    <View>
+      <ScrollView 
+        ref={scrollViewRef}
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={styles.chartScroll}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <View style={[styles.barContainer, { alignItems: 'flex-end', paddingBottom: 20 }]}>
+          {chartData.map((item, index) => {
+            const y = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
+            const prevY = index > 0 ? (chartData[index - 1].value / maxVal) * CHART_CONTENT_HEIGHT : y;
+            
+            const dx = BAR_WIDTH + 8;
+            const dy = y - prevY;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            
+            return (
+              <TouchableOpacity 
+                key={index} 
+                style={styles.barWrapper}
+                onPress={() => item.periodStartMs && onSelect?.(item.periodStartMs)}
+                activeOpacity={0.8}
+              >
+                {/* Diagonal connector from previous dot */}
+                {index > 0 && (
+                  <View 
+                    style={{
+                      position: 'absolute',
+                      width: length,
+                      height: 2,
+                      backgroundColor: theme.status.met.bar,
+                      left: (BAR_WIDTH / 2) - (dx / 2) - (length / 2),
+                      bottom: ((y + prevY) / 2) - 1,
+                      transform: [{ rotate: `${-angle}rad` }],
+                      zIndex: 0,
+                    }} 
+                  />
+                )}
 
-              <View style={[styles.dot, { bottom: y, backgroundColor: theme.primary.main }]} />
-              
-              <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+                <View style={[styles.dot, { bottom: y - 4, backgroundColor: theme.status.met.bar, zIndex: 1 }]} />
+                
+                <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
+                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('dd/MM') : item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+      {activeYear !== null && (
+        <View style={styles.yearIndicatorContainer}>
+          <Text style={[styles.yearLabel, { color: theme.text.tertiary }]}>
+            {activeYear}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -525,7 +701,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    marginBottom: 12,
+    marginBottom: 4,
     borderBottomWidth: 1,
   },
   tabsContainer: {
@@ -586,20 +762,33 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   goalBar: {
-      width: '80%',
-      backgroundColor: '#eee',
-      borderRadius: 4,
-      justifyContent: 'flex-end',
-      overflow: 'visible',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 4,
+    borderWidth: 1,
+    opacity: 0.3,
   },
   actualBar: {
-      width: '100%',
-      borderRadius: 4,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 4,
   },
-  overflowBar: {
-      width: '100%',
-      position: 'absolute',
-      borderRadius: 4,
+  goalMarker: {
+    position: 'absolute',
+    left: -4,
+    right: -4,
+    height: 2,
+    borderRadius: 1,
+  },
+  stackedBar: {
+    width: '80%',
+    height: CHART_HEIGHT,
+    justifyContent: 'flex-end',
+    position: 'relative',
   },
   goalLine: {
       position: 'absolute',
@@ -614,10 +803,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: BAR_WIDTH + 8,
   },
+  yearIndicatorContainer: {
+    alignItems: 'center',
+    marginTop: 4,
+    height: 16,
+    justifyContent: 'center',
+  },
+  yearLabel: {
+    fontSize: 9,
+    textAlign: 'center',
+  },
   description: {
     fontSize: 12,
     marginTop: 8,
-    marginBottom: 12,
+    marginBottom: 24,
     fontStyle: 'italic',
   },
   dot: {
@@ -625,16 +824,6 @@ const styles = StyleSheet.create({
       height: 8,
       borderRadius: 4,
       position: 'absolute',
-  },
-  connector: {
-      position: 'absolute',
-      width: 1,
-      left: -BAR_WIDTH / 2,
-  },
-  horizontalConnector: {
-    position: 'absolute',
-    height: 1,
-    zIndex: 0,
   },
   modalOverlay: {
     flex: 1,

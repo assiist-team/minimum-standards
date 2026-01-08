@@ -42,7 +42,7 @@ Display the section title "Volume Visualization" with a clean dropdown selector 
 All charts consume the same filtered dataset (activity, date range, timezone) and should feel consistent with the mobile marketing site aesthetic (`minimum_standards_website/index.html`).
 
 ### Chart A — "Daily Volume"
-- **What**: Standard bar chart where the x-axis is calendar days and the bar height is the total activity logged for that day.
+- **What**: Total volume per day (standard bar chart where the x-axis is calendar days and the bar height is the total activity logged for that day).
 - **Why**: Gives the fastest read on pace and streaks—are we logging anything today?
 - **Details**
   - Use native day labels (Mon 1/12, Tue 1/13, etc.); collapse to tick marks when space is tight.
@@ -50,7 +50,7 @@ All charts consume the same filtered dataset (activity, date range, timezone) an
   - Tap reveals the day's entries and link to edit logs.
 
 ### Chart B — "Daily Progress"
-- **What**: Still uses days on the x-axis, but each bar represents the **cumulative** volume for the current period up to that day. Bars reset to zero at the start of the next period.
+- **What**: Cumulative daily volume per period (still uses days on the x-axis, but each bar represents the **cumulative** volume for the current period up to that day. Bars reset to zero at the start of the next period).
 - **Why**: Shows intra-period momentum and how quickly the user is closing the gap each week.
 - **Details**
   - Overlay a horizontal line at the period goal (the standard minimum for that period) so users know when the cumulative stack crosses the threshold.
@@ -58,7 +58,7 @@ All charts consume the same filtered dataset (activity, date range, timezone) an
   - Tooltip shows: day, cumulative total, remaining volume to goal, days left in period.
 
 ### Chart C — "Period Progress"
-- **What**: X-axis is simply the ordered list of periods (1, 2, 3…). Bars represent the goal volume, and a fill inside each bar represents the actual logged volume (0–100%+).
+- **What**: Total volume per period (x-axis is simply the ordered list of periods (1, 2, 3…). Bars represent the goal volume, and a fill inside each bar represents the actual logged volume (0–100%+)).
 - **Why**: Fastest way to scan consistency across many periods, even when date labels would get cramped.
 - **Details**
   - Highlight current period with a subtle glow.

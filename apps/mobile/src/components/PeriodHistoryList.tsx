@@ -48,7 +48,7 @@ function PeriodRow({
         <View
           style={[
             styles.progressFill,
-            { width: `${item.progressPercent}%`, backgroundColor: item.progressPercent >= 100 ? '#4A7C59' : getStatusColors(theme, 'Met').bar },
+            { width: `${item.progressPercent}%`, backgroundColor: item.progressPercent >= 100 ? theme.status.met.barComplete : getStatusColors(theme, 'Met').bar },
           ]}
           accessibilityRole="progressbar"
           accessibilityValue={{ now: item.progressPercent, min: 0, max: 100 }}

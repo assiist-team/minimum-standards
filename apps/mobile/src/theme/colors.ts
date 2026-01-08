@@ -11,6 +11,7 @@ export interface ColorTheme {
       background: string;
       text: string;
       bar: string;
+      barComplete: string;
     };
     inProgress: {
       background: string;
@@ -143,6 +144,7 @@ export const lightTheme: ColorTheme = {
       background: '#F5F3EF',
       text: '#987e55',
       bar: '#987e55',
+      barComplete: '#4A7C59',
     },
     inProgress: {
       background: '#FFF8E1',
@@ -236,6 +238,7 @@ export const darkTheme: ColorTheme = {
       background: '#3D3224',
       text: '#987e55',
       bar: '#987e55',
+      barComplete: '#4A7C59',
     },
     inProgress: {
       background: '#3E2E1A',

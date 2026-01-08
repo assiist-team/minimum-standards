@@ -3,7 +3,8 @@ import { DateTime } from 'luxon';
 
 export interface DailyVolumeData {
   date: string; // ISO date string YYYY-MM-DD
-  label: string; // Display label like "Mon 1/12"
+  label: string; // Display label like "01/12"
+  year: number; // Year for sticky indicator
   value: number;
   timestamp: number;
 }
@@ -48,7 +49,8 @@ export function aggregateDailyVolume(
     const dt = DateTime.fromISO(dateStr, { zone: timezone });
     return {
       date: dateStr,
-      label: dt.toFormat('ccc M/d'),
+      label: dt.toFormat('dd/MM'),
+      year: dt.year,
       value,
       timestamp: dt.toMillis(),
     };
@@ -84,7 +86,8 @@ export function aggregateDailyProgress(
       
       result.push({
         date: dateStr,
-        label: current.toFormat('ccc M/d'),
+        label: current.toFormat('dd/MM'),
+        year: current.year,
         value: dayTotal,
         cumulativeValue: cumulative,
         goalValue: period.goal,
