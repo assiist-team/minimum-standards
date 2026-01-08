@@ -827,15 +827,14 @@ const styles = StyleSheet.create({
     width: BAR_WIDTH + 8,
   },
   yearIndicatorContainer: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginTop: 4,
     height: 16,
     justifyContent: 'center',
-    paddingLeft: 4,
   },
   yearLabel: {
     fontSize: 9,
-    textAlign: 'left',
+    textAlign: 'center',
   },
   description: {
     fontSize: 12,
