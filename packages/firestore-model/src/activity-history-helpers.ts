@@ -190,8 +190,11 @@ export function createActivityHistoryHelpers(bindings: ActivityHistoryFirestoreB
       generatedAtMs: Date.now(),
       source,
     };
-
-    await setDoc(docRef, payload, { merge: true });
+    
+    // We do not use { merge: true } here because we want to ensure the document 
+    // exactly matches our payload, satisfying the strict hasOnlyKeys rules.
+    // Overwriting is safe because we compute the complete rollup for the period.
+    await setDoc(docRef, payload);
   }
 
   async function getLatestHistoryForStandard(

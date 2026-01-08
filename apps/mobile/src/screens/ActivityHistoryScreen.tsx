@@ -247,9 +247,12 @@ export function ActivityHistoryScreen({
 
   // Aggregate Stats Panel Data
   const stats = useMemo(() => {
-    if (clippedRows.length === 0) return null;
+    // We want to show stats if we have ANY logs, even if we don't have completed periods yet
+    if (rangeLogs.length === 0 && clippedRows.length === 0) return null;
 
-    const totalValueRaw = clippedRows.reduce((sum, entry) => sum + entry.clippedTotal, 0);
+    // Total value should reflect ALL logs in the selected range, not just those mapped to period rows
+    const totalValueRaw = rangeLogs.reduce((sum, log) => sum + log.value, 0);
+    
     const completedRows = clippedRows.filter(entry => entry.row.status !== 'In Progress');
     const metCount = completedRows.filter(entry => entry.clippedTotal >= entry.row.standardSnapshot.minimum).length;
     const completedPeriods = completedRows.length;
@@ -443,8 +446,7 @@ export function ActivityHistoryScreen({
               standardChange={stats.standardChange}
               standardHistory={stats.standardHistory}
               isLoading={loading}
-              hasData={clippedRows.length > 0}
-              hasInProgressPeriods={filteredRowsForList.some(r => r.status === 'In Progress')}
+              hasData={rangeLogs.length > 0 || clippedRows.length > 0}
             />
           )}
 

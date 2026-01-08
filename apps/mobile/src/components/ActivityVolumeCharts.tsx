@@ -1,11 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  LayoutAnimation,
   Platform,
   UIManager,
   Modal,
@@ -13,7 +12,6 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import { DailyVolumeData, DailyProgressData } from '../utils/activityCharts';
-import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import { useUIPreferencesStore, ChartType } from '../stores/uiPreferencesStore';
 import { trackStandardEvent } from '../utils/analytics';
 
@@ -32,7 +30,7 @@ const CHART_DESCRIPTIONS: Record<ChartType, string> = {
   'Daily Volume': 'Daily activity totals showing your day-to-day pace and consistency.',
   'Daily Progress': 'Cumulative progress through each period toward your minimum standard.',
   'Period Progress': 'Comparison of total volume vs. goal across historical periods.',
-  'Standards Progress': 'History of your minimum standard settings over time.',
+  'Standards Progress': 'Your minimum standards over time.',
 };
 
 export interface ActivityVolumeChartsProps {
@@ -53,9 +51,21 @@ export function ActivityVolumeCharts({
   onSelectPeriod,
 }: ActivityVolumeChartsProps) {
   const { preferredActivityChart: selectedChart, setPreferredActivityChart: setSelectedChart } = useUIPreferencesStore();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [tooltip, setTooltip] = useState<{ title: string; body: string; periodStartMs?: number } | null>(null);
   const theme = useTheme();
+  
+  const scrollRef = useRef<ScrollView>(null);
+  const tabLayouts = useRef<Record<string, { x: number; width: number }>>({});
+
+  useEffect(() => {
+    const layout = tabLayouts.current[selectedChart];
+    if (layout && scrollRef.current) {
+      scrollRef.current.scrollTo({
+        x: layout.x - 16, // Center a bit with some padding
+        animated: true,
+      });
+    }
+  }, [selectedChart]);
 
   const dayToPeriodStart = useMemo(() => {
     const map = new Map<string, number>();
@@ -91,14 +101,8 @@ export function ActivityVolumeCharts({
     return set;
   }, [dailyProgress]);
 
-  const toggleDropdown = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
   const selectChart = (type: ChartType) => {
     setSelectedChart(type);
-    setIsDropdownOpen(false);
     trackStandardEvent('activity_history_chart_selected', { chartType: type });
   };
 
@@ -139,44 +143,52 @@ export function ActivityVolumeCharts({
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text.primary }]}>Volume Visualization</Text>
-        <View>
-          <TouchableOpacity
-            style={[styles.dropdown, { borderColor: theme.border.primary }]}
-            onPress={toggleDropdown}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.dropdownText, { color: theme.text.primary }]}>{selectedChart}</Text>
-            <MaterialIcon
-              name={isDropdownOpen ? 'keyboard-arrow-up' : 'keyboard-arrow-down'}
-              size={20}
-              color={theme.text.primary}
-            />
-          </TouchableOpacity>
-          {isDropdownOpen && (
-            <View style={[styles.dropdownMenu, { backgroundColor: theme.background.surface, borderColor: theme.border.primary }]}>
-              {CHART_TYPES.map((type) => (
-                <TouchableOpacity
-                  key={type}
-                  style={styles.dropdownItem}
-                  onPress={() => selectChart(type)}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownItemText,
-                      { color: selectedChart === type ? theme.primary.main : theme.text.primary },
-                      selectedChart === type && { fontWeight: '700' },
-                    ]}
-                  >
-                    {type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
+      <View style={[styles.header, { borderBottomColor: theme.border.primary }]}>
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsContainer}
+        >
+          {CHART_TYPES.map((type) => (
+            <TouchableOpacity
+              key={type}
+              onLayout={(event) => {
+                tabLayouts.current[type] = event.nativeEvent.layout;
+                // If this is the initially selected chart, scroll to it immediately
+                if (type === selectedChart) {
+                  scrollRef.current?.scrollTo({
+                    x: event.nativeEvent.layout.x - 16,
+                    animated: false,
+                  });
+                }
+              }}
+              style={[
+                styles.tab,
+                selectedChart === type && {
+                  borderBottomColor: theme.tabBar.activeTint,
+                  borderBottomWidth: 3,
+                },
+              ]}
+              onPress={() => selectChart(type)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: selectedChart === type ? theme.tabBar.activeTint : theme.text.secondary },
+                  selectedChart === type && { fontWeight: '700' },
+                ]}
+              >
+                {type}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
+      <Text style={[styles.description, { color: theme.text.secondary }]}>
+        {CHART_DESCRIPTIONS[selectedChart]}
+      </Text>
 
       <View style={styles.chartArea}>
         {selectedChart === 'Daily Volume' && (
@@ -209,10 +221,6 @@ export function ActivityVolumeCharts({
           <StandardsProgressChart data={standardsProgress} theme={theme} onSelect={handleBarPress} />
         )}
       </View>
-
-      <Text style={[styles.description, { color: theme.text.secondary }]}>
-        {CHART_DESCRIPTIONS[selectedChart]}
-      </Text>
 
       {/* Chart Tooltip Modal for Daily Volume details */}
       {selectedChart === 'Daily Volume' && (
@@ -419,7 +427,7 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
                     style={[
                         styles.actualBar,
                         {
-                            height: (Math.min(item.actual, item.goal) / item.goal) * 100 + '%',
+                            height: ((Math.min(item.actual, item.goal) / item.goal) * 100 + '%') as any,
                             backgroundColor: isMet ? theme.status.met.bar : theme.primary.main,
                         },
                     ]}
@@ -429,7 +437,7 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
                         style={[
                             styles.overflowBar,
                             {
-                                height: ((item.actual - item.goal) / item.goal) * 100 + '%',
+                                height: (((item.actual - item.goal) / item.goal) * 100 + '%') as any,
                                 backgroundColor: theme.status.met.bar,
                                 bottom: '100%',
                             }
@@ -517,50 +525,23 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginBottom: 12,
+    borderBottomWidth: 1,
+  },
+  tabsContainer: {
+    paddingRight: 16,
+  },
+  tab: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: -1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    zIndex: 10,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    minWidth: 120,
-    justifyContent: 'space-between',
-  },
-  dropdownText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dropdownMenu: {
-    position: 'absolute',
-    top: 32,
-    right: 0,
-    borderWidth: 1,
-    borderRadius: 8,
-    width: 150,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  dropdownItem: {
-    padding: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#eee',
-  },
-  dropdownItemText: {
-    fontSize: 12,
+  tabText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
   chartArea: {
     height: CHART_HEIGHT + 40,
@@ -635,7 +616,8 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 12,
-    marginTop: 12,
+    marginTop: 8,
+    marginBottom: 12,
     fontStyle: 'italic',
   },
   dot: {

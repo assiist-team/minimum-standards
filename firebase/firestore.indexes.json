@@ -14,8 +14,32 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "standardId", "order": "ASCENDING" },
+        { "fieldPath": "occurredAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activityLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "standardId", "order": "ASCENDING" },
         { "fieldPath": "deletedAt", "order": "ASCENDING" },
         { "fieldPath": "occurredAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activityHistory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "activityId", "order": "ASCENDING" },
+        { "fieldPath": "referenceTimestampMs", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "activityHistory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "standardId", "order": "ASCENDING" },
+        { "fieldPath": "referenceTimestampMs", "order": "DESCENDING" }
       ]
     },
     {

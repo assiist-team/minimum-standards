@@ -151,7 +151,7 @@ export const activityHistoryDocSchema = z
     standardSnapshot: activityHistoryStandardSnapshotSchema,
     total: z.number().min(0),
     currentSessions: z.number().int().nonnegative(),
-    targetSessions: z.number().int().positive(),
+    targetSessions: z.number().int().nonnegative(),
     status: activityHistoryPeriodStatusSchema,
     progressPercent: z.number().min(0).max(100),
     generatedAtMs: timestampMsSchema,

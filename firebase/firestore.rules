@@ -371,7 +371,7 @@ service cloud.firestore {
       && data.currentSessions is int
       && data.currentSessions >= 0
       && data.targetSessions is int
-      && data.targetSessions > 0
+      && data.targetSessions >= 0
       && data.status in ['Met', 'In Progress', 'Missed']
       && data.progressPercent is number
       && data.progressPercent >= 0

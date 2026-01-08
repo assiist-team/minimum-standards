@@ -5,6 +5,8 @@ import {
   doc,
   query,
   where,
+  orderBy,
+  limit,
   Timestamp,
   getDocs,
 } from '@react-native-firebase/firestore';
@@ -73,7 +75,9 @@ export function useActivityHistoryEngine() {
         }
       });
 
-      const total = logs.reduce((sum, log) => sum + log.value, 0);
+      const total = Number.isFinite(logs.reduce((sum, log) => sum + log.value, 0))
+        ? logs.reduce((sum, log) => sum + log.value, 0)
+        : 0;
       const currentSessions = logs.length;
       const targetSessions = standard.sessionConfig.sessionsPerCadence;
       const status = derivePeriodStatus(
@@ -84,7 +88,9 @@ export function useActivityHistoryEngine() {
       );
       const safeMinimum = Math.max(standard.minimum, 0);
       const ratio = safeMinimum === 0 ? 1 : Math.min(total / safeMinimum, 1);
-      const progressPercent = Number((ratio * 100).toFixed(2));
+      const progressPercent = Number.isFinite(ratio)
+        ? Number((ratio * 100).toFixed(2))
+        : 0;
 
       return {
         total,
@@ -163,15 +169,34 @@ export function useActivityHistoryEngine() {
             // Start from the end of the latest period (catch up from there)
             startReference = lastCompletedWindow.endMs;
           } else {
-            // No history exists - start from current period (no backfill)
-            // We'll iterate forward but only generate completed periods
-            const currentWindow = calculatePeriodWindow(
-              nowMs,
-              standard.cadence,
-              timezone,
-              { periodStartPreference: standard.periodStartPreference }
+            // No history exists - try to find the earliest log for this standard
+            const earliestLogQuery = query(
+              collection(doc(firebaseFirestore, 'users', userId), 'activityLogs'),
+              where('standardId', '==', standard.id),
+              orderBy('occurredAt', 'asc'),
+              limit(1)
             );
-            startReference = currentWindow.startMs;
+            
+            const earliestLogSnap = await getDocs(earliestLogQuery);
+            
+            if (!earliestLogSnap.empty) {
+              // Found logs! Start backfill from the earliest log
+              const logData = earliestLogSnap.docs[0].data();
+              // Handle Timestamp or number just in case, though schema says Timestamp
+              const occurredAt = logData.occurredAt;
+              startReference = occurredAt instanceof Timestamp ? occurredAt.toMillis() : Date.now();
+              console.log(`[useActivityHistoryEngine] No history found, but found logs starting at ${new Date(startReference).toISOString()}. Backfilling...`);
+            } else {
+              // No history and no logs - start from current period (no backfill)
+              console.log(`[useActivityHistoryEngine] No history and no logs found for ${standard.id}. Starting fresh.`);
+              const currentWindow = calculatePeriodWindow(
+                nowMs,
+                standard.cadence,
+                timezone,
+                { periodStartPreference: standard.periodStartPreference }
+              );
+              startReference = currentWindow.startMs;
+            }
           }
 
           // Iterate forward through completed periods
@@ -209,14 +234,27 @@ export function useActivityHistoryEngine() {
               const standardSnapshot: ActivityHistoryStandardSnapshot = {
                 minimum: standard.minimum,
                 unit: standard.unit,
-                cadence: standard.cadence,
-                sessionConfig: standard.sessionConfig,
+                cadence: {
+                  interval: standard.cadence.interval,
+                  unit: standard.cadence.unit,
+                },
+                sessionConfig: {
+                  sessionLabel: standard.sessionConfig.sessionLabel,
+                  sessionsPerCadence: standard.sessionConfig.sessionsPerCadence,
+                  volumePerSession: standard.sessionConfig.volumePerSession,
+                },
                 summary: standard.summary,
               };
 
               if (standard.periodStartPreference) {
-                standardSnapshot.periodStartPreference =
-                  standard.periodStartPreference;
+                if (standard.periodStartPreference.mode === 'default') {
+                  standardSnapshot.periodStartPreference = { mode: 'default' };
+                } else if (standard.periodStartPreference.mode === 'weekDay') {
+                  standardSnapshot.periodStartPreference = {
+                    mode: 'weekDay',
+                    weekStartDay: standard.periodStartPreference.weekStartDay,
+                  };
+                }
               }
 
               console.log(`[useActivityHistoryEngine] Writing history document for ${standard.id}`);

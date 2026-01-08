@@ -12,7 +12,6 @@ export interface ActivityHistoryStatsPanelProps {
   standardHistory?: number[];
   isLoading?: boolean;
   hasData?: boolean;
-  hasInProgressPeriods?: boolean;
 }
 
 export function ActivityHistoryStatsPanel({
@@ -24,7 +23,6 @@ export function ActivityHistoryStatsPanel({
   standardHistory = [],
   isLoading = false,
   hasData = true,
-  hasInProgressPeriods = false,
 }: ActivityHistoryStatsPanelProps) {
   const theme = useTheme();
   const [helpContent, setHelpContent] = useState<{ title: string; description: string } | null>(null);
@@ -45,14 +43,14 @@ export function ActivityHistoryStatsPanel({
   if (isLoading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {[1, 2, 3, 4].map((i) => (
+        <View style={styles.gridContent}>
+          {[1, 2].map((i) => (
             <View key={i} style={styles.skeletonItem}>
               <View style={[styles.skeletonLabel, { backgroundColor: theme.background.tertiary }]} />
               <View style={[styles.skeletonValue, { backgroundColor: theme.background.tertiary }]} />
             </View>
           ))}
-        </ScrollView>
+        </View>
       </View>
     );
   }
@@ -87,22 +85,18 @@ export function ActivityHistoryStatsPanel({
         },
       ]}
     >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
+      <View style={styles.gridContent}>
         <StatItem
           label={`Total ${unit}`}
           value={totalValue}
           onHelp={() => showHelp(`Total ${unit}`, `Sum of all logs for this activity in the selected range.`)}
-          badge={hasInProgressPeriods ? 'Period in progress' : undefined}
         />
         <StatItem
           label="% Met"
           value={`${percentMet}%`}
           onHelp={() => showHelp('% Met', 'Percentage of periods where the minimum standard was achieved. In-progress periods are excluded.')}
         />
+        {/* 
         <StatItem
           label="Count Met"
           value={countMet}
@@ -110,12 +104,13 @@ export function ActivityHistoryStatsPanel({
         />
         <StatItem
           label="Standard Change"
-          value={standardChange === 'No changes yet' ? 'No changes yet' : standardChange}
+          value={standardChange === 'No changes yet' ? 'No changes' : standardChange}
           onHelp={() => showHelp('Standard Change', standardChange === 'No changes yet' ? 'Your minimum standard has not changed since you started tracking this activity.' : 'Evolution of your minimum standard from start to now.')}
           onPress={standardChange !== 'No changes yet' ? handleStandardPress : undefined}
           hasMore={standardHistory.length > 2}
         />
-      </ScrollView>
+        */}
+      </View>
 
       {/* Help Modal */}
       <Modal
@@ -238,14 +233,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     overflow: 'hidden',
   },
-  scrollContent: {
+  gridContent: {
     padding: 16,
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   statItem: {
-    marginRight: 24,
-    minWidth: 100,
+    width: '50%',
+    paddingBottom: 16,
   },
   labelRow: {
     flexDirection: 'row',
@@ -342,8 +337,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   skeletonItem: {
-    marginRight: 24,
-    minWidth: 100,
+    width: '50%',
+    paddingBottom: 16,
   },
   skeletonLabel: {
     width: 60,

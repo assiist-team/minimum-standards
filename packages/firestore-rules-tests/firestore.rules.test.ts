@@ -249,6 +249,180 @@ describe('Firestore security rules: user isolation', () => {
       )
     );
   });
+
+  describe('activityHistory rules', () => {
+    test('allows owner to create activityHistory with valid payload', async () => {
+      const u1 = testEnv.authenticatedContext('u1');
+      const db1 = u1.firestore();
+      const docId = 'a1__s1__1736121600000';
+      const historyRef = doc(db1, `users/u1/activityHistory/${docId}`);
+
+      const validPayload = {
+        id: docId,
+        activityId: 'a1',
+        standardId: 's1',
+        referenceTimestampMs: 1736121600000,
+        standardSnapshot: {
+          minimum: 100,
+          unit: 'calls',
+          cadence: { interval: 1, unit: 'week' },
+          sessionConfig: {
+            sessionLabel: 'call',
+            sessionsPerCadence: 5,
+            volumePerSession: 20
+          },
+          summary: '100 calls / week'
+        },
+        total: 50,
+        currentSessions: 2,
+        targetSessions: 5,
+        status: 'In Progress',
+        progressPercent: 50,
+        generatedAtMs: Date.now(),
+        source: 'boundary'
+      };
+
+      await assertSucceeds(setDoc(historyRef, validPayload));
+    });
+
+    test('allows targetSessions to be zero when standard uses volume-only tracking', async () => {
+      const u1 = testEnv.authenticatedContext('u1');
+      const db1 = u1.firestore();
+      const docId = 'a1__s1__1736121600001';
+      const historyRef = doc(db1, `users/u1/activityHistory/${docId}`);
+
+      const zeroSessionsPayload = {
+        id: docId,
+        activityId: 'a1',
+        standardId: 's1',
+        referenceTimestampMs: 1736121600001,
+        standardSnapshot: {
+          minimum: 100,
+          unit: 'calls',
+          cadence: { interval: 1, unit: 'week' },
+          sessionConfig: {
+            sessionLabel: 'call',
+            sessionsPerCadence: 0,
+            volumePerSession: 0,
+          },
+          summary: '100 calls / week',
+        },
+        total: 100,
+        currentSessions: 0,
+        targetSessions: 0,
+        status: 'Met',
+        progressPercent: 100,
+        generatedAtMs: Date.now(),
+        source: 'boundary',
+      };
+
+      await assertSucceeds(setDoc(historyRef, zeroSessionsPayload));
+    });
+
+    test('denies create with extra fields in document', async () => {
+      const u1 = testEnv.authenticatedContext('u1');
+      const db1 = u1.firestore();
+      const docId = 'a1__s1__1736121600000';
+      const historyRef = doc(db1, `users/u1/activityHistory/${docId}`);
+
+      const invalidPayload = {
+        id: docId,
+        activityId: 'a1',
+        standardId: 's1',
+        referenceTimestampMs: 1736121600000,
+        standardSnapshot: {
+          minimum: 100,
+          unit: 'calls',
+          cadence: { interval: 1, unit: 'week' },
+          sessionConfig: {
+            sessionLabel: 'call',
+            sessionsPerCadence: 5,
+            volumePerSession: 20
+          },
+          summary: '100 calls / week'
+        },
+        total: 50,
+        currentSessions: 2,
+        targetSessions: 5,
+        status: 'In Progress',
+        progressPercent: 50,
+        generatedAtMs: Date.now(),
+        source: 'boundary',
+        extraField: 'should fail'
+      };
+
+      await assertFails(setDoc(historyRef, invalidPayload));
+    });
+
+    test('denies create with extra fields in standardSnapshot', async () => {
+      const u1 = testEnv.authenticatedContext('u1');
+      const db1 = u1.firestore();
+      const docId = 'a1__s1__1736121600000';
+      const historyRef = doc(db1, `users/u1/activityHistory/${docId}`);
+
+      const invalidPayload = {
+        id: docId,
+        activityId: 'a1',
+        standardId: 's1',
+        referenceTimestampMs: 1736121600000,
+        standardSnapshot: {
+          minimum: 100,
+          unit: 'calls',
+          cadence: { interval: 1, unit: 'week' },
+          sessionConfig: {
+            sessionLabel: 'call',
+            sessionsPerCadence: 5,
+            volumePerSession: 20
+          },
+          summary: '100 calls / week',
+          extraField: 'should fail'
+        },
+        total: 50,
+        currentSessions: 2,
+        targetSessions: 5,
+        status: 'In Progress',
+        progressPercent: 50,
+        generatedAtMs: Date.now(),
+        source: 'boundary'
+      };
+
+      await assertFails(setDoc(historyRef, invalidPayload));
+    });
+
+    test('denies create with mismatched id', async () => {
+      const u1 = testEnv.authenticatedContext('u1');
+      const db1 = u1.firestore();
+      const docId = 'a1__s1__1736121600000';
+      const historyRef = doc(db1, `users/u1/activityHistory/${docId}`);
+
+      const invalidPayload = {
+        id: 'different-id',
+        activityId: 'a1',
+        standardId: 's1',
+        referenceTimestampMs: 1736121600000,
+        standardSnapshot: {
+          minimum: 100,
+          unit: 'calls',
+          cadence: { interval: 1, unit: 'week' },
+          sessionConfig: {
+            sessionLabel: 'call',
+            sessionsPerCadence: 5,
+            volumePerSession: 20
+          },
+          summary: '100 calls / week'
+        },
+        total: 50,
+        currentSessions: 2,
+        targetSessions: 5,
+        status: 'In Progress',
+        progressPercent: 50,
+        generatedAtMs: Date.now(),
+        source: 'boundary'
+      };
+
+      await assertFails(setDoc(historyRef, invalidPayload));
+    });
+  });
 });
 
 describe('Firestore security rules: activity log updates', () => {

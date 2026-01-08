@@ -1,0 +1,13 @@
+[debug] [2026-01-08T07:34:58.628Z] ----------------------------------------------------------------------
+[debug] [2026-01-08T07:34:58.629Z] Command:       /opt/homebrew/Cellar/node@20/20.19.6/bin/node /usr/local/bin/firebase login --reauth
+[debug] [2026-01-08T07:34:58.629Z] CLI Version:   14.1.0
+[debug] [2026-01-08T07:34:58.629Z] Platform:      darwin
+[debug] [2026-01-08T07:34:58.630Z] Node Version:  v20.19.6
+[debug] [2026-01-08T07:34:58.630Z] Time:          Wed Jan 07 2026 21:34:58 GMT-1000 (Hawaii-Aleutian Standard Time)
+[debug] [2026-01-08T07:34:58.630Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=716577639&redirect_uri=http%3A%2F%2Flocalhost%3A9005&login_hint=team%40assiist.ai
+[info] 
+[info] Waiting for authentication...
