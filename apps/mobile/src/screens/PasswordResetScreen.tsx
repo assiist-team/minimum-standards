@@ -69,23 +69,23 @@ export function PasswordResetScreen() {
 
       <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
         {success && (
-          <View style={styles.successContainer}>
-            <Text style={styles.successText}>
+          <View style={[styles.successContainer, { backgroundColor: theme.status.met.background }]}>
+            <Text style={[styles.successText, { color: theme.status.met.text }]}>
               Password reset email sent! Check your inbox.
             </Text>
           </View>
         )}
 
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: theme.status.missed.background }]}>
+            <Text style={[styles.errorText, { color: theme.status.missed.text }]}>{error}</Text>
           </View>
         )}
 
         {!success && (
           <>
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, { color: theme.text.primary }]}>Email</Text>
               <Controller
                 control={control}
                 name="email"
@@ -111,7 +111,7 @@ export function PasswordResetScreen() {
                 )}
               />
               {errors.email && (
-                <Text style={styles.fieldError}>{errors.email.message}</Text>
+                <Text style={[styles.fieldError, { color: theme.status.missed.text }]}>{errors.email.message}</Text>
               )}
             </View>
 

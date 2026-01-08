@@ -288,8 +288,13 @@ export function ActivityHistoryScreen({
     
     const dailyProgress = aggregateDailyProgress(
       rangeLogs,
-      filteredRowsForList.map(r => ({ startMs: r.periodStartMs, endMs: r.periodEndMs, goal: r.standardSnapshot.minimum })),
-      timezone
+      filteredRowsForList.map((r) => ({
+        startMs: r.periodStartMs,
+        endMs: r.periodEndMs,
+        goal: r.standardSnapshot.minimum,
+      })),
+      timezone,
+      { nowMs }
     );
 
     // Period Progress: show all filtered periods, not just last 15

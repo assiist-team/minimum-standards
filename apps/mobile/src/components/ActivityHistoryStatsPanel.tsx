@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '700',
   },
   modalOverlay: {
@@ -346,13 +346,13 @@ const styles = StyleSheet.create({
   },
   skeletonLabel: {
     width: 60,
-    height: 12,
+    height: 14,
     borderRadius: 4,
     marginBottom: 8,
   },
   skeletonValue: {
     width: 80,
-    height: 20,
+    height: 28,
     borderRadius: 4,
   },
   emptyContent: {

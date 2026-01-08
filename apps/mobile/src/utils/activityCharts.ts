@@ -49,7 +49,7 @@ export function aggregateDailyVolume(
     const dt = DateTime.fromISO(dateStr, { zone: timezone });
     return {
       date: dateStr,
-      label: dt.toFormat('dd/MM'),
+      label: dt.toFormat('MM/dd'),
       year: dt.year,
       value,
       timestamp: dt.toMillis(),
@@ -63,11 +63,24 @@ export function aggregateDailyVolume(
 export function aggregateDailyProgress(
   logs: ActivityLogSlice[],
   periods: { startMs: number; endMs: number; goal: number }[],
-  timezone: string
+  timezone: string,
+  options?: { nowMs?: number }
 ): DailyProgressData[] {
   const result: DailyProgressData[] = [];
+  const nowMs = options?.nowMs ?? Date.now();
 
-  for (const period of periods) {
+  const normalizedPeriods = periods
+    .map((period) => {
+      const clampedEndMs = Math.min(period.endMs, nowMs);
+      return {
+        ...period,
+        endMs: clampedEndMs,
+      };
+    })
+    .filter((period) => period.endMs > period.startMs)
+    .sort((a, b) => a.startMs - b.startMs);
+
+  for (const period of normalizedPeriods) {
     const periodLogs = logs.filter(
       (l) => l.occurredAtMs >= period.startMs && l.occurredAtMs < period.endMs
     );
@@ -86,7 +99,7 @@ export function aggregateDailyProgress(
       
       result.push({
         date: dateStr,
-        label: current.toFormat('dd/MM'),
+        label: current.toFormat('MM/dd'),
         year: current.year,
         value: dayTotal,
         cumulativeValue: cumulative,

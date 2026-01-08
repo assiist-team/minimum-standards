@@ -524,12 +524,14 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
         scrollEventThrottle={16}
       >
         <View style={styles.barContainer}>
-          {data.map((item, index) => {
-            const isMet = item.actual >= item.goal;
-            const isCurrent = item.status === 'In Progress';
-            const goalHeight = (item.goal / maxVal) * CHART_HEIGHT;
-            const actualHeight = (item.actual / maxVal) * CHART_HEIGHT;
-            return (
+        {data.map((item, index) => {
+          const isMet = item.actual >= item.goal;
+          const isCurrent = item.status === 'In Progress';
+          const goalHeight = (item.goal / maxVal) * CHART_HEIGHT;
+          const actualHeight = (item.actual / maxVal) * CHART_HEIGHT;
+          const baseFillHeight = goalHeight > 0 ? Math.min(actualHeight, goalHeight) : 0;
+          const overflowHeight = Math.max(actualHeight - (goalHeight > 0 ? goalHeight : 0), 0);
+          return (
               <TouchableOpacity 
                 key={index} 
                 style={[styles.barWrapper, isCurrent && styles.currentBarWrapper]}
@@ -549,15 +551,29 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
                       ]}
                     />
                   )}
-                  <View
-                    style={[
-                      styles.actualBar,
-                      {
-                        height: actualHeight,
-                        backgroundColor: isMet ? theme.status.met.barComplete : theme.status.met.bar,
-                      },
-                    ]}
-                  />
+                  {baseFillHeight > 0 && (
+                    <View
+                      style={[
+                        styles.actualBar,
+                        {
+                          height: baseFillHeight,
+                          backgroundColor: isMet ? theme.status.met.barComplete : theme.status.met.bar,
+                        },
+                      ]}
+                    />
+                  )}
+                  {overflowHeight > 0 && (
+                    <View
+                      style={[
+                        styles.actualBarOverflow,
+                        {
+                          height: overflowHeight,
+                          bottom: goalHeight > 0 ? goalHeight : 0,
+                          backgroundColor: theme.status.met.barOverflow || theme.status.met.barComplete,
+                        },
+                      ]}
+                    />
+                  )}
                   {goalHeight > 0 && (
                     <View
                       pointerEvents="none"
@@ -572,7 +588,7 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
                   )}
                 </View>
                 <Text style={[styles.label, { color: theme.text.tertiary, fontWeight: isCurrent ? '700' : '400' }]} numberOfLines={1}>
-                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('dd/MM') : item.label}{isCurrent ? '*' : ''}
+                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('MM/dd') : item.label}{isCurrent ? '*' : ''}
                 </Text>
               </TouchableOpacity>
             );
@@ -674,7 +690,7 @@ function StandardsProgressChart({ data, theme, onSelect }: { data: any[]; theme:
                 <View style={[styles.dot, { bottom: y - 4, backgroundColor: theme.status.met.bar, zIndex: 1 }]} />
                 
                 <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
-                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('dd/MM') : item.label}
+                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('MM/dd') : item.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -777,6 +793,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     borderRadius: 4,
   },
+  actualBarOverflow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderRadius: 4,
+    borderWidth: 0,
+  },
   goalMarker: {
     position: 'absolute',
     left: -4,
@@ -804,14 +827,15 @@ const styles = StyleSheet.create({
     width: BAR_WIDTH + 8,
   },
   yearIndicatorContainer: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: 4,
     height: 16,
     justifyContent: 'center',
+    paddingLeft: 4,
   },
   yearLabel: {
     fontSize: 9,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   description: {
     fontSize: 12,

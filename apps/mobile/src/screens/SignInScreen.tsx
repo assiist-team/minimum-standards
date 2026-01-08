@@ -175,13 +175,13 @@ export function SignInScreen() {
 
       <View style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: theme.status.missed.background }]}>
+            <Text style={[styles.errorText, { color: theme.status.missed.text }]}>{error}</Text>
           </View>
         )}
 
         <View style={styles.field}>
-          <Text style={styles.label}>Email</Text>
+          <Text style={[styles.label, { color: theme.text.primary }]}>Email</Text>
           <Controller
             control={control}
             name="email"
@@ -207,12 +207,12 @@ export function SignInScreen() {
             )}
           />
           {errors.email && (
-            <Text style={styles.fieldError}>{errors.email.message}</Text>
+            <Text style={[styles.fieldError, { color: theme.status.missed.text }]}>{errors.email.message}</Text>
           )}
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Password</Text>
+          <Text style={[styles.label, { color: theme.text.primary }]}>Password</Text>
           <Controller
             control={control}
             name="password"
@@ -237,7 +237,7 @@ export function SignInScreen() {
             )}
           />
           {errors.password && (
-            <Text style={styles.fieldError}>{errors.password.message}</Text>
+            <Text style={[styles.fieldError, { color: theme.status.missed.text }]}>{errors.password.message}</Text>
           )}
         </View>
 
@@ -268,7 +268,7 @@ export function SignInScreen() {
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
+          <Text style={[styles.dividerText, { color: theme.text.tertiary }]}>OR</Text>
           <View style={styles.dividerLine} />
         </View>
 
