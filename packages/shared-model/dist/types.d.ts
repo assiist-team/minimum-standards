@@ -54,7 +54,7 @@ export type ActivityLog = SoftDelete & AuditTimestamps & {
 };
 export type DashboardPins = {
     id: string;
-    orderedStandardIds: string[];
+    pinnedStandardIds: string[];
     updatedAtMs: TimestampMs;
 };
 export type ActivityHistorySource = 'boundary' | 'resume';

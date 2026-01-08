@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "luxon": "^3.7.2",
+    "pluralize": "^8.0.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

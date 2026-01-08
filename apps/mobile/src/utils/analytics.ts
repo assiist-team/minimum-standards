@@ -19,7 +19,10 @@ type StandardAnalyticsEvent =
   | 'standard_detail_period_tap'
   | 'standard_detail_log_tap'
   | 'standard_detail_edit_tap'
-  | 'standard_detail_archive_tap';
+  | 'standard_detail_archive_tap'
+  | 'activity_history_chart_selected'
+  | 'activity_history_chart_bar_tap'
+  | 'activity_history_chart_tooltip_action';
 
 type EventPayload = Record<string, unknown>;
 

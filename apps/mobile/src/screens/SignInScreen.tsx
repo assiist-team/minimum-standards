@@ -23,6 +23,7 @@ import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { firebaseAuth } from '../firebase/firebaseApp';
 import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
+import { useAuthStore } from '../stores/authStore';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
@@ -44,6 +45,8 @@ export function SignInScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const setAuthUser = useAuthStore((state) => state.setUser);
+  const setAuthInitialized = useAuthStore((state) => state.setInitialized);
 
   const {
     control,
@@ -62,6 +65,12 @@ export function SignInScreen() {
       setLoading(true);
       setError(null);
       await firebaseAuth.signInWithEmailAndPassword(data.email, data.password);
+      const currentUser = firebaseAuth.currentUser;
+      if (currentUser) {
+        console.log('[Email Sign-In] Updating auth store with Firebase user');
+        setAuthUser(currentUser);
+        setAuthInitialized(true);
+      }
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err) {
       const authError = AuthError.fromFirebaseError(err);
@@ -150,6 +159,14 @@ export function SignInScreen() {
       console.log('[Google Sign-In] Signing in with Firebase credential...');
       await firebaseAuth.signInWithCredential(googleCredential);
       console.log('[Google Sign-In] Successfully signed in with Firebase');
+      const currentUser = firebaseAuth.currentUser;
+      if (currentUser) {
+        console.log('[Google Sign-In] Updating auth store with Firebase user:', currentUser.uid);
+        setAuthUser(currentUser);
+        setAuthInitialized(true);
+      } else {
+        console.warn('[Google Sign-In] Firebase currentUser not resolved immediately after credential sign-in');
+      }
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err: any) {
       console.error('[Google Sign-In] Error occurred:', {

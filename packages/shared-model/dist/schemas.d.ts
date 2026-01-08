@@ -247,16 +247,16 @@ export type ActivityLogSchema = z.infer<typeof activityLogSchema>;
 export type DashboardPinsSchema = z.infer<typeof dashboardPinsSchema>;
 export declare const dashboardPinsSchema: z.ZodObject<{
     id: z.ZodString;
-    orderedStandardIds: z.ZodArray<z.ZodString, "many">;
+    pinnedStandardIds: z.ZodArray<z.ZodString, "many">;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
 }, "strip", z.ZodTypeAny, {
     id: string;
     updatedAtMs: number;
-    orderedStandardIds: string[];
+    pinnedStandardIds: string[];
 }, {
     id: string;
     updatedAtMs: number;
-    orderedStandardIds: string[];
+    pinnedStandardIds: string[];
 }>;
 export declare const activityHistorySourceSchema: z.ZodEnum<["boundary", "resume"]>;
 export declare const activityHistoryStandardSnapshotSchema: z.ZodObject<{

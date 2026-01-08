@@ -167,7 +167,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         
         clearTimeout(timeoutId);
         set({ user, isInitialized: true });
-        console.log('[AuthStore] Auth state updated, isInitialized: true');
       });
       console.log('[AuthStore] onAuthStateChanged listener registered successfully');
     } catch (error) {
