@@ -20,6 +20,8 @@ export interface AuthState {
 
   // Sign out action
   signOut: () => Promise<void>;
+  // Optional helper to clear cached Google session when user explicitly requests it
+  clearGoogleSession: () => Promise<void>;
 
   // Initialize auth state listener (call once on app startup)
   initialize: () => () => void; // Returns cleanup function
@@ -48,19 +50,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signOut: async () => {
     console.log('[AuthStore] Signing out...');
     try {
-      // Sign out from Firebase
       await firebaseSignOut(firebaseAuth);
-      
-      // Also sign out from Google to ensure the user can switch accounts
-      // and to prevent automatic silent sign-in on next app launch
+    } catch (error) {
+      console.error('[AuthStore] Error during Firebase sign out:', error);
+    }
+    // Prevent background silent-sign-in retries until the next full initialize run.
+    hasAttemptedSilentSignIn = true;
+    set({ user: null });
+  },
+
+  clearGoogleSession: async () => {
+    console.log('[AuthStore] Clearing cached Google session on explicit request...');
+    try {
       if (await GoogleSignin.isSignedIn()) {
         await GoogleSignin.signOut();
       }
     } catch (error) {
-      console.error('[AuthStore] Error during sign out:', error);
+      console.error('[AuthStore] Error clearing Google session:', error);
     }
-    hasAttemptedSilentSignIn = false;
-    set({ user: null });
   },
 
   initialize: () => {
@@ -150,6 +157,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('[AuthStore] Setting up onAuthStateChanged listener...');
     try {
       unsubscribeAuthState = onAuthStateChanged(firebaseAuth, async (user) => {
+        console.log('[AuthStore] [Remediation] onAuthStateChanged callback reached');
         const uid = user?.uid;
         console.log('[AuthStore] onAuthStateChanged callback fired:', uid ? `User ID: ${uid}` : 'No user');
         

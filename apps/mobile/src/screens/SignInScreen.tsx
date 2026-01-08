@@ -23,7 +23,6 @@ import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { firebaseAuth } from '../firebase/firebaseApp';
 import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
-import { useAuthStore } from '../stores/authStore';
 
 // Extend AuthError to handle Google Sign-In errors
 function createAuthErrorFromAnyError(err: any): AuthError {
@@ -45,8 +44,6 @@ export function SignInScreen() {
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const setAuthUser = useAuthStore((state) => state.setUser);
-  const setAuthInitialized = useAuthStore((state) => state.setInitialized);
 
   const {
     control,
@@ -65,12 +62,6 @@ export function SignInScreen() {
       setLoading(true);
       setError(null);
       await firebaseAuth.signInWithEmailAndPassword(data.email, data.password);
-      const currentUser = firebaseAuth.currentUser;
-      if (currentUser) {
-        console.log('[Email Sign-In] Updating auth store with Firebase user');
-        setAuthUser(currentUser);
-        setAuthInitialized(true);
-      }
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err) {
       const authError = AuthError.fromFirebaseError(err);
@@ -98,18 +89,8 @@ export function SignInScreen() {
       }
 
       // Get the user's ID token
-      console.log('[Google Sign-In] Calling GoogleSignin.signIn()...');
-      
-      // Try silent sign-in first to see if we can avoid the system prompt
-      let signInResult: unknown;
-      try {
-        console.log('[Google Sign-In] Attempting silent sign-in first...');
-        signInResult = await GoogleSignin.signInSilently();
-        console.log('[Google Sign-In] Silent sign-in successful');
-      } catch (silentError) {
-        console.log('[Google Sign-In] Silent sign-in unavailable, proceeding to interactive sign-in');
-        signInResult = await GoogleSignin.signIn();
-      }
+      console.log('[Google Sign-In] Calling GoogleSignin.signIn() (no cached session wipe)...');
+      const signInResult = await GoogleSignin.signIn();
 
       const normalizedResult = normalizeGoogleSignInResult(signInResult);
       if (!normalizedResult.success || !normalizedResult.data) {
@@ -159,14 +140,6 @@ export function SignInScreen() {
       console.log('[Google Sign-In] Signing in with Firebase credential...');
       await firebaseAuth.signInWithCredential(googleCredential);
       console.log('[Google Sign-In] Successfully signed in with Firebase');
-      const currentUser = firebaseAuth.currentUser;
-      if (currentUser) {
-        console.log('[Google Sign-In] Updating auth store with Firebase user:', currentUser.uid);
-        setAuthUser(currentUser);
-        setAuthInitialized(true);
-      } else {
-        console.warn('[Google Sign-In] Firebase currentUser not resolved immediately after credential sign-in');
-      }
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err: any) {
       console.error('[Google Sign-In] Error occurred:', {

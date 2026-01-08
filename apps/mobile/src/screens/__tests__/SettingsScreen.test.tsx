@@ -34,6 +34,7 @@ describe('SettingsScreen', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: mockSignOut,
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByText } = render(<SettingsScreen />);
@@ -56,6 +57,7 @@ describe('SettingsScreen', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: mockSignOut,
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByText } = render(<SettingsScreen />);

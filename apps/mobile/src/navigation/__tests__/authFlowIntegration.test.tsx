@@ -42,6 +42,7 @@ describe('Auth Flow Integration', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByTestId, queryByTestId } = render(<AppNavigator />);
@@ -67,6 +68,7 @@ describe('Auth Flow Integration', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByTestId, queryByTestId } = render(<AppNavigator />);
@@ -93,6 +95,7 @@ describe('Auth Flow Integration', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: mockSignOut,
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByTestId, rerender, queryByTestId } = render(<AppNavigator />);
@@ -109,6 +112,7 @@ describe('Auth Flow Integration', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: mockSignOut,
+      clearGoogleSession: jest.fn(),
     });
 
     rerender(<AppNavigator />);

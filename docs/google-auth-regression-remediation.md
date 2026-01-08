@@ -25,7 +25,7 @@
    - `apps/mobile/src/screens/SignInScreen.tsx`
    - `apps/mobile/src/screens/SignUpScreen.tsx`
 2. Delete all `useAuthStore` imports/usages introduced recently (`setAuthUser`, `setAuthInitialized`, the extra `currentUser` blocks).
-3. After removal, both screens should simply call the Firebase auth methods and trust the listener to update state.
+3. After removal, both screens should simply call the Firebase auth methods and trust the listener to update state. **Reviewer checklist:** block any PR that re-introduces direct `useAuthStore` mutations from UI components.
 
 **Verification:**
 
@@ -36,39 +36,40 @@
 
 ## 3. Fix Google account switching
 
-**Problem:** `handleGoogleSignIn` now forces `signInSilently()`, so taps on “Sign in with Google” reuse the cached account and never present the selector.
+**Problem:** We routed interactive sign-in through `signInSilently()` and then tried to force the picker by calling `GoogleSignin.signOut()` before every tap. That combination both reused the wrong account *and* blew away the cached OAuth grant, which reintroduced the consent prompts we were trying to avoid.
 
 **Remediation steps:**
 
 1. In `apps/mobile/src/screens/SignInScreen.tsx`:
-   - Remove the silent-first block inside `handleGoogleSignIn`. Replace with:
-     ```ts
-     await GoogleSignin.signOut().catch(() => {/* ignore */});
-     const signInResult = await GoogleSignin.signIn();
-     ```
-     This guarantees the account picker shows and lets users switch.
-2. Keep the silent sign-in attempt **only** inside `authStore.initialize` (already there) so sessions restore automatically on app launch without prompting.
-3. Mirror the same change in `SignUpScreen` (Google sign-up handler).
+   - Delete the silent-sign-in fallback and any pre-emptive `GoogleSignin.signOut()` call.
+   - Call `GoogleSignin.hasPlayServices` (Android) and then invoke `GoogleSignin.signIn()` directly. The native picker appears whenever multiple accounts exist, but cached scopes remain intact so Google doesn’t re-ask for permission.
+   - After the Firebase credential resolves, let `authStore` drive navigation (no manual store writes).
+2. Keep the silent sign-in attempt **only** inside `authStore.initialize`, guarded by `hasAttemptedSilentSignIn`, so automatic session restore happens once per app launch.
+3. Mirror the same change in `SignUpScreen`.
+4. Update `authStore.signOut()` so it **only** signs out from Firebase. Add a separate `clearGoogleSession()` helper inside the store for the rare cases where we truly need to drop the cached Google session (e.g., “Use a different Google account”). Regular sign-out must leave the Google grant intact to avoid re-triggering the consent dialog.
 
 **Testing checklist:**
 
-- Sign out.
-- Tap “Sign in with Google”; confirm the account picker appears and allows switching accounts.
+- Sign out via the Settings screen (which calls `authStore.signOut()`).
+- Tap “Sign in with Google”; confirm the account picker appears and allows switching accounts without showing the consent dialog.
 - Choose a different Google profile and verify Firebase signs into the selected user.
 
 ---
 
 ## 4. Preserve the “no repeated consent” fix
 
-The original request was to avoid the Google consent prompt appearing every single time. With the changes above:
+The whole point of the earlier change was: **use silent restore during startup, keep cached scopes intact, and only show UI when the user explicitly taps the Google button.**
 
-- Silent restore still happens during app startup (Step 3 keeps `authStore` logic intact).
-- When the user explicitly taps the Google button, we intentionally show the account picker so they can switch accounts. Consent won’t reappear unless the scope changed or the account is new.
+With the updated remediation steps:
+
+- Silent restore still happens exactly once inside `authStore.initialize`. Because we no longer clear the Google session on every tap, the cached OAuth grant survives and the user lands in the authenticated UI without touching the login screen.
+- When the user taps “Sign in with Google,” we present the account picker but reuse the existing grant, so consent is only requested for new accounts or new scopes.
 
 **Double-check:**
 
-1. Launch the app fresh (still signed into Google). Confirm you land in the authenticated UI without touching the login screen.
+1. Launch the app fresh (still signed into Google). Confirm you land in the authenticated UI without touching the login screen and see a single `[AuthStore] onAuthStateChanged` log line.
 2. Sign out → sign back in with the same account. You should see the picker, but only a quick account selection (no consent dialog).
+3. (Optional) Call the new `clearGoogleSession()` helper, then sign in again—this path should intentionally show the consent dialog, verifying that we only wipe the grant when explicitly requested.
 
 ---
 
@@ -80,9 +81,10 @@ The original request was to avoid the Google consent prompt appearing every sing
 2. **Automated tests**
    - `cd apps/mobile && npm test -- SignInScreen`
    - `npm test -- authFlowIntegration`
+   - If Jest fails with “Cannot find module `@jest/test-sequencer`,” reinstall dependencies (`npm install`) before re-running; do **not** skip the suites.
 3. **Logging sanity**
    - Watch Metro/Xcode logs for:
-     - `[AuthStore] onAuthStateChanged callback fired` exactly once per auth change.
+     - `[AuthStore] onAuthStateChanged callback fired` exactly once per auth change (no duplicate initialization logs when tapping Google).
      - No warnings about missing ID tokens or null `currentUser`.
 
 ---
@@ -101,8 +103,9 @@ The original request was to avoid the Google consent prompt appearing every sing
 
 | Issue | Root Cause | Guardrail |
 | --- | --- | --- |
-| Auth screen flicker | Screens wrote to auth store directly | Only the store (and its listener) own auth state. |
-| Forced Google account reuse | Sign-in handler forced `signInSilently()` | When a user taps the button, always show the account picker; use silent sign-in only during app bootstrap. |
+| Auth screen flicker | Screens wrote to auth store directly | Only the store (and its listener) own auth state; UI never calls `setUser`/`setInitialized`. |
+| Forced Google account reuse | Sign-in handler forced `signInSilently()` | Buttons call `GoogleSignin.signIn()` directly; silent sign-in lives only in `authStore.initialize`. |
+| Repeated Google consent prompts | We wiped the Google session on every sign-out | Default sign-out leaves Google session intact; only the dedicated `clearGoogleSession()` helper may call `GoogleSignin.signOut()`. |
 
 Add team lint rule / code review checklist item: “Never mutate auth store outside `authStore.ts` except via provided actions.”
 

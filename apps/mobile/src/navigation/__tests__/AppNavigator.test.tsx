@@ -43,6 +43,7 @@ describe('AppNavigator', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByText } = render(<AppNavigator />);
@@ -58,6 +59,7 @@ describe('AppNavigator', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByTestId } = render(<AppNavigator />);
@@ -80,6 +82,7 @@ describe('AppNavigator', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByTestId } = render(<AppNavigator />);
@@ -98,6 +101,7 @@ describe('AppNavigator', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     const { getByTestId, rerender } = render(<AppNavigator />);
@@ -119,6 +123,7 @@ describe('AppNavigator', () => {
       setUser: jest.fn(),
       setInitialized: jest.fn(),
       signOut: jest.fn(),
+      clearGoogleSession: jest.fn(),
     });
 
     rerender(<AppNavigator />);
