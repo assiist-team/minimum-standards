@@ -377,7 +377,7 @@ service cloud.firestore {
       && data.progressPercent >= 0
       && data.progressPercent <= 100
       && isTimestampMs(data.generatedAtMs)
-      && data.source in ['boundary', 'resume'];
+      && data.source in ['boundary', 'resume', 'log-edit'];
     }
 
     match /users/{uid} {

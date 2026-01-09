@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useRef, useEffect, useCallback, useId } from 'react';
 import {
   View,
   Text,
@@ -11,27 +11,32 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { DateTime } from 'luxon';
+import Svg, { Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../theme/useTheme';
 import { DailyVolumeData, DailyProgressData } from '../utils/activityCharts';
 import { useUIPreferencesStore, ChartType } from '../stores/uiPreferencesStore';
 import { trackStandardEvent } from '../utils/analytics';
+import { formatTotal } from '../utils/activityHistory';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 const CHART_TYPES: ChartType[] = [
-  'Daily Volume',
-  'Daily Progress',
+  'Cumulative Volume',
   'Period Progress',
-  'Standards Progress',
+  // Temporarily disabled charts – keep references for quick re-enable
+  // 'Standards Progress',
+  // 'Daily Volume',
+  // 'Daily Progress',
 ];
 
 const CHART_DESCRIPTIONS: Record<ChartType, string> = {
-  'Daily Volume': 'Total volume per day',
-  'Daily Progress': 'Cumulative daily volume per period',
+  'Cumulative Volume': 'Total volume over time',
   'Period Progress': 'Total volume per period',
   'Standards Progress': 'Your minimum standards over time.',
+  'Daily Volume': 'Total volume per day',
+  'Daily Progress': 'Cumulative daily volume per period',
 };
 
 export interface ActivityVolumeChartsProps {
@@ -39,6 +44,7 @@ export interface ActivityVolumeChartsProps {
   dailyProgress: DailyProgressData[];
   periodProgress: { label: string; actual: number; goal: number; status: string; periodStartMs?: number }[];
   standardsProgress: { label: string; value: number; periodStartMs?: number }[];
+  cumulativeVolume: { label: string; value: number; date: string; timestamp: number }[];
   unit: string;
   onSelectPeriod?: (periodStartMs: number) => void;
 }
@@ -48,6 +54,7 @@ export function ActivityVolumeCharts({
   dailyProgress,
   periodProgress,
   standardsProgress,
+  cumulativeVolume,
   unit,
   onSelectPeriod,
 }: ActivityVolumeChartsProps) {
@@ -67,6 +74,12 @@ export function ActivityVolumeCharts({
       });
     }
   }, [selectedChart]);
+
+  useEffect(() => {
+    if (!CHART_TYPES.includes(selectedChart)) {
+      setSelectedChart('Cumulative Volume');
+    }
+  }, [selectedChart, setSelectedChart]);
 
   const dayToPeriodStart = useMemo(() => {
     const map = new Map<string, number>();
@@ -187,11 +200,33 @@ export function ActivityVolumeCharts({
           ))}
         </ScrollView>
       </View>
-      <Text style={[styles.description, { color: theme.text.secondary }]}>
-        {CHART_DESCRIPTIONS[selectedChart]}
-      </Text>
+      <View style={styles.descriptionContainer}>
+        <Text style={[styles.description, { color: theme.text.secondary }]}>
+          {CHART_DESCRIPTIONS[selectedChart]}
+        </Text>
+        {selectedChart === 'Period Progress' && (
+          <View style={styles.legendContainer}>
+            <View style={[styles.legendIndicator, { backgroundColor: theme.status.met.barOverflow }]} />
+            <Text style={[styles.legendText, { color: theme.text.secondary }]}>
+              Overage
+            </Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.chartArea}>
+        {selectedChart === 'Period Progress' && (
+          <PeriodProgressChart 
+            data={periodProgress} 
+            theme={theme} 
+            onSelect={handleBarPress}
+          />
+        )}
+        {selectedChart === 'Cumulative Volume' && (
+          <CumulativeVolumeChart data={cumulativeVolume} theme={theme} unit={unit} onShowTooltip={showTooltip} />
+        )}
+        {/* Temporarily disabled charts */}
+        {/*
         {selectedChart === 'Daily Volume' && (
           <DailyVolumeChart 
             data={dailyVolume} 
@@ -211,19 +246,14 @@ export function ActivityVolumeCharts({
             onSelectPeriod={handleBarPress}
           />
         )}
-        {selectedChart === 'Period Progress' && (
-          <PeriodProgressChart 
-            data={periodProgress} 
-            theme={theme} 
-            onSelect={handleBarPress}
-          />
-        )}
         {selectedChart === 'Standards Progress' && (
           <StandardsProgressChart data={standardsProgress} theme={theme} onSelect={handleBarPress} />
         )}
+        */}
       </View>
 
-      {/* Chart Tooltip Modal for Daily Volume details */}
+      {/* Chart Tooltip Modal for Daily Volume details (temporarily disabled with the chart) */}
+      {/*
       {selectedChart === 'Daily Volume' && (
         <Modal
           visible={!!tooltip}
@@ -261,12 +291,89 @@ export function ActivityVolumeCharts({
           </TouchableWithoutFeedback>
         </Modal>
       )}
+      */}
     </View>
   );
 }
 
 const BAR_WIDTH = 30;
 const CHART_HEIGHT = 150;
+const LINE_CHART_LABEL_HEIGHT = 32;
+const DEFAULT_POINT_SPACING = BAR_WIDTH + 8;
+const MIN_COMPRESSED_POINT_SPACING = 14;
+const MAX_VISIBLE_TICKS = 6;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type CumulativePoint = { label: string; value: number; date: string; timestamp: number };
+type TimeScale = 'daily' | 'weekly' | 'monthly';
+
+const determineTimeScale = (points: CumulativePoint[]): TimeScale => {
+  const datedPoints = points.filter((point) => point.timestamp > 0);
+  if (datedPoints.length < 2) {
+    return 'daily';
+  }
+
+  const spanMs = datedPoints[datedPoints.length - 1].timestamp - datedPoints[0].timestamp;
+  const spanDays = spanMs / DAY_MS;
+
+  if (spanDays <= 30) return 'daily';
+  if (spanDays <= 120) return 'weekly';
+  return 'monthly';
+};
+
+const bucketCumulativeData = (points: CumulativePoint[], scale: TimeScale): CumulativePoint[] => {
+  if (scale === 'daily' || points.length <= 2) {
+    return points;
+  }
+
+  const hasOrigin = points[0]?.timestamp === 0;
+  const originPoint = hasOrigin ? points[0] : undefined;
+  const dataPoints = hasOrigin ? points.slice(1) : points;
+  const buckets = new Map<string, CumulativePoint>();
+
+  dataPoints.forEach((point) => {
+    if (!point.timestamp) return;
+    const dt = DateTime.fromMillis(point.timestamp);
+    const start = scale === 'weekly' ? dt.startOf('week') : dt.startOf('month');
+    const isoDate = start.toISODate();
+    if (!isoDate) {
+      return;
+    }
+    const bucketKey = isoDate;
+    const existing = buckets.get(bucketKey);
+
+    if (!existing || point.timestamp > existing.timestamp) {
+      buckets.set(bucketKey, {
+        ...point,
+        label: start.toFormat(scale === 'weekly' ? 'MMM d' : 'MMM'),
+        date: isoDate,
+      });
+    }
+  });
+
+  const bucketed = Array.from(buckets.values()).sort((a, b) => a.timestamp - b.timestamp);
+  return originPoint ? [originPoint, ...bucketed] : bucketed;
+};
+
+const getTickIndices = (length: number, maxTicks: number = MAX_VISIBLE_TICKS): Set<number> => {
+  const indices = new Set<number>();
+  if (length === 0) return indices;
+
+  const step = Math.max(1, Math.ceil(length / maxTicks));
+  for (let i = 0; i < length; i += step) {
+    indices.add(i);
+  }
+  indices.add(length - 1);
+  return indices;
+};
+
+const formatAxisLabel = (point: CumulativePoint, scale: TimeScale): string => {
+  if (!point.timestamp) return '';
+  const dt = DateTime.fromMillis(point.timestamp);
+  if (scale === 'daily') return dt.toFormat('MM/dd');
+  if (scale === 'weekly') return dt.toFormat('MMM dd');
+  return dt.toFormat('MMM');
+};
 
 function DailyVolumeChart({
   data,
@@ -485,8 +592,18 @@ function DailyProgressChart({
   );
 }
 
+const MAX_OVERFLOW_DISPLAY_RATIO = 0.25;
+const MIN_BAR_HEIGHT = 4;
+
 function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: any; onSelect?: (startMs: number) => void }) {
-  const maxVal = Math.max(...data.map((d) => Math.max(d.actual, d.goal)), 1);
+  const maxGoalValue = useMemo(() => {
+    if (data.length === 0) return 1;
+    const goals = data.map((d) => d.goal || 0);
+    const maxGoal = Math.max(...goals);
+    if (maxGoal > 0) return maxGoal;
+    const fallbackActual = Math.max(...data.map((d) => d.actual || 0));
+    return fallbackActual > 0 ? fallbackActual : 1;
+  }, [data]);
   const scrollViewRef = useRef<ScrollView>(null);
   const [activeYear, setActiveYear] = useState<number | null>(
     data.length > 0 && data[0].periodStartMs ? new Date(data[0].periodStartMs).getFullYear() : null
@@ -513,6 +630,8 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
     }
   }, [data, activeYear]);
 
+  const unitHeight = CHART_HEIGHT / maxGoalValue;
+
   return (
     <View>
       <ScrollView 
@@ -525,63 +644,66 @@ function PeriodProgressChart({ data, theme, onSelect }: { data: any[]; theme: an
       >
         <View style={styles.barContainer}>
         {data.map((item, index) => {
-          const isMet = item.actual >= item.goal;
+          const goalValue = Math.max(item.goal || 0, 0);
+          const actualValue = Math.max(item.actual || 0, 0);
+          const isMet = goalValue > 0 ? actualValue >= goalValue : actualValue > 0;
           const isCurrent = item.status === 'In Progress';
-          const goalHeight = (item.goal / maxVal) * CHART_HEIGHT;
-          const actualHeight = (item.actual / maxVal) * CHART_HEIGHT;
-          const baseFillHeight = goalHeight > 0 ? Math.min(actualHeight, goalHeight) : 0;
-          const overflowHeight = Math.max(actualHeight - (goalHeight > 0 ? goalHeight : 0), 0);
+          const hasOverflow = goalValue > 0 && actualValue > goalValue;
+
+          const baseHeight = goalValue > 0 ? goalValue * unitHeight : 0;
+          const actualHeight = actualValue * unitHeight;
+          const maxOverflowHeight = CHART_HEIGHT * MAX_OVERFLOW_DISPLAY_RATIO;
+          const overflowHeight = hasOverflow ? Math.min(actualHeight - baseHeight, maxOverflowHeight) : 0;
+          const baseFillHeight = goalValue > 0 ? Math.min(actualHeight, baseHeight) : actualHeight;
+          const columnHeight = Math.max(baseHeight, baseFillHeight + overflowHeight, MIN_BAR_HEIGHT);
+
+          const fillColor = isMet ? theme.status.met.barComplete : theme.status.met.bar;
+          const isDark = theme.background.surface !== '#fff';
+          const trackBackground = isDark ? '#444444' : theme.border.primary;
+          const trackBorderColor = isDark ? '#555555' : theme.border.primary;
+
           return (
               <TouchableOpacity 
                 key={index} 
                 style={[styles.barWrapper, isCurrent && styles.currentBarWrapper]}
                 onPress={() => item.periodStartMs && onSelect?.(item.periodStartMs)}
               >
-                {isCurrent && <View style={[styles.currentGlow, { backgroundColor: theme.primary.main }]} />}
-                <View style={styles.stackedBar}>
-                  {goalHeight > 0 && (
-                    <View
-                      style={[
-                        styles.goalBar,
-                        {
-                          height: goalHeight,
-                          borderColor: theme.border.primary,
-                          backgroundColor: theme.background.tertiary,
-                        },
-                      ]}
-                    />
-                  )}
+                <Text style={[styles.barValueLabel, { color: theme.text.tertiary, fontWeight: isCurrent ? '700' : '400' }]} numberOfLines={1}>
+                  {formatTotal(actualValue)}
+                </Text>
+                <View
+                  style={[
+                    styles.stackedBar,
+                    {
+                      height: columnHeight,
+                      backgroundColor: trackBackground,
+                      borderColor: trackBorderColor,
+                    },
+                  ]}
+                >
+                  {/* Filled portion */}
                   {baseFillHeight > 0 && (
                     <View
                       style={[
-                        styles.actualBar,
+                        styles.periodBarFill,
                         {
                           height: baseFillHeight,
-                          backgroundColor: isMet ? theme.status.met.barComplete : theme.status.met.bar,
+                          backgroundColor: fillColor,
+                          borderTopLeftRadius: overflowHeight > 0 ? 0 : 4,
+                          borderTopRightRadius: overflowHeight > 0 ? 0 : 4,
                         },
                       ]}
                     />
                   )}
+                  {/* Overflow portion rendered as a seamless extension */}
                   {overflowHeight > 0 && (
                     <View
                       style={[
-                        styles.actualBarOverflow,
+                        styles.periodBarOverflow,
                         {
                           height: overflowHeight,
-                          bottom: goalHeight > 0 ? goalHeight : 0,
+                          bottom: baseFillHeight,
                           backgroundColor: theme.status.met.barOverflow || theme.status.met.barComplete,
-                        },
-                      ]}
-                    />
-                  )}
-                  {goalHeight > 0 && (
-                    <View
-                      pointerEvents="none"
-                      style={[
-                        styles.goalMarker,
-                        {
-                          bottom: goalHeight,
-                          backgroundColor: theme.border.primary,
                         },
                       ]}
                     />
@@ -654,7 +776,9 @@ function StandardsProgressChart({ data, theme, onSelect }: { data: any[]; theme:
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
-        <View style={[styles.barContainer, { alignItems: 'flex-end', paddingBottom: 20 }]}>
+        <View style={[styles.lineChartContainer]}>
+          <View style={[styles.lineChartAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
+          <View style={[styles.lineChartYAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
           {chartData.map((item, index) => {
             const y = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
             const prevY = index > 0 ? (chartData[index - 1].value / maxVal) * CHART_CONTENT_HEIGHT : y;
@@ -671,27 +795,321 @@ function StandardsProgressChart({ data, theme, onSelect }: { data: any[]; theme:
                 onPress={() => item.periodStartMs && onSelect?.(item.periodStartMs)}
                 activeOpacity={0.8}
               >
-                {/* Diagonal connector from previous dot */}
-                {index > 0 && (
-                  <View 
-                    style={{
-                      position: 'absolute',
-                      width: length,
-                      height: 2,
-                      backgroundColor: theme.status.met.bar,
-                      left: (BAR_WIDTH / 2) - (dx / 2) - (length / 2),
-                      bottom: ((y + prevY) / 2) - 1,
-                      transform: [{ rotate: `${-angle}rad` }],
-                      zIndex: 0,
-                    }} 
-                  />
-                )}
+                <View style={styles.lineChartPointArea}>
+                  {index > 0 && (
+                    <View 
+                      style={[
+                        styles.lineSegment,
+                        {
+                          width: length,
+                          left: (BAR_WIDTH / 2) - (dx / 2) - (length / 2),
+                          bottom: ((y + prevY) / 2) - 1,
+                          transform: [{ rotate: `${-angle}rad` }],
+                          backgroundColor: theme.status.met.bar,
+                        },
+                      ]}
+                    />
+                  )}
 
-                <View style={[styles.dot, { bottom: y - 4, backgroundColor: theme.status.met.bar, zIndex: 1 }]} />
+                  {item.periodStartMs && (
+                    <View style={[styles.dot, { bottom: y - 4, backgroundColor: theme.status.met.bar, zIndex: 1 }]} />
+                  )}
+                </View>
                 
-                <Text style={[styles.label, { color: theme.text.tertiary }]} numberOfLines={1}>
-                  {item.periodStartMs ? DateTime.fromMillis(item.periodStartMs).toFormat('MM/dd') : item.label}
-                </Text>
+                {item.periodStartMs ? (
+                  <Text style={[styles.lineChartLabel, { color: theme.text.tertiary }]} numberOfLines={1}>
+                    {DateTime.fromMillis(item.periodStartMs).toFormat('MM/dd')}
+                  </Text>
+                ) : (
+                  <View style={styles.lineChartLabelSpacer} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+      {activeYear !== null && (
+        <View style={styles.yearIndicatorContainer}>
+          <Text style={[styles.yearLabel, { color: theme.text.tertiary }]}>
+            {activeYear}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+function CumulativeVolumeChart({ 
+  data, 
+  theme, 
+  unit,
+  onShowTooltip,
+}: { 
+  data: CumulativePoint[]; 
+  theme: any; 
+  unit: string;
+  onShowTooltip: (title: string, body: string, date?: string) => void;
+}) {
+  const chartData = useMemo<CumulativePoint[]>(() => {
+    if (data.length === 0) return [];
+    // Prepend a (0,0) point to show progress from origin
+    return [{ value: 0, label: '', date: '', timestamp: 0 }, ...data];
+  }, [data]);
+
+  const [chartWidth, setChartWidth] = useState(0);
+
+  const { scaledData, timeScale } = useMemo(() => {
+    const scale = determineTimeScale(chartData);
+    return {
+      scaledData: bucketCumulativeData(chartData, scale),
+      timeScale: scale,
+    };
+  }, [chartData]);
+
+  const effectiveData = scaledData.length > 0 ? scaledData : chartData;
+  const tickIndices = useMemo(() => getTickIndices(effectiveData.length), [effectiveData.length, timeScale]);
+
+  const maxVal = Math.max(...effectiveData.map((d) => d.value), 1);
+  const CHART_CONTENT_HEIGHT = CHART_HEIGHT - 20;
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [activeYear, setActiveYear] = useState<number | null>(
+    effectiveData.length > 0 && effectiveData[effectiveData.length - 1].timestamp 
+      ? new Date(effectiveData[effectiveData.length - 1].timestamp).getFullYear() 
+      : null
+  );
+
+  const handleChartLayout = useCallback(
+    (event: any) => {
+      const width = event.nativeEvent.layout.width;
+      if (Math.abs(width - chartWidth) > 1) {
+        setChartWidth(width);
+      }
+    },
+    [chartWidth]
+  );
+
+  const wantsCompressedView = timeScale !== 'daily';
+  const canCompress = wantsCompressedView && chartWidth > 0 && effectiveData.length > 1;
+  const slotWidth = canCompress
+    ? Math.max(chartWidth / Math.max(effectiveData.length - 1, 1), MIN_COMPRESSED_POINT_SPACING)
+    : DEFAULT_POINT_SPACING;
+  const gap = canCompress ? Math.max(slotWidth * 0.1, 2) : 4;
+  const wrapperWidth = Math.max(slotWidth - gap * 2, 8);
+  const labelWidth = Math.max(slotWidth, wrapperWidth + gap * 2);
+
+  const isCompressed = canCompress;
+  const slotSpacing = slotWidth;
+
+  const handleScroll = (event: any) => {
+    const scrollX = event.nativeEvent.contentOffset.x;
+    const viewportWidth = event.nativeEvent.layoutMeasurement.width;
+    const centerX = scrollX + viewportWidth / 2;
+    
+    // Calculate which bar is at the center of the viewport
+    const barWidth = slotSpacing; // dynamic slot width
+    const centerIndex = Math.round(centerX / barWidth);
+    const index = Math.max(0, Math.min(centerIndex, effectiveData.length - 1));
+    
+    if (effectiveData[index]?.timestamp) {
+      setActiveYear(new Date(effectiveData[index].timestamp).getFullYear());
+    }
+  };
+
+  useEffect(() => {
+    const lastItem = effectiveData[effectiveData.length - 1];
+    if (lastItem?.timestamp && activeYear === null) {
+      setActiveYear(new Date(lastItem.timestamp).getFullYear());
+    }
+  }, [effectiveData, activeYear]);
+
+  const latestIndex = effectiveData.length - 1;
+
+  // Calculate path for gradient area fill
+  const areaPath = useMemo(() => {
+    if (effectiveData.length < 2) return '';
+    
+    const points: { x: number; y: number }[] = [];
+    let currentX = 0;
+    
+    effectiveData.forEach((item, index) => {
+      const y = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
+      const isOriginPoint = index === 0 && item.timestamp === 0;
+      // Calculate x position: center of each wrapper
+      const xPos = currentX + wrapperWidth / 2 + gap;
+      // Adjust for origin point offset
+      const adjustedX = isOriginPoint ? xPos - wrapperWidth / 2 : xPos;
+      
+      points.push({
+        x: adjustedX,
+        y: CHART_CONTENT_HEIGHT - y, // SVG coordinates are top-down, so invert y
+      });
+      
+      if (index < effectiveData.length - 1) {
+        currentX += slotSpacing;
+      }
+    });
+    
+    // Create path: start at bottom-left, go through all points, end at bottom-right, close
+    if (points.length === 0) return '';
+    
+    const firstX = points[0].x;
+    const lastX = points[points.length - 1].x;
+    const bottomY = CHART_CONTENT_HEIGHT;
+    
+    let path = `M ${firstX} ${bottomY} `;
+    points.forEach((point) => {
+      path += `L ${point.x} ${point.y} `;
+    });
+    path += `L ${lastX} ${bottomY} Z`;
+    
+    return path;
+  }, [effectiveData, maxVal, CHART_CONTENT_HEIGHT, slotSpacing, wrapperWidth, gap]);
+
+  const gradientStartColor = theme.status.met.bar;
+  const gradientId = useId();
+
+  return (
+    <View onLayout={handleChartLayout}>
+      <ScrollView 
+        ref={scrollViewRef}
+        horizontal 
+        scrollEnabled={!isCompressed}
+        showsHorizontalScrollIndicator={false} 
+        contentContainerStyle={[
+          styles.chartScroll,
+          isCompressed && chartWidth > 0 ? { width: chartWidth } : null,
+        ]}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
+        <View
+          style={[
+            styles.lineChartContainer,
+            isCompressed && chartWidth > 0 ? { width: chartWidth } : null,
+          ]}
+        >
+          {/* Gradient area fill */}
+          {areaPath && effectiveData.length > 1 && (
+            <Svg
+              style={[
+                styles.gradientArea,
+                {
+                  height: CHART_CONTENT_HEIGHT,
+                  width: effectiveData.length > 1 ? (effectiveData.length - 1) * slotSpacing + wrapperWidth : wrapperWidth,
+                },
+              ]}
+              pointerEvents="none"
+            >
+              <Defs>
+                <LinearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
+                  <Stop offset="0%" stopColor={gradientStartColor} stopOpacity="0.25" />
+                  <Stop offset="50%" stopColor={gradientStartColor} stopOpacity="0.15" />
+                  <Stop offset="100%" stopColor={gradientStartColor} stopOpacity="0" />
+                </LinearGradient>
+              </Defs>
+              <Path d={areaPath} fill={`url(#${gradientId})`} />
+            </Svg>
+          )}
+          
+          <View style={[styles.lineChartAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
+          <View style={[styles.lineChartYAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
+          {effectiveData.map((item, index) => {
+            const y = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
+            const prevY = index > 0 ? (effectiveData[index - 1].value / maxVal) * CHART_CONTENT_HEIGHT : y;
+            
+            const dx = slotSpacing;
+            const dy = y - prevY;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const isLatest = index === latestIndex && item.timestamp > 0;
+            const formattedValue = `${formatTotal(item.value)} ${unit}`.trim();
+            const indicatorY = Math.min(Math.max(y, 0), CHART_CONTENT_HEIGHT);
+            const showLabel = tickIndices.has(index) && item.timestamp > 0;
+            const isOriginPoint = index === 0 && item.timestamp === 0;
+            const wrapperStyle = [
+              styles.barWrapper,
+              {
+                width: wrapperWidth,
+                marginHorizontal: gap,
+              },
+              // Pull the synthetic origin point onto the Y-axis so the line starts at the true origin
+              isOriginPoint && { marginLeft: -wrapperWidth / 2 },
+            ];
+            
+            return (
+              <TouchableOpacity 
+                key={index} 
+                style={wrapperStyle}
+                onPress={() => {
+                  if (item.date) {
+                    onShowTooltip(
+                      item.label || DateTime.fromMillis(item.timestamp).toFormat('MM/dd'),
+                      `${item.value} ${unit}`,
+                      item.date
+                    );
+                  }
+                }}
+                activeOpacity={0.8}
+              >
+                <View style={styles.lineChartPointArea}>
+                  {index > 0 && (
+                    <View 
+                      style={[
+                        styles.lineSegment,
+                        {
+                          width: length,
+                            left: (wrapperWidth / 2) - (dx / 2) - (length / 2),
+                          bottom: ((y + prevY) / 2) - 1,
+                          transform: [{ rotate: `${-angle}rad` }],
+                          backgroundColor: theme.status.met.bar,
+                        },
+                      ]}
+                    />
+                  )}
+
+                  {isLatest && (
+                    <>
+                      <View
+                        style={[
+                          styles.currentValueMarker,
+                          {
+                            bottom: indicatorY - 4,
+                            backgroundColor: theme.status.met.bar,
+                            borderColor: theme.background.surface,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          styles.currentValueLabel,
+                          {
+                            bottom: Math.min(indicatorY + 8, CHART_CONTENT_HEIGHT - 4),
+                            backgroundColor: theme.background.surface,
+                            color: theme.text.primary,
+                            borderColor: theme.border.secondary,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {formattedValue}
+                      </Text>
+                    </>
+                  )}
+                </View>
+                
+                {showLabel ? (
+                  <Text
+                    style={[
+                      styles.lineChartLabel,
+                      { color: theme.text.tertiary, width: labelWidth },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {formatAxisLabel(item, timeScale)}
+                  </Text>
+                ) : (
+                  <View style={[styles.lineChartLabelSpacer, { width: labelWidth }]} />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -736,7 +1154,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   chartArea: {
-    height: CHART_HEIGHT + 40,
+    height: CHART_HEIGHT + 80,
     justifyContent: 'center',
   },
   chartScroll: {
@@ -745,7 +1163,60 @@ const styles = StyleSheet.create({
   barContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    height: CHART_HEIGHT + 20,
+    height: CHART_HEIGHT + 60,
+    overflow: 'visible',
+  },
+  lineChartContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    height: CHART_HEIGHT + LINE_CHART_LABEL_HEIGHT,
+    position: 'relative',
+  },
+  gradientArea: {
+    position: 'absolute',
+    left: 0,
+    bottom: LINE_CHART_LABEL_HEIGHT,
+    zIndex: 0,
+  },
+  lineChartAxis: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: LINE_CHART_LABEL_HEIGHT,
+    height: 1,
+    opacity: 0.5,
+  },
+  lineChartYAxis: {
+    position: 'absolute',
+    left: 0,
+    bottom: LINE_CHART_LABEL_HEIGHT,
+    width: 1,
+    height: CHART_HEIGHT - 20,
+    opacity: 0.25,
+  },
+  lineChartPointArea: {
+    height: CHART_HEIGHT - 20,
+    width: '100%',
+    position: 'relative',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  lineChartLabel: {
+    fontSize: 9,
+    marginTop: 8,
+    textAlign: 'center',
+    width: BAR_WIDTH + 8,
+    minHeight: LINE_CHART_LABEL_HEIGHT - 8,
+  },
+  lineChartLabelSpacer: {
+    width: BAR_WIDTH + 8,
+    height: LINE_CHART_LABEL_HEIGHT,
+  },
+  lineSegment: {
+    position: 'absolute',
+    height: 2,
+    zIndex: 1,
   },
   periodGroup: {
       flexDirection: 'row',
@@ -764,54 +1235,32 @@ const styles = StyleSheet.create({
   currentBarWrapper: {
     // maybe some extra padding or margin?
   },
-  currentGlow: {
-    position: 'absolute',
-    top: -10,
-    bottom: 20,
-    left: 0,
-    right: 0,
-    borderRadius: 4,
-    opacity: 0.1,
-  },
   bar: {
     width: '80%',
     borderRadius: 4,
   },
-  goalBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 4,
-    borderWidth: 1,
-    opacity: 0.3,
-  },
-  actualBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 4,
-  },
-  actualBarOverflow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderRadius: 4,
-    borderWidth: 0,
-  },
-  goalMarker: {
-    position: 'absolute',
-    left: -4,
-    right: -4,
-    height: 2,
-    borderRadius: 1,
-  },
   stackedBar: {
     width: '80%',
-    height: CHART_HEIGHT,
     justifyContent: 'flex-end',
     position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  periodBarFill: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 4,
+  },
+  periodBarOverflow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
   goalLine: {
       position: 'absolute',
@@ -826,6 +1275,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     width: BAR_WIDTH + 8,
   },
+  barValueLabel: {
+    fontSize: 9,
+    textAlign: 'center',
+    width: BAR_WIDTH + 8,
+    marginBottom: 4,
+  },
   yearIndicatorContainer: {
     alignItems: 'center',
     marginTop: 4,
@@ -836,17 +1291,57 @@ const styles = StyleSheet.create({
     fontSize: 9,
     textAlign: 'center',
   },
-  description: {
-    fontSize: 12,
+  descriptionContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 8,
     marginBottom: 24,
+    paddingRight: 8,
+  },
+  description: {
+    fontSize: 12,
     fontStyle: 'italic',
+    flex: 1,
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  legendIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  legendText: {
+    fontSize: 11,
   },
   dot: {
       width: 8,
       height: 8,
       borderRadius: 4,
       position: 'absolute',
+  },
+  currentValueMarker: {
+      position: 'absolute',
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      borderWidth: 1,
+      zIndex: 2,
+  },
+  currentValueLabel: {
+      position: 'absolute',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 8,
+      fontSize: 10,
+      borderWidth: 1,
+      zIndex: 2,
+      maxWidth: 140,
+      textAlign: 'center',
   },
   modalOverlay: {
     flex: 1,

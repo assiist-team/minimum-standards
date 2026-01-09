@@ -149,7 +149,11 @@ export function StandardPeriodActivityLogsScreen() {
     }
 
     try {
-      await deleteLogEntry(log.id, log.standardId);
+      await deleteLogEntry({
+        logEntryId: log.id,
+        standardId: log.standardId,
+        occurredAtMs: log.occurredAtMs,
+      });
     } catch (error) {
       console.error('Failed to delete log:', error);
     }

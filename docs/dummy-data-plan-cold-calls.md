@@ -27,17 +27,19 @@ To visualize how the standard changed over time, we will simulate the user incre
 | **Week 7** | **2,500** | 2,500 | Mon: 500, Tue: 500, Wed: 500, Thu: 500, Fri: 500 | Met |
 | **Total** | | **10,550** | | |
 
-## Implementation Strategy: History Snapshots
+## Implementation Strategy: Logs First, Engine Builds History
 
-Since the "Activity History Engine" usually generates these rows as periods close, we will manually create `ActivityHistoryDoc` records for Weeks 1-6 to ensure they capture the **Standard (Goal)** progression shown above.
+Earlier revisions of this plan wrote `ActivityHistoryDoc` rows directly, which led to duplicate periods once the Activity History engine also generated rows for the same weeks.  
+The updated approach seeds **only the log entries**, then relies on the engine (running inside the mobile app) to backfill history rows deterministically.
 
-### Snapshot Logic
-For each week's `ActivityHistoryDoc`:
-1. **`standardSnapshot.minimum`**: Set to the "Standard (Goal)" for that week.
-2. **`total`**: Set to the "Actual Logs" sum for that week.
-3. **`status`**: Set to 'Met'.
-4. **`standardId`**: `XrPWoeyYW2RQ2oqp4LkR`
-5. **`activityId`**: `SiEEv8F5n0Da9OES782c`
+### Steps
+1. Run `scripts/seed-cold-calls.js` to wipe any previous cold-call logs/history for the test user and write the log entries for the 7-week progression.
+2. Launch the app (or run the Activity History engine in dev tooling) to trigger `useActivityHistoryEngine`, which will:
+   - detect the seeded logs,
+   - compute the completed period rollups, and
+   - write the `activityHistory` documents without duplication.
+3. Run `node scripts/patch-cold-calls-history.js` to overwrite each completed period’s `standardSnapshot.minimum` so the series shows the planned goal ramp (500 ➝ 2,500). This script assumes the engine has already created the history docs.
+4. If you need the history rows immediately after seeding, simply open the Activity History screen once; the engine runs globally at the app root.
 
 ### Log Entry Schema
 Each entry will follow this structure (from `packages/shared-model/src/types.ts`):

@@ -1,8 +1,41 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { useStandards } from '../useStandards';
-import type { Standard } from '@minimum-standards/shared-model';
+import { recomputeActivityHistoryPeriod } from '../../utils/activityHistoryRecompute';
+import { emitActivityLogMutation } from '../../utils/activityLogEvents';
+
+jest.mock('../../utils/activityHistoryRecompute', () => ({
+  recomputeActivityHistoryPeriod: jest.fn().mockResolvedValue(undefined),
+}));
+
+jest.mock('../../utils/activityLogEvents', () => ({
+  emitActivityLogMutation: jest.fn(),
+  subscribeToActivityLogMutations: jest.fn(),
+}));
 
 const mockUnsubscribe = jest.fn();
+
+type Standard = {
+  id: string;
+  activityId: string;
+  minimum: number;
+  unit: string;
+  cadence: { interval: number; unit: 'day' | 'week' | 'month' };
+  state: 'active' | 'archived';
+  summary: string;
+  archivedAtMs: number | null;
+  createdAtMs: number;
+  updatedAtMs: number;
+  deletedAtMs: number | null;
+  sessionConfig?: {
+    sessionLabel: string;
+    sessionsPerCadence: number;
+    volumePerSession: number;
+  };
+  periodStartPreference?: {
+    mode: 'default' | 'weekDay';
+    weekStartDay?: number;
+  };
+};
 
 type MockFirestoreModuleInstance = {
   collection: jest.Mock;
@@ -17,6 +50,12 @@ type MockFirestoreDefaultExport = jest.Mock & {
 
 let mockFirestoreModuleInstance: MockFirestoreModuleInstance;
 let mockAuth: jest.Mock;
+const mockRecomputeActivityHistoryPeriod =
+  recomputeActivityHistoryPeriod as jest.MockedFunction<
+    typeof recomputeActivityHistoryPeriod
+  >;
+const mockEmitActivityLogMutation =
+  emitActivityLogMutation as jest.MockedFunction<typeof emitActivityLogMutation>;
 
 jest.mock('@react-native-firebase/firestore', () => {
   mockFirestoreModuleInstance = {
@@ -54,7 +93,7 @@ jest.mock('@react-native-firebase/auth', () => {
 });
 
 describe('useStandards - Log Operations', () => {
-  const mockStandard: Standard = {
+  const mockStandard = {
     id: 'standard-1',
     activityId: 'activity-1',
     minimum: 100,
@@ -68,7 +107,7 @@ describe('useStandards - Log Operations', () => {
     deletedAtMs: null,
   };
 
-  const mockArchivedStandard: Standard = {
+  const mockArchivedStandard = {
     ...mockStandard,
     id: 'standard-2',
     state: 'archived',
@@ -134,6 +173,8 @@ describe('useStandards - Log Operations', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRecomputeActivityHistoryPeriod.mockClear();
+    mockEmitActivityLogMutation.mockClear();
     mockAuth.mockReturnValue({
       currentUser: { uid: 'test-user-id' },
     });
@@ -213,6 +254,41 @@ describe('useStandards - Log Operations', () => {
       });
     });
 
+    it('should emit mutation event and recompute history after update', async () => {
+      const { result } = renderHook(() => useStandards());
+
+      await waitFor(() => {
+        expect(result.current.standards.length).toBeGreaterThan(0);
+      });
+
+      await waitFor(async () => {
+        await result.current.updateLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-1',
+          value: 50,
+          occurredAtMs: 1000000,
+          note: 'Updated note',
+        });
+      });
+
+      expect(mockEmitActivityLogMutation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'update',
+          standardId: 'standard-1',
+          occurredAtMs: 1000000,
+          logEntryId: 'log-1',
+        })
+      );
+      expect(mockRecomputeActivityHistoryPeriod).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 'test-user-id',
+          occurredAtMs: 1000000,
+          source: 'log-edit',
+          standard: expect.objectContaining({ id: 'standard-1' }),
+        })
+      );
+    });
+
     it('should reject update for archived standard', async () => {
       mockStandardsOnSnapshot.mockImplementationOnce((onNext: (snapshot: any) => void) => {
         onNext(createStandardsSnapshot([mockArchivedStandard]));
@@ -266,7 +342,11 @@ describe('useStandards - Log Operations', () => {
       });
 
       await waitFor(async () => {
-        await result.current.deleteLogEntry('log-1', 'standard-1');
+        await result.current.deleteLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-1',
+          occurredAtMs: 1000000,
+        });
       });
 
       expect(logDocRefsById['log-1'].update).toHaveBeenCalledWith({
@@ -288,7 +368,11 @@ describe('useStandards - Log Operations', () => {
       });
 
       await expect(
-        result.current.deleteLogEntry('log-1', 'standard-2')
+        result.current.deleteLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-2',
+          occurredAtMs: 1000000,
+        })
       ).rejects.toThrow('This Standard is archived. Unarchive it to delete logs.');
     });
 
@@ -304,7 +388,11 @@ describe('useStandards - Log Operations', () => {
       });
 
       await expect(
-        result.current.deleteLogEntry('log-1', 'standard-1')
+        result.current.deleteLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-1',
+          occurredAtMs: 1000000,
+        })
       ).rejects.toThrow('User not authenticated');
     });
   });
@@ -318,7 +406,11 @@ describe('useStandards - Log Operations', () => {
       });
 
       await waitFor(async () => {
-        await result.current.restoreLogEntry('log-1', 'standard-1');
+        await result.current.restoreLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-1',
+          occurredAtMs: 1000000,
+        });
       });
 
       expect(logDocRefsById['log-1'].update).toHaveBeenCalledWith({
@@ -340,7 +432,11 @@ describe('useStandards - Log Operations', () => {
       });
 
       await expect(
-        result.current.restoreLogEntry('log-1', 'standard-2')
+        result.current.restoreLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-2',
+          occurredAtMs: 1000000,
+        })
       ).rejects.toThrow('This Standard is archived. Unarchive it to restore logs.');
     });
 
@@ -356,7 +452,11 @@ describe('useStandards - Log Operations', () => {
       });
 
       await expect(
-        result.current.restoreLogEntry('log-1', 'standard-1')
+        result.current.restoreLogEntry({
+          logEntryId: 'log-1',
+          standardId: 'standard-1',
+          occurredAtMs: 1000000,
+        })
       ).rejects.toThrow('User not authenticated');
     });
   });

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type ChartType = 'Daily Volume' | 'Daily Progress' | 'Period Progress' | 'Standards Progress';
+export type ChartType = 'Daily Volume' | 'Daily Progress' | 'Period Progress' | 'Standards Progress' | 'Cumulative Volume';
 
 interface UIPreferencesState {
   preferredActivityChart: ChartType;

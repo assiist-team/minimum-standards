@@ -23,6 +23,8 @@ import {
 } from '../utils/standardConverter';
 import { normalizeFirebaseError } from '../utils/errors';
 import { retryFirestoreWrite } from '../utils/retry';
+import { emitActivityLogMutation } from '../utils/activityLogEvents';
+import { recomputeActivityHistoryPeriod } from '../utils/activityHistoryRecompute';
 
 export interface CreateStandardInput {
   activityId: string;
@@ -47,6 +49,18 @@ export interface UpdateLogInput {
   value: number;
   occurredAtMs: number;
   note?: string | null;
+}
+
+export interface DeleteLogInput {
+  logEntryId: string;
+  standardId: string;
+  occurredAtMs: number;
+}
+
+export interface RestoreLogInput {
+  logEntryId: string;
+  standardId: string;
+  occurredAtMs: number;
 }
 
 export interface UpdateStandardInput {
@@ -74,8 +88,8 @@ export interface UseStandardsResult {
   deleteStandard: (standardId: string) => Promise<void>;
   createLogEntry: (input: CreateLogInput) => Promise<void>;
   updateLogEntry: (input: UpdateLogInput) => Promise<void>;
-  deleteLogEntry: (logEntryId: string, standardId: string) => Promise<void>;
-  restoreLogEntry: (logEntryId: string, standardId: string) => Promise<void>;
+  deleteLogEntry: (input: DeleteLogInput) => Promise<void>;
+  restoreLogEntry: (input: RestoreLogInput) => Promise<void>;
   canLogStandard: (standardId: string) => boolean;
 }
 
@@ -339,6 +353,26 @@ export function useStandards(): UseStandardsResult {
     [standards]
   );
 
+  const triggerActivityHistoryRecompute = useCallback(
+    (standard: Standard, occurredAtMs: number) => {
+      if (!userId) {
+        return;
+      }
+
+      void recomputeActivityHistoryPeriod({
+        userId,
+        standard,
+        occurredAtMs,
+      }).catch((error) => {
+        console.error(
+          '[useStandards] Failed to recompute activity history period',
+          error
+        );
+      });
+    },
+    [userId]
+  );
+
   const createLogEntry = useCallback(
     async ({ standardId, value, occurredAtMs, note = null }: CreateLogInput) => {
       if (!userId) {
@@ -371,14 +405,29 @@ export function useStandards(): UseStandardsResult {
           deletedAt: null,
         });
       });
+
+      emitActivityLogMutation({
+        type: 'create',
+        standardId,
+        activityId: target.activityId,
+        occurredAtMs,
+        logEntryId: logsRef.id,
+      });
+
+      triggerActivityHistoryRecompute(target, occurredAtMs);
     },
-    [userId, standards, canLogStandard]
+    [userId, standards, canLogStandard, triggerActivityHistoryRecompute]
   );
 
   const updateLogEntry = useCallback(
     async ({ logEntryId, standardId, value, occurredAtMs, note = null }: UpdateLogInput) => {
       if (!userId) {
         throw new Error('User not authenticated');
+      }
+
+      const standard = standards.find((item) => item.id === standardId);
+      if (!standard) {
+        throw new Error('Standard not found');
       }
 
       if (!canLogStandard(standardId)) {
@@ -401,14 +450,29 @@ export function useStandards(): UseStandardsResult {
           updatedAt: serverTimestamp(),
         });
       });
+
+      emitActivityLogMutation({
+        type: 'update',
+        standardId,
+        activityId: standard.activityId,
+        occurredAtMs,
+        logEntryId,
+      });
+
+      triggerActivityHistoryRecompute(standard, occurredAtMs);
     },
-    [userId, canLogStandard]
+    [userId, standards, canLogStandard, triggerActivityHistoryRecompute]
   );
 
   const deleteLogEntry = useCallback(
-    async (logEntryId: string, standardId: string) => {
+    async ({ logEntryId, standardId, occurredAtMs }: DeleteLogInput) => {
       if (!userId) {
         throw new Error('User not authenticated');
+      }
+
+      const standard = standards.find((item) => item.id === standardId);
+      if (!standard) {
+        throw new Error('Standard not found');
       }
 
       if (!canLogStandard(standardId)) {
@@ -428,14 +492,29 @@ export function useStandards(): UseStandardsResult {
           updatedAt: serverTimestamp(),
         });
       });
+
+      emitActivityLogMutation({
+        type: 'delete',
+        standardId,
+        activityId: standard.activityId,
+        occurredAtMs,
+        logEntryId,
+      });
+
+      triggerActivityHistoryRecompute(standard, occurredAtMs);
     },
-    [userId, canLogStandard]
+    [userId, standards, canLogStandard, triggerActivityHistoryRecompute]
   );
 
   const restoreLogEntry = useCallback(
-    async (logEntryId: string, standardId: string) => {
+    async ({ logEntryId, standardId, occurredAtMs }: RestoreLogInput) => {
       if (!userId) {
         throw new Error('User not authenticated');
+      }
+
+      const standard = standards.find((item) => item.id === standardId);
+      if (!standard) {
+        throw new Error('Standard not found');
       }
 
       if (!canLogStandard(standardId)) {
@@ -455,8 +534,18 @@ export function useStandards(): UseStandardsResult {
           updatedAt: serverTimestamp(),
         });
       });
+
+      emitActivityLogMutation({
+        type: 'restore',
+        standardId,
+        activityId: standard.activityId,
+        occurredAtMs,
+        logEntryId,
+      });
+
+      triggerActivityHistoryRecompute(standard, occurredAtMs);
     },
-    [userId, canLogStandard]
+    [userId, standards, canLogStandard, triggerActivityHistoryRecompute]
   );
 
   const loading = standardsLoading;

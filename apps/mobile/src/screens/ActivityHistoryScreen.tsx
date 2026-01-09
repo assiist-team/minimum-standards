@@ -124,12 +124,17 @@ export function ActivityHistoryScreen({
 
   // Merge persisted and synthetic rows
   const mergedRows = useMemo(() => {
-    return mergeActivityHistoryRows({
+    const merged = mergeActivityHistoryRows({
       persistedRows,
       syntheticRows,
       timezone,
     });
-  }, [persistedRows, syntheticRows, timezone]);
+    if (relevantStandardIds.length === 0) {
+      return merged;
+    }
+    const allowed = new Set(relevantStandardIds);
+    return merged.filter((row) => allowed.has(row.standardId));
+  }, [persistedRows, syntheticRows, timezone, relevantStandardIds]);
 
   const effectiveRangeStartMs = useMemo(() => {
     if (timeRange !== 'All') {
@@ -328,11 +333,24 @@ export function ActivityHistoryScreen({
         };
       });
 
+    // Cumulative Volume: accumulate daily volume over time
+    let cumulativeTotal = 0;
+    const cumulativeVolume = dailyVolume.map((day) => {
+      cumulativeTotal += day.value;
+      return {
+        label: day.label,
+        value: cumulativeTotal,
+        date: day.date,
+        timestamp: day.timestamp,
+      };
+    });
+
     return {
       dailyVolume,
       dailyProgress,
       periodProgress,
       standardsProgress,
+      cumulativeVolume,
     };
   }, [filteredRowsForList, rangeLogs, effectiveRangeStartMs, nowMs, timezone]);
 
@@ -461,6 +479,7 @@ export function ActivityHistoryScreen({
               dailyProgress={chartData.dailyProgress}
               periodProgress={chartData.periodProgress}
               standardsProgress={chartData.standardsProgress}
+              cumulativeVolume={chartData.cumulativeVolume}
               unit={unit}
               onSelectPeriod={handleSelectPeriod}
             />

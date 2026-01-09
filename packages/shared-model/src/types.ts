@@ -71,7 +71,7 @@ export type DashboardPins = {
   updatedAtMs: TimestampMs;
 };
 
-export type ActivityHistorySource = 'boundary' | 'resume';
+export type ActivityHistorySource = 'boundary' | 'resume' | 'log-edit';
 
 export type ActivityHistoryStandardSnapshot = {
   minimum: number;

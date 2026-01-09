@@ -10,6 +10,10 @@ import {
   orderBy,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
+import {
+  subscribeToActivityLogMutations,
+  ActivityLogMutation,
+} from '../utils/activityLogEvents';
 
 export interface ActivityLogSlice {
   id: string;
@@ -84,20 +88,107 @@ export function useActivityRangeLogs(
   const prevCacheKeyRef = useRef<string | null>(null);
   const listenerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const chunkResultsRef = useRef<Map<number, ActivityLogSlice[]>>(new Map());
+  const standardIdsRef = useRef<string[]>(standardIds);
+  const startMsRef = useRef(startMs);
+  const endMsRef = useRef(endMs);
+  const userIdRef = useRef(userId);
+  const shouldUseListenersRef = useRef(shouldUseListeners);
   
   // Initialize from cache if available
-  const initialCacheKey = userId && standardIds.length > 0
-    ? createCacheKey(userId, standardIds, startMs, endMs)
-    : null;
+  const initialCacheKey =
+    userId && standardIds.length > 0
+      ? createCacheKey(userId, standardIds, startMs, endMs)
+      : null;
   const initialCached = initialCacheKey ? getCachedResult(initialCacheKey) : null;
-  
-  // Track whether listeners should be active (false when using fresh cache)
-  const [shouldUseListeners, setShouldUseListeners] = useState(!initialCached?.isFresh);
-  
+  const initialCacheHasData =
+    !!initialCached && Array.isArray(initialCached.logs) && initialCached.logs.length > 0;
+  const initialCacheUsable = Boolean(initialCached?.isFresh && initialCacheHasData);
+
+  // Track whether listeners should be active (false when using fresh cache with data)
+  const [shouldUseListeners, setShouldUseListeners] = useState(!initialCacheUsable);
+
   const [logs, setLogs] = useState<ActivityLogSlice[]>(initialCached?.logs || []);
-  const [loading, setLoading] = useState(!initialCached);
+  const [loading, setLoading] = useState(!initialCacheUsable);
   const [error, setError] = useState<Error | null>(null);
   const prevShouldUseListenersRef = useRef(shouldUseListeners);
+
+  useEffect(() => {
+    standardIdsRef.current = standardIds;
+  }, [standardIds]);
+
+  useEffect(() => {
+    startMsRef.current = startMs;
+  }, [startMs]);
+
+  useEffect(() => {
+    endMsRef.current = endMs;
+  }, [endMs]);
+
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
+
+  useEffect(() => {
+    shouldUseListenersRef.current = shouldUseListeners;
+  }, [shouldUseListeners]);
+
+  useEffect(() => {
+    if (!userId || standardIds.length === 0) {
+      return;
+    }
+
+    const handleMutation = (mutation: ActivityLogMutation) => {
+      const currentStandardIds = standardIdsRef.current;
+      if (!currentStandardIds || currentStandardIds.length === 0) {
+        return;
+      }
+
+      if (!currentStandardIds.includes(mutation.standardId)) {
+        return;
+      }
+
+      const currentStart = startMsRef.current;
+      const currentEnd = endMsRef.current;
+      if (
+        typeof currentStart !== 'number' ||
+        typeof currentEnd !== 'number' ||
+        mutation.occurredAtMs < currentStart ||
+        mutation.occurredAtMs >= currentEnd
+      ) {
+        return;
+      }
+
+      const currentUserId = userIdRef.current;
+      if (!currentUserId) {
+        return;
+      }
+
+      const cacheKey = createCacheKey(
+        currentUserId,
+        currentStandardIds,
+        currentStart,
+        currentEnd
+      );
+      queryCache.delete(cacheKey);
+      chunkResultsRef.current.clear();
+
+      if (listenerTimeoutRef.current) {
+        clearTimeout(listenerTimeoutRef.current);
+        listenerTimeoutRef.current = null;
+      }
+
+      if (!shouldUseListenersRef.current) {
+        setShouldUseListeners(true);
+      } else {
+        setLoading(true);
+      }
+    };
+
+    const unsubscribe = subscribeToActivityLogMutations(handleMutation);
+    return () => {
+      unsubscribe();
+    };
+  }, [userId, standardIds.length]);
 
   useEffect(() => {
     const prevShouldUseListeners = prevShouldUseListenersRef.current;
@@ -136,25 +227,26 @@ export function useActivityRangeLogs(
       }
       
       if (cached) {
-        setLogs(cached.logs);
-        setLoading(false);
+        const cacheLogs = Array.isArray(cached.logs) ? cached.logs : [];
+        const cacheHasData = cacheLogs.length > 0;
+        const cacheUsable = cached.isFresh && cacheHasData;
+
+        setLogs(cacheLogs);
+        setLoading(!cacheUsable);
         setError(null);
         
-        // If cache is fresh, defer listener setup until TTL expires
-        if (cached.isFresh) {
+        if (cacheUsable) {
           setShouldUseListeners(false);
           const entry = queryCache.get(currentCacheKey);
           if (entry) {
             const age = Date.now() - entry.timestamp;
             const remainingTTL = CACHE_TTL_MS - age;
-            // Set up listeners after cache expires
             listenerTimeoutRef.current = setTimeout(() => {
               listenerTimeoutRef.current = null;
               setShouldUseListeners(true);
             }, remainingTTL);
           }
         } else {
-          // Cache expired, set up listeners immediately
           setShouldUseListeners(true);
           setLoading(true);
         }
@@ -169,7 +261,9 @@ export function useActivityRangeLogs(
     // If we shouldn't use listeners yet (cache is fresh), skip listener setup
     if (!shouldUseListeners) {
       const currentCached = getCachedResult(currentCacheKey);
-      if (currentCached?.isFresh) {
+      const cacheHasData =
+        !!currentCached && Array.isArray(currentCached.logs) && currentCached.logs.length > 0;
+      if (currentCached?.isFresh && cacheHasData) {
         return () => {
           if (listenerTimeoutRef.current) {
             clearTimeout(listenerTimeoutRef.current);

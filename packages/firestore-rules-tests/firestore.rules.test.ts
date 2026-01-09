@@ -285,6 +285,40 @@ describe('Firestore security rules: user isolation', () => {
       await assertSucceeds(setDoc(historyRef, validPayload));
     });
 
+    test('allows owner to create activityHistory with log-edit source', async () => {
+      const u1 = testEnv.authenticatedContext('u1');
+      const db1 = u1.firestore();
+      const docId = 'a1__s1__1736121600002';
+      const historyRef = doc(db1, `users/u1/activityHistory/${docId}`);
+
+      const payload = {
+        id: docId,
+        activityId: 'a1',
+        standardId: 's1',
+        referenceTimestampMs: 1736121600002,
+        standardSnapshot: {
+          minimum: 100,
+          unit: 'calls',
+          cadence: { interval: 1, unit: 'week' },
+          sessionConfig: {
+            sessionLabel: 'call',
+            sessionsPerCadence: 5,
+            volumePerSession: 20,
+          },
+          summary: '100 calls / week',
+        },
+        total: 75,
+        currentSessions: 3,
+        targetSessions: 5,
+        status: 'In Progress',
+        progressPercent: 75,
+        generatedAtMs: Date.now(),
+        source: 'log-edit',
+      };
+
+      await assertSucceeds(setDoc(historyRef, payload));
+    });
+
     test('allows targetSessions to be zero when standard uses volume-only tracking', async () => {
       const u1 = testEnv.authenticatedContext('u1');
       const db1 = u1.firestore();
