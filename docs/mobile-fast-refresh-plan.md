@@ -92,12 +92,21 @@ export EXTRA_PACKAGER_ARGS="${EXTRA_PACKAGER_ARGS} --reset-cache"
    - Start Metro via `npm run dev:ios` (or `npm start`).  
    - Verify Dev Menu shows “Connected to Metro”.
 
+_Status: ✅ Complete (2026‑01‑08)._  
+- `apps/mobile/package.json` now exposes `npm run dev:ios`, which spawns Metro + `react-native run-ios` with `SKIP_BUNDLING=1` and `FORCE_EMBEDDED_JS_BUNDLE=0` by default.  
+- `scripts/check-metro.sh` validates Node ≥20, Watchman watches, and port 8081 availability before attempting an Xcode run.  
+- `scripts/mobile-dev-setup.md` and `docs/mobile-build-and-launch.md` document the TL;DR daily workflow, Metro preflight, and verification logs.
+
 ### Phase C – Embedded Bundle Fallback Hardening
 
 1. **Formalize the “nuclear” script** already described in Section 2 of the build doc (`scripts/reset-mobile-ios.sh`).  
    - Steps: package rebuilds, `npm install`, kill Metro, `npx react-native bundle --reset-cache`, optional `simctl uninstall`.  
 2. **Add a verification step** to the script that greps for known guard strings (e.g., `"firestore is required"`) in the produced `main.jsbundle`.  
 3. **Document how to swap schemes/flags** for regression testing, including CLI invocation (`FORCE_EMBEDDED_JS_BUNDLE=1 npx react-native run-ios --device ...`).
+
+_Status: ✅ Complete (2026‑01‑08)._  
+- `scripts/reset-mobile-ios.sh` now automates the rebuild/install/kill/bundle sequence, clears DerivedData, optionally runs `simctl uninstall`, and gates success on finding `firestore is required` (override via `BUNDLE_GUARD_STRING=...`).  
+- `docs/mobile-build-and-launch.md` documents the script, lists each automated step, and shows the exact CLI (`FORCE_EMBEDDED_JS_BUNDLE=1 SKIP_BUNDLING=0 npx react-native run-ios ...`) for regression testing without touching Xcode.
 
 ### Phase D – Validation & Rollout
 
@@ -114,7 +123,20 @@ export EXTRA_PACKAGER_ARGS="${EXTRA_PACKAGER_ARGS} --reset-cache"
 
 ---
 
-## 5. Follow-ups / Decision Points
+## 5. Implementation Tracking
+
+| Phase | Scope | Status | Notes |
+| --- | --- | --- | --- |
+| Phase A – Dual Scheme Strategy | Twin schemes + `SKIP_BUNDLING`-aware run script + doc updates | ✅ **Complete (2026‑01‑08)** | `MinimumStandardsMobile (Fast Refresh)` and `MinimumStandardsMobile (Embedded)` committed; run script now skips when `SKIP_BUNDLING=1`; build doc updated with scheme matrix/CLI instructions. |
+| Phase B – Developer Ergonomics + Health Checks | `npm run dev:ios`, Metro health check, daily loop doc | ✅ **Complete (2026‑01‑08)** | `npm run dev:ios` added, `scripts/check-metro.sh` enforces Metro prerequisites, and the Fast Refresh daily loop now lives in `scripts/mobile-dev-setup.md` + the build playbook TL;DR. |
+| Phase C – Embedded Bundle Hardening | Reset script + guard-string verification + regression instructions | ✅ **Complete (2026‑01‑08)** | `scripts/reset-mobile-ios.sh` automates the nuclear rebuild, verifies `"firestore is required"`, and the build doc now covers the regression CLI/flag handoff. |
+| Phase D – Validation & Rollout | Fast Refresh + embedded smoke tests, rollout comms | ⏳ **Not started** | Blocked on Phase B/C deliverables; plan smoke tests once automation exists. |
+
+Use this table as the single source of truth before touching any Metro- or bundle-adjacent config. Update the status/date columns as each phase lands.
+
+---
+
+## 6. Follow-ups / Decision Points
 
 - **Automation depth**: Do we want a watcher that automatically rebuilds packages + reinstalls into `apps/mobile`, or is manual still acceptable?  
 - **CI enforcement**: Should CI fail if `main.jsbundle` changes without running the reset script (guarding against stale bundles)?  

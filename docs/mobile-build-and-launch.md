@@ -1,6 +1,6 @@
 # MinimumStandardsMobile – Build & Launch Playbook
 
-_Last updated: 2025‑12‑23_
+_Last updated: 2026‑01‑08_
 
 This document captures the full end‑to‑end workflow for rebuilding, bundling, and launching the React Native iOS app inside the `minimum_standards` monorepo. Follow these steps whenever you need a clean rebuild, are chasing bundle drift, or are preparing a release build.
 
@@ -17,6 +17,17 @@ Metro and the Xcode bundler only read the compiled files living under `apps/mobi
 
 ---
 
+## Fast Refresh Daily Loop (TL;DR)
+
+1. **Rebuild touched packages** via `npm run build` inside each package plus `npm install` inside `apps/mobile`.
+2. **Preflight Metro** with `./scripts/check-metro.sh` (verifies Node >=20, Watchman watches, and that port `8081` is free).
+3. **Launch the Fast Refresh scheme**: `cd apps/mobile && npm run dev:ios`. This starts Metro + the simulator together with `SKIP_BUNDLING=1` and `FORCE_EMBEDDED_JS_BUNDLE=0`.
+4. **Check the logs** for `[AppDelegate] Using Metro bundle at:` and confirm the Dev Menu reads “Connected to Metro”.
+
+See `scripts/mobile-dev-setup.md` for the full daily checklist and recovery steps.
+
+---
+
 ## 1. Architecture Overview
 
 - **Repo layout**
@@ -25,12 +36,21 @@ Metro and the Xcode bundler only read the compiled files living under `apps/mobi
   - `apps/mobile/ios/MinimumStandardsMobile.xcworkspace`: Xcode project that builds the iOS app and always embeds a JS bundle.
 
 - **Embedded bundle policy**
-  - `AppDelegate` has `FORCE_EMBEDDED_JS_BUNDLE` enabled in all debug builds, so the app ignores Metro at runtime and loads `ios/main.jsbundle` (or the copy Xcode places into `DerivedData/.../MinimumStandardsMobile.app/main.jsbundle`).
-  - The default Xcode **“Bundle React Native code and images”** run script will rebuild and copy its own bundle unless you:
-    - Set `SKIP_BUNDLING=1` on the scheme (recommended during day‑to‑day dev), **or**
-    - Export `FORCE_BUNDLING=1` and append `--reset-cache` to `EXTRA_PACKAGER_ARGS` inside the script so it intentionally re-bundles with a clean Metro cache (current repo default).
+  - `AppDelegate` still inspects `FORCE_EMBEDDED_JS_BUNDLE` at launch. When the flag is `0` it prints `[AppDelegate] Using Metro bundle at: …` and streams code from Metro; when the flag is `1` it prints `[AppDelegate] FORCE_EMBEDDED_JS_BUNDLE enabled - loading embedded bundle` and falls back to the baked `main.jsbundle`.
+  - The **“Bundle React Native code and images”** phase now honors `SKIP_BUNDLING`. If the environment provides `SKIP_BUNDLING=1`, the script logs that it is skipping bundling and leaves Metro in charge. Otherwise it exports `FORCE_BUNDLING=1`, appends `--reset-cache` to `EXTRA_PACKAGER_ARGS`, and rebuilds `main.jsbundle` on every run.
+- **Scheme matrix**
+  - `MinimumStandardsMobile (Fast Refresh)`  
+    - Daily-driver scheme for Metro/Fast Refresh.  
+    - Env vars: `FORCE_EMBEDDED_JS_BUNDLE=0`, `SKIP_BUNDLING=1`.  
+    - Expect `[AppDelegate] Using Metro bundle at:` in the device log.  
+    - CLI equivalent: ``SKIP_BUNDLING=1 FORCE_EMBEDDED_JS_BUNDLE=0 npx react-native run-ios --scheme "MinimumStandardsMobile (Fast Refresh)"`` (add `--simulator`/`--device` as needed).
+  - `MinimumStandardsMobile (Embedded)`  
+    - Regression / release / CI scheme that always bakes the JS bundle.  
+    - Env vars: `FORCE_EMBEDDED_JS_BUNDLE=1`, `SKIP_BUNDLING=0`.  
+    - Expect `[AppDelegate] FORCE_EMBEDDED_JS_BUNDLE enabled - loading embedded bundle`.  
+    - CLI equivalent: ``FORCE_EMBEDDED_JS_BUNDLE=1 SKIP_BUNDLING=0 npx react-native run-ios --scheme "MinimumStandardsMobile (Embedded)"``.
 
-Keep this in mind: if the embedded bundle step isn’t explicitly controlled, any JS change requires a full Xcode rebuild to take effect, and stale bundles are very easy to ship.
+Keep this in mind: if you launch the Embedded scheme without regenerating the bundle, you will still run whatever `main.jsbundle` is checked into the app resources.
 
 ---
 
@@ -67,7 +87,7 @@ Run these steps whenever you need to guarantee that the iOS binary contains the 
    npx react-native start --reset-cache
    ```
 
-6. **Regenerate the embedded bundle (always, because of FORCE_EMBEDDED_JS_BUNDLE)**
+6. **Regenerate the embedded bundle (required whenever you plan to run the Embedded scheme)**
    ```bash
    cd /Users/benjaminmackenzie/Dev/minimum_standards/apps/mobile
    npx react-native bundle \
@@ -81,9 +101,9 @@ Run these steps whenever you need to guarantee that the iOS binary contains the 
 
 7. **Xcode clean & rebuild**
    - Open `MinimumStandardsMobile.xcworkspace`.
-   - Ensure either:
-     - Scheme Env Var `SKIP_BUNDLING=1`, **or**
-     - Run script exports `FORCE_BUNDLING=1` and sets `EXTRA_PACKAGER_ARGS="--reset-cache …"`.
+   - Pick a scheme deliberately:
+     - `MinimumStandardsMobile (Fast Refresh)` for Metro/Fast Refresh work (no bundling, `SKIP_BUNDLING=1`).
+     - `MinimumStandardsMobile (Embedded)` for release/CI runs (forced bundling with `--reset-cache`).
    - Product → **Clean Build Folder** (Cmd + Shift + K), then quit and reopen Xcode.
    - Product → **Build** (Cmd + B), then Product → **Run** (Cmd + R).
 
@@ -98,7 +118,8 @@ Run these steps whenever you need to guarantee that the iOS binary contains the 
 
 ## 3. Quick Iteration Tips
 
-- **During development:** Prefer disabling `FORCE_EMBEDDED_JS_BUNDLE` or setting `SKIP_BUNDLING=1` so Metro’s live bundle is used. This turns RN dev back into the normal Fast Refresh workflow and avoids multi-minute rebuild cycles for every JS tweak.
+- **During development:** Select the `MinimumStandardsMobile (Fast Refresh)` scheme (equivalent to `FORCE_EMBEDDED_JS_BUNDLE=0`, `SKIP_BUNDLING=1`) or just run `npm run dev:ios` inside `apps/mobile`. Both paths restore Fast Refresh, Dev Menu, and LogBox without multi-minute rebuilds.
+- **Preflight Metro before every session:** `./scripts/check-metro.sh` validates Node/Watchman and ensures port `8081` is free so Xcode doesn’t silently fall back to the embedded bundle.
 - **When testing embedded-bundle behavior:** Keep `FORCE_BUNDLING=1` + `--reset-cache` in the run script. That guarantees Xcode rebuilds the bundle with a clean cache every time you hit Cmd + R.
 - **Workspace changes:** Any edit under `packages/*` requires `npm run build` in that package plus `npm install` inside `apps/mobile` before Metro sees it. Metro always reads the compiled JavaScript sitting under `apps/mobile/node_modules/.../dist`.
 - **Inspecting the live bundle:** `npx react-native bundle --platform ios --dev true --minify false --bundle-output /tmp/dev-main.jsbundle --reset-cache` gives you an unminified snapshot you can `grep` for call‑sites.
@@ -129,36 +150,29 @@ Run these steps whenever you need to guarantee that the iOS binary contains the 
 
 ---
 
-## 6. One-Command Resync Script (optional)
+## 6. Nuclear Reset Script (`scripts/reset-mobile-ios.sh`)
 
-If you want a single script to perform the “nuclear” procedure, drop something like this into `scripts/reset-mobile-ios.sh`:
+Run `./scripts/reset-mobile-ios.sh` from the repo root whenever you need the “nuclear” rebuild (e.g., prepping the embedded bundle for regression tests or release validation). The script now lives in the repo and automates every step called out in Section&nbsp;2:
 
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
+- Rebuilds every workspace package that exposes a `build` script (`npm run build` inside `packages/*`).
+- Reinstalls `apps/mobile` dependencies so Metro/Xcode read the freshly compiled packages.
+- Kills anything bound to port `8081`, clears `~/Library/Developer/Xcode/DerivedData/MinimumStandardsMobile-*`, and uninstalls the app from the booted simulator (when one is available).
+- Re-runs `npx react-native bundle --reset-cache` so `apps/mobile/ios/main.jsbundle` matches the current workspace.
+- Verifies the guard string `firestore is required` is present before exiting. Override the check via `BUNDLE_GUARD_STRING="my sentinel" ./scripts/reset-mobile-ios.sh` if we ever change the runtime message.
+- Prints the follow-up command so you can immediately relaunch the embedded scheme without spelunking for env vars again.
 
-pushd packages/firestore-model
-npm run build
-popd
+### Launching the embedded bundle after the reset
 
-pushd apps/mobile
-npm install
-lsof -ti :8081 | xargs kill || true
-rm -rf ~/Library/Developer/Xcode/DerivedData/MinimumStandardsMobile-*
-npx react-native start --reset-cache &
-METRO_PID=$!
-npx react-native bundle \
-  --platform ios \
-  --dev false \
-  --entry-file index.js \
-  --bundle-output ios/main.jsbundle \
-  --assets-dest ios \
-  --reset-cache
-kill "$METRO_PID"
-popd
+After the script finishes, you can either select the `MinimumStandardsMobile (Embedded)` scheme inside Xcode or run the equivalent CLI:
+
+```
+FORCE_EMBEDDED_JS_BUNDLE=1 SKIP_BUNDLING=0 \
+  npx react-native run-ios \
+  --scheme "MinimumStandardsMobile (Embedded)" \
+  --device "Ben's iPhone"
 ```
 
-Run the script, then handle the Xcode clean/build manually. This removes most of the copy‑paste toil and lowers the chance of missing a step.
+Drop the `--device` flag (or swap it for `--simulator "iPhone 15 Pro"`) when you want to target the currently booted simulator. Either way, you’ll see `[AppDelegate] FORCE_EMBEDDED_JS_BUNDLE enabled - loading embedded bundle` in the logs once the app boots.
 
 ---
 

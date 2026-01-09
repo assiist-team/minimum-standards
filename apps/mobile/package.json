@@ -5,6 +5,7 @@
   "scripts": {
     "android": "concurrently \"npm start\" \"react-native run-android\"",
     "ios": "concurrently \"npm start\" \"react-native run-ios\"",
+    "dev:ios": "SKIP_BUNDLING=1 FORCE_EMBEDDED_JS_BUNDLE=0 concurrently \"npm start\" \"react-native run-ios --scheme \\\"MinimumStandardsMobile (Fast Refresh)\\\"\"",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",

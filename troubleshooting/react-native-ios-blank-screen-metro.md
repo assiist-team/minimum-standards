@@ -575,7 +575,7 @@ Until these checkpoints appear consistently in Xcode logs, assume the blank scre
   `RCT_NEW_ARCH_ENABLED=0 USE_FABRIC=0 RCT_FABRIC_ENABLED=0 bundle exec pod install`  
   (run this again any time `ios/build` is wiped—codegen output lives there). If you hit `EPERM` when the script rewrites `RCTThirdPartyFabricComponentsProvider.*`, delete those two files from `node_modules/react-native/React/Fabric/` and rerun the same command.
 - Cleaned build + simulator compile test succeeded:  
-  `xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme MinimumStandardsMobile -configuration Debug -sdk iphonesimulator -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build`
+  `xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme "MinimumStandardsMobile (Embedded)" -configuration Debug -sdk iphonesimulator -derivedDataPath build CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO build`
 - ✅ Result: native build now completes on the Paper bridge. Next verification steps are on-device smoke tests (real login, navigation) plus re-adding any required URL handlers (e.g., Google Sign-In) so deep links continue to work without relying on Fabric.
 
 ### 10.2 Paper bridge checklist (2025-12-14 @ 18:10 PT)

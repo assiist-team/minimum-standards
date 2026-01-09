@@ -194,7 +194,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\nexport FORCE_BUNDLING=1\nexport EXTRA_PACKAGER_ARGS=\"${EXTRA_PACKAGER_ARGS} --reset-cache\"\n\n/bin/sh -c \"\\\"$WITH_ENVIRONMENT\\\" \\\"$REACT_NATIVE_XCODE\\\"\"\n";
+			shellScript = "set -e\n\nWITH_ENVIRONMENT=\"$REACT_NATIVE_PATH/scripts/xcode/with-environment.sh\"\nREACT_NATIVE_XCODE=\"$REACT_NATIVE_PATH/scripts/react-native-xcode.sh\"\n\nSKIP_BUNDLING_VALUE=\"${SKIP_BUNDLING:-0}\"\nif [ \"$SKIP_BUNDLING_VALUE\" = \"1\" ]; then\n  echo \"[Bundle] SKIP_BUNDLING=1 - skipping React Native bundling phase\"\nelse\n  export FORCE_BUNDLING=1\n  export EXTRA_PACKAGER_ARGS=\"${EXTRA_PACKAGER_ARGS} --reset-cache\"\nfi\n\n/bin/sh -c \"\\\"$WITH_ENVIRONMENT\\\" \\\"$REACT_NATIVE_XCODE\\\"\"\n";
 		};
 		11005094012EC39973B0287C /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;

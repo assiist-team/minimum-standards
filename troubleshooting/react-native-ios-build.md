@@ -224,8 +224,8 @@ Use this list for each iteration and update the section above with the outcome:
    - `rm -rf ~/Library/Developer/Xcode/DerivedData/MinimumStandardsMobile-*`
 3. **Open the workspace and build for device**
    - `xed .`
-   - In Xcode: select `MinimumStandardsMobile` scheme, a physical device (or `iphoneos` destination), then `Product > Clean Build Folder` and `Product > Build`.
-   - CLI alternative: `xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme MinimumStandardsMobile -sdk iphoneos -configuration Debug clean build`
+   - In Xcode: select `MinimumStandardsMobile (Embedded)` for release/CI parity or `MinimumStandardsMobile (Fast Refresh)` for Metro debugging, choose a physical device (or `iphoneos` destination), then `Product > Clean Build Folder` and `Product > Build`.
+   - CLI alternative: `xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme "MinimumStandardsMobile (Embedded)" -sdk iphoneos -configuration Debug clean build`
 4. **Verify** that `Pods/Headers/Public/react_runtime` no longer contains `React-jsitooling.modulemap` and investigate any remaining `ReactCommon` modulemap copies surfaced in DerivedData.
 
 If the build completes, record “✅ Confirmed on device” here along with any warnings; if it fails, attach the new log artifacts noted above.

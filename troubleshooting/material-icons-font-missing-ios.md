@@ -29,9 +29,9 @@ After downgrading to React Native 0.76.5, iOS builds stopped bundling the Materi
 4. **Clean + rebuild**
    ```bash
    cd apps/mobile/ios
-   xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme MinimumStandardsMobile -configuration Debug -destination 'generic/platform=iOS' clean build
+   xcodebuild -workspace MinimumStandardsMobile.xcworkspace -scheme "MinimumStandardsMobile (Embedded)" -configuration Debug -destination 'generic/platform=iOS' clean build
    ```
-   Or simply *Product → Clean Build Folder* inside Xcode, then run again.
+   Swap the scheme for `MinimumStandardsMobile (Fast Refresh)` if you only need a Metro dev build. Or simply *Product → Clean Build Folder* inside Xcode, then run again.
 
 ## Verification
 - Launch the app; tab icons should render immediately without warnings.
