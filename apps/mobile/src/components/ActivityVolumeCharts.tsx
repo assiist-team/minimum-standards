@@ -363,10 +363,19 @@ const getTickIndices = (length: number, maxTicks: number = MAX_VISIBLE_TICKS): S
   if (length === 0) return indices;
 
   const step = Math.max(1, Math.ceil(length / maxTicks));
-  for (let i = 0; i < length; i += step) {
-    indices.add(i);
-  }
+  
+  // Always include the last point (most recent date)
   indices.add(length - 1);
+
+  // Add intermediate points, skipping those too close to the end
+  // to avoid overlapping labels
+  for (let i = 0; i < length - 1; i += step) {
+    // If the tick is too close to the last point (within 75% of a step), skip it
+    if ((length - 1) - i >= step * 0.75) {
+      indices.add(i);
+    }
+  }
+  
   return indices;
 };
 
@@ -905,7 +914,7 @@ function CumulativeVolumeChart({
     [currentValueLabelWidth]
   );
 
-  const wantsCompressedView = timeScale !== 'daily';
+  const wantsCompressedView = true;
   const canCompress = wantsCompressedView && chartWidth > 0 && effectiveData.length > 1;
 
   // Use minimal padding for the chart area itself
@@ -1145,7 +1154,7 @@ function CumulativeVolumeChart({
                   <Text
                     style={[
                       styles.lineChartLabel,
-                      { color: theme.text.tertiary, width: labelWidth },
+                      { color: theme.text.tertiary, width: 45 },
                     ]}
                     numberOfLines={1}
                   >

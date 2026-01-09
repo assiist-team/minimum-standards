@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -102,7 +102,7 @@ export function ActivityHistoryScreen({
   // Fetch logs for range charts
   const rangeDays = TIME_RANGE_DAYS[timeRange];
   const requestedRangeStartMs = rangeDays ? nowMs - (rangeDays * 24 * 60 * 60 * 1000) : 0;
-  const { logs: rangeLogs, loading: rangeLogsLoading } = useActivityRangeLogs(
+  const { logs: rangeLogs, loading: rangeLogsLoading, error: rangeLogsError } = useActivityRangeLogs(
     relevantStandardIds,
     requestedRangeStartMs,
     nowMs
@@ -355,7 +355,13 @@ export function ActivityHistoryScreen({
   }, [filteredRowsForList, rangeLogs, effectiveRangeStartMs, nowMs, timezone]);
 
   const loading = historyLoading || logsLoading || (rangeLogsLoading && mergedRows.length === 0);
-  const error = historyError || logsError;
+  const error = historyError || logsError || rangeLogsError;
+
+  useEffect(() => {
+    if (rangeLogsError) {
+      console.error('ActivityHistoryScreen range logs error:', rangeLogsError);
+    }
+  }, [rangeLogsError]);
 
   // Handle period card press - navigate to period activity logs
   const handlePeriodPress = (row: MergedActivityHistoryRow) => {
