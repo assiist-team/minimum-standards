@@ -301,6 +301,9 @@ const CHART_HEIGHT = 150;
 const LINE_CHART_LABEL_HEIGHT = 32;
 const DEFAULT_POINT_SPACING = BAR_WIDTH + 8;
 const MIN_COMPRESSED_POINT_SPACING = 14;
+const CURRENT_VALUE_LABEL_MAX_WIDTH = 220;
+const CURRENT_VALUE_LABEL_FALLBACK_WIDTH = 120;
+const CURRENT_VALUE_LABEL_MIN_WIDTH = 80;
 const MAX_VISIBLE_TICKS = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -877,6 +880,7 @@ function CumulativeVolumeChart({
       ? new Date(effectiveData[effectiveData.length - 1].timestamp).getFullYear() 
       : null
   );
+  const [currentValueLabelWidth, setCurrentValueLabelWidth] = useState(CURRENT_VALUE_LABEL_FALLBACK_WIDTH);
 
   const handleChartLayout = useCallback(
     (event: any) => {
@@ -888,11 +892,43 @@ function CumulativeVolumeChart({
     [chartWidth]
   );
 
+  const handleCurrentValueLabelLayout = useCallback(
+    (event: any) => {
+      const measuredWidth = Math.max(
+        CURRENT_VALUE_LABEL_MIN_WIDTH,
+        Math.min(event.nativeEvent.layout.width, CURRENT_VALUE_LABEL_MAX_WIDTH)
+      );
+      if (Math.abs(measuredWidth - currentValueLabelWidth) > 1) {
+        setCurrentValueLabelWidth(measuredWidth);
+      }
+    },
+    [currentValueLabelWidth]
+  );
+
   const wantsCompressedView = timeScale !== 'daily';
   const canCompress = wantsCompressedView && chartWidth > 0 && effectiveData.length > 1;
+
+  // Use minimal padding for the chart area itself
+  const chartPaddingLeft = 8;
+  
+  // The trailing label can extend past the chart area.
+  // We only need to ensure the dot/line itself doesn't get clipped.
+  // The ScrollView clip settings will determine if the label shows.
+  // But since we want to prevent horizontal scroll in compressed mode, 
+  // we must ensure the label fits if we want it visible.
+  // However, forcing the whole chart to compress just for one label makes it too narrow.
+  // Let's compromise: reserve less space, allow label to potentially be cut off 
+  // or use the parent padding (which is 16px) to help absorb it.
+  
+  const trailingIndicatorPadding = 8; 
+
   const slotWidth = canCompress
-    ? Math.max(chartWidth / Math.max(effectiveData.length - 1, 1), MIN_COMPRESSED_POINT_SPACING)
+    ? Math.max(
+        (chartWidth - chartPaddingLeft - trailingIndicatorPadding) / Math.max(effectiveData.length - 1, 1),
+        MIN_COMPRESSED_POINT_SPACING
+      )
     : DEFAULT_POINT_SPACING;
+
   const gap = canCompress ? Math.max(slotWidth * 0.1, 2) : 4;
   const wrapperWidth = Math.max(slotWidth - gap * 2, 8);
   const labelWidth = Math.max(slotWidth, wrapperWidth + gap * 2);
@@ -924,46 +960,63 @@ function CumulativeVolumeChart({
 
   const latestIndex = effectiveData.length - 1;
 
-  // Calculate path for gradient area fill
-  const areaPath = useMemo(() => {
-    if (effectiveData.length < 2) return '';
-    
-    const points: { x: number; y: number }[] = [];
+  const pointPositions = useMemo(() => {
+    if (effectiveData.length === 0) return [];
+
+    const points: { x: number; svgY: number; valueHeight: number }[] = [];
     let currentX = 0;
-    
+
     effectiveData.forEach((item, index) => {
-      const y = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
+      const valueHeight = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
+      const svgY = CHART_CONTENT_HEIGHT - valueHeight;
       const isOriginPoint = index === 0 && item.timestamp === 0;
-      // Calculate x position: center of each wrapper
       const xPos = currentX + wrapperWidth / 2 + gap;
-      // Adjust for origin point offset
       const adjustedX = isOriginPoint ? xPos - wrapperWidth / 2 : xPos;
-      
+
       points.push({
         x: adjustedX,
-        y: CHART_CONTENT_HEIGHT - y, // SVG coordinates are top-down, so invert y
+        svgY,
+        valueHeight,
       });
-      
+
       if (index < effectiveData.length - 1) {
         currentX += slotSpacing;
       }
     });
-    
-    // Create path: start at bottom-left, go through all points, end at bottom-right, close
-    if (points.length === 0) return '';
-    
-    const firstX = points[0].x;
-    const lastX = points[points.length - 1].x;
+
+    return points;
+  }, [effectiveData, maxVal, CHART_CONTENT_HEIGHT, slotSpacing, wrapperWidth, gap]);
+
+  const chartContentWidth =
+    pointPositions.length > 1 ? (effectiveData.length - 1) * slotSpacing + wrapperWidth : wrapperWidth;
+  
+  // Calculate total required width including padding
+  const totalRequiredWidth = chartPaddingLeft + chartContentWidth + trailingIndicatorPadding;
+  const shouldAllowScroll = !isCompressed || totalRequiredWidth > chartWidth;
+
+  const areaPath = useMemo(() => {
+    if (pointPositions.length < 2) return '';
+
+    const firstX = pointPositions[0].x;
+    const lastX = pointPositions[pointPositions.length - 1].x;
     const bottomY = CHART_CONTENT_HEIGHT;
-    
+
     let path = `M ${firstX} ${bottomY} `;
-    points.forEach((point) => {
-      path += `L ${point.x} ${point.y} `;
+    pointPositions.forEach((point) => {
+      path += `L ${point.x} ${point.svgY} `;
     });
     path += `L ${lastX} ${bottomY} Z`;
-    
+
     return path;
-  }, [effectiveData, maxVal, CHART_CONTENT_HEIGHT, slotSpacing, wrapperWidth, gap]);
+  }, [pointPositions, CHART_CONTENT_HEIGHT]);
+
+  const linePath = useMemo(() => {
+    if (pointPositions.length < 2) return '';
+
+    return pointPositions
+      .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.svgY}`)
+      .join(' ');
+  }, [pointPositions]);
 
   const gradientStartColor = theme.status.met.bar;
   const gradientId = useId();
@@ -973,31 +1026,35 @@ function CumulativeVolumeChart({
       <ScrollView 
         ref={scrollViewRef}
         horizontal 
-        scrollEnabled={!isCompressed}
+        scrollEnabled={shouldAllowScroll}
         showsHorizontalScrollIndicator={false} 
         contentContainerStyle={[
           styles.chartScroll,
-          isCompressed && chartWidth > 0 ? { width: chartWidth } : null,
+          { 
+            paddingLeft: chartPaddingLeft,
+            paddingRight: trailingIndicatorPadding 
+          },
         ]}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        overflow="visible" // Allow labels to overflow the scroll view bounds if needed
       >
         <View
           style={[
             styles.lineChartContainer,
-            isCompressed && chartWidth > 0 ? { width: chartWidth } : null,
           ]}
         >
-          {/* Gradient area fill */}
-          {areaPath && effectiveData.length > 1 && (
+          {/* SVG-rendered line and gradient */}
+          {pointPositions.length > 1 && (
             <Svg
               style={[
-                styles.gradientArea,
+                styles.chartSvg,
                 {
                   height: CHART_CONTENT_HEIGHT,
-                  width: effectiveData.length > 1 ? (effectiveData.length - 1) * slotSpacing + wrapperWidth : wrapperWidth,
+                  width: chartContentWidth,
                 },
               ]}
+              viewBox={`0 0 ${chartContentWidth} ${CHART_CONTENT_HEIGHT}`}
               pointerEvents="none"
             >
               <Defs>
@@ -1007,22 +1064,20 @@ function CumulativeVolumeChart({
                   <Stop offset="100%" stopColor={gradientStartColor} stopOpacity="0" />
                 </LinearGradient>
               </Defs>
-              <Path d={areaPath} fill={`url(#${gradientId})`} />
+              {areaPath ? <Path d={areaPath} fill={`url(#${gradientId})`} /> : null}
+              {linePath ? (
+                <Path d={linePath} stroke={gradientStartColor} strokeWidth={2} strokeLinecap="round" fill="none" />
+              ) : null}
             </Svg>
           )}
           
           <View style={[styles.lineChartAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
           <View style={[styles.lineChartYAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
           {effectiveData.map((item, index) => {
-            const y = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
-            const prevY = index > 0 ? (effectiveData[index - 1].value / maxVal) * CHART_CONTENT_HEIGHT : y;
-            
-            const dx = slotSpacing;
-            const dy = y - prevY;
-            const length = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx);
+            const pointPosition = pointPositions[index];
+            const y = pointPosition?.valueHeight ?? 0;
             const isLatest = index === latestIndex && item.timestamp > 0;
-            const formattedValue = `${formatTotal(item.value)} ${unit}`.trim();
+            const indicatorValue = formatTotal(item.value);
             const indicatorY = Math.min(Math.max(y, 0), CHART_CONTENT_HEIGHT);
             const showLabel = tickIndices.has(index) && item.timestamp > 0;
             const isOriginPoint = index === 0 && item.timestamp === 0;
@@ -1030,7 +1085,8 @@ function CumulativeVolumeChart({
               styles.barWrapper,
               {
                 width: wrapperWidth,
-                marginHorizontal: gap,
+                marginLeft: gap,
+                marginRight: gap,
               },
               // Pull the synthetic origin point onto the Y-axis so the line starts at the true origin
               isOriginPoint && { marginLeft: -wrapperWidth / 2 },
@@ -1052,21 +1108,6 @@ function CumulativeVolumeChart({
                 activeOpacity={0.8}
               >
                 <View style={styles.lineChartPointArea}>
-                  {index > 0 && (
-                    <View 
-                      style={[
-                        styles.lineSegment,
-                        {
-                          width: length,
-                            left: (wrapperWidth / 2) - (dx / 2) - (length / 2),
-                          bottom: ((y + prevY) / 2) - 1,
-                          transform: [{ rotate: `${-angle}rad` }],
-                          backgroundColor: theme.status.met.bar,
-                        },
-                      ]}
-                    />
-                  )}
-
                   {isLatest && (
                     <>
                       <View
@@ -1087,11 +1128,14 @@ function CumulativeVolumeChart({
                             backgroundColor: theme.background.surface,
                             color: theme.text.primary,
                             borderColor: theme.border.secondary,
+                            left: wrapperWidth / 2,
+                            transform: [{ translateX: -currentValueLabelWidth / 2 }],
                           },
                         ]}
                         numberOfLines={1}
+                        onLayout={handleCurrentValueLabelLayout}
                       >
-                        {formattedValue}
+                        {indicatorValue}
                       </Text>
                     </>
                   )}
@@ -1171,8 +1215,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     height: CHART_HEIGHT + LINE_CHART_LABEL_HEIGHT,
     position: 'relative',
+    overflow: 'visible',
   },
-  gradientArea: {
+  chartSvg: {
     position: 'absolute',
     left: 0,
     bottom: LINE_CHART_LABEL_HEIGHT,
@@ -1340,7 +1385,8 @@ const styles = StyleSheet.create({
       fontSize: 10,
       borderWidth: 1,
       zIndex: 2,
-      maxWidth: 140,
+      maxWidth: CURRENT_VALUE_LABEL_MAX_WIDTH,
+      minWidth: CURRENT_VALUE_LABEL_MIN_WIDTH,
       textAlign: 'center',
   },
   modalOverlay: {

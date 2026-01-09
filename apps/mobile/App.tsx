@@ -1,6 +1,7 @@
 import React from 'react';
 import { StatusBar, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useUIPreferencesStore } from './src/stores/uiPreferencesStore';
 
 type ErrorBoundaryComponentType = typeof import('./src/components/ErrorBoundary').ErrorBoundary;
 type SyncStatusBannerComponentType = typeof import('./src/components/SyncStatusBanner').SyncStatusBanner;
@@ -109,7 +110,12 @@ console.log('[App] Module evaluation started');
 
 function App() {
   console.log('[App] Component render start');
-  const isDarkMode = useColorScheme() === 'dark';
+  const systemColorScheme = useColorScheme();
+  const themePreference = useUIPreferencesStore((state) => state.themePreference);
+
+  const isDarkMode = themePreference === 'system' 
+    ? systemColorScheme === 'dark' 
+    : themePreference === 'dark';
   
   // Debug: confirm JS is executing
   React.useEffect(() => {

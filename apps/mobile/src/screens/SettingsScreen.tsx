@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../stores/authStore';
@@ -7,11 +7,13 @@ import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
+import { useUIPreferencesStore, ThemePreference } from '../stores/uiPreferencesStore';
 
 export function SettingsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { signOut } = useAuthStore();
+  const { themePreference, setThemePreference } = useUIPreferencesStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +31,12 @@ export function SettingsScreen() {
       setLoading(false);
     }
   };
+
+  const themeOptions: { label: string; value: ThemePreference; icon: string }[] = [
+    { label: 'Light', value: 'light', icon: 'light-mode' },
+    { label: 'Dark', value: 'dark', icon: 'dark-mode' },
+    { label: 'Auto', value: 'system', icon: 'brightness-auto' },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
@@ -48,11 +56,35 @@ export function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
-      {error && (
-        <View style={[styles.errorContainer, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
-          <Text style={styles.errorText}>{error}</Text>
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Appearance</Text>
+        <View style={[styles.card, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
+          {themeOptions.map((option, index) => (
+            <TouchableOpacity
+              key={option.value}
+              style={[
+                styles.optionRow,
+                index !== themeOptions.length - 1 && [styles.optionBorder, { borderBottomColor: theme.border.secondary }]
+              ]}
+              onPress={() => setThemePreference(option.value)}
+            >
+              <View style={styles.optionLabelContainer}>
+                <MaterialIcons name={option.icon} size={22} color={theme.text.primary} style={styles.optionIcon} />
+                <Text style={[styles.optionLabel, { color: theme.text.primary }]}>{option.label}</Text>
+              </View>
+              {themePreference === option.value && (
+                <MaterialIcons name="check" size={24} color={theme.button.primary.background} />
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+
+        {error && (
+          <View style={[styles.errorContainer, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -83,10 +115,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingRight: 4,
   },
+  content: {
+    flex: 1,
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    marginLeft: 4,
+    letterSpacing: 0.5,
+  },
+  card: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 24,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  optionBorder: {
+    borderBottomWidth: 1,
+  },
+  optionLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  optionIcon: {
+    marginRight: 12,
+  },
+  optionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
   errorContainer: {
     borderRadius: 12,
     padding: 24,
-    margin: 24,
+    marginTop: 8,
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 3,
