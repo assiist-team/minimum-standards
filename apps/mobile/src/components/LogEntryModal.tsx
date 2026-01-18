@@ -211,7 +211,8 @@ export function LogEntryModal({
       : undefined;
 
   // For session-based standards, don't show quick-add buttons when the session button is present
-  const effectiveQuickAddValues = sessionQuickFillValue !== null ? undefined : quickAddValues;
+  // AND completely disable quick-add values to prevent +1 buttons from appearing
+  const effectiveQuickAddValues = undefined;
 
   const handleQuickAddPress = (quickValue: number) => {
     if (saving) {

@@ -4,11 +4,6 @@
 - Recent UI update added an `react-native-svg`–based fill under the cumulative volume line inside `apps/mobile/src/components/ActivityVolumeCharts.tsx`.
 - On device the filled region does not follow the plotted line; portions of the gradient either lag behind or extend beyond the curve, making the chart look misaligned.
 
-### Reproduction
-1. Install the latest mobile app build (includes the gradient change).
-2. Launch the Activity History screen and select the **Cumulative Volume** tab.
-3. Observe the rendered line vs. the translucent area behind it.
-
 ### Expected vs Actual
 - **Expected:** The gradient area should sit flush beneath the polyline, sharing the exact contour and touching the x‑axis at the same points.
 - **Actual:** The polygon rendered by `Path d={areaPath}` drifts away from the line. This is most visible near the origin and towards the right edge where the fill either starts before the plotted point or stops short.
