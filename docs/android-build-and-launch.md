@@ -1,18 +1,63 @@
 # MinimumStandardsMobile – Android Build & Launch
 
-_Last updated: 2026-01-17_
+_Last updated: 2026-01-18_
 
 This document captures the current Android build requirements, the dev loop, and the release build checklist for `apps/mobile`. It is intentionally explicit so a junior engineer can follow it without guesswork.
 
 ---
 
+## Progress
+
+_Date: 2026-01-18_
+
+- [x] Verified Android config values in Gradle files (app ID, SDK targets, build tools, wrapper, Kotlin, Hermes, new arch).
+- [x] Confirmed `react-native-vector-icons` and `react-native-config` wiring in `apps/mobile/android/app/build.gradle`.
+- [x] Confirmed `google-services.json` is missing in `apps/mobile/android/app/`.
+- [x] Confirmed Google Services / Crashlytics plugins are not wired in Gradle.
+- [x] Ran Metro preflight (`./scripts/check-metro.sh`) — pass after:
+  - Installing Watchman.
+  - Adding repo to Watchman watch list.
+  - Freeing port 8081.
+- [x] Started Android dev build (`npm run android`) — initial attempt failed:
+  - `adb` not found (Android platform-tools missing from PATH).
+  - No Android emulator available (`emulator -list-avds` empty).
+  - Java runtime not found for Gradle.
+  - React Native CLI could not open a new terminal window for Metro (`--terminal` not set).
+- [x] Installed Android platform-tools (`adb`) via Homebrew.
+- [x] Installed JDK 17 via Homebrew (`openjdk@17`).
+- [x] Confirmed Android SDK + emulator binaries exist under `~/Library/Android/sdk`.
+- [x] Started emulator `Medium_Phone_API_36` and verified `adb devices`.
+- [x] Started Metro manually (`npm start`) to avoid terminal launcher issues.
+- [x] Updated Gradle wrapper to 8.7 to satisfy AGP minimum version.
+- [x] Added manifest placeholder for `usesCleartextTraffic` (debug=true, release=false).
+- [x] Aligned Kotlin to 1.9.24 and forced Kotlin dependency versions.
+- [x] Pinned `react-native-gesture-handler` to 2.20.2 (RN 0.76 compatible).
+- [x] Patched `react-native-safe-area-context` Kotlin `Dynamic.type` access (patch-package).
+- [x] Updated `MainApplication.kt` to RN 0.76-compatible `ReactNativeHost` setup.
+- [x] Built + installed Android app (`npx react-native run-android --no-packager`) successfully.
+- [x] Current runtime state:
+  - Emulator `Medium_Phone_API_36` running.
+  - Metro bundler running on port 8081.
+- [x] Added Google Services + Crashlytics Gradle classpaths in `apps/mobile/android/build.gradle`.
+- [x] Applied Google Services + Crashlytics plugins in `apps/mobile/android/app/build.gradle`.
+- [x] Added release signing scaffold in `apps/mobile/android/app/build.gradle` (uses `keystore.properties` when present).
+- [x] Added `apps/mobile/android/app/google-services.json` for package `app.nine4.minimum_standards`.
+- [x] Created `apps/mobile/android/keystore.properties` with local keystore path + passwords.
+- [x] Added `apps/mobile/.env` — **exists locally** (ensure it contains required secrets).
+- [x] Created release keystore at `~/.keystores/minimum-standards-release.keystore`.
+- [x] Fixed Gradle settings plugin error (`com.facebook.react.settings`) by matching RN 0.76 template structure in `settings.gradle`.
+- [x] Explicitly set AGP version to 8.2.1 and downgraded target SDK to 35 for stability.
+- [x] Run `./gradlew clean assembleRelease` to verify fixes — **SUCCESS**.
+
+---
+
 ## 1. Current Android Configuration (Repo Findings)
 
-- **App ID / namespace:** `com.minimumstandardsmobile` (`apps/mobile/android/app/build.gradle`)
-- **SDK targets:** `minSdk 24`, `compileSdk 36`, `targetSdk 36`
-- **Build tools:** `36.0.0`
-- **Gradle wrapper:** `9.0.0` (`apps/mobile/android/gradle/wrapper/gradle-wrapper.properties`)
-- **Kotlin:** `2.1.20`
+- **App ID / namespace:** `app.nine4.minimum_standards` (`apps/mobile/android/app/build.gradle`)
+- **SDK targets:** `minSdk 24`, `compileSdk 35`, `targetSdk 35`
+- **Build tools:** `35.0.0`
+- **Gradle wrapper:** `8.7` (`apps/mobile/android/gradle/wrapper/gradle-wrapper.properties`)
+- **Kotlin:** `1.9.24`
 - **Hermes:** `true` (`apps/mobile/android/gradle.properties`)
 - **New Architecture:** `false` (`apps/mobile/android/gradle.properties`)
 - **Vector icons:** fonts gradle applied (`react-native-vector-icons`)
@@ -32,7 +77,7 @@ That means Firebase will not initialize on Android until the Google Services con
 
 1. **Android Studio** installed and opened at least once.
 2. **JDK 17+** installed and set as the Gradle JDK in Android Studio.
-3. **Android SDK 36 + Build Tools 36.0.0** installed.
+3. **Android SDK 35 + Build Tools 35.0.0** installed.
 4. **NDK 27.1.12297006** installed (Android Studio SDK Manager → SDK Tools).
 5. **Node 20+** installed (matches repo engines).
 
@@ -41,9 +86,9 @@ That means Firebase will not initialize on Android until the Google Services con
 Android Studio → Settings → Android SDK
 
 - **SDK Platforms**
-  - Android 36 (API 36) installed
+  - Android 35 (API 35) installed
 - **SDK Tools**
-  - Android SDK Build-Tools 36.0.0
+  - Android SDK Build-Tools 35.0.0
   - Android SDK Platform-Tools
   - Android SDK Command-line Tools (latest)
   - NDK (Side by side) 27.1.12297006
@@ -89,7 +134,7 @@ This command runs Metro and `react-native run-android` concurrently.
 
 Android Studio → Device Manager → Create Device:
 - Pick a Pixel device (any modern one is fine)
-- Use **API 36** system image
+- Use **API 35** system image
 - Start the emulator before running `npm run android`
 
 ### 4.2 First-time physical device setup
@@ -102,6 +147,15 @@ Android Studio → Device Manager → Create Device:
   cd apps/mobile/android
   ./gradlew devices
   ```
+
+### 4.3 Post-dev setup checklist (next phase)
+
+These are required before QA or any real release build:
+
+1. **Firebase Android config** — add `apps/mobile/android/app/google-services.json`.
+2. **Env file** — add `apps/mobile/.env` (from secrets store).
+3. **Release signing** — create keystore + `apps/mobile/android/keystore.properties`.
+4. **Rebuild** — run `./gradlew clean` then rebuild after config changes.
 
 
 ---
@@ -122,7 +176,7 @@ cd apps/mobile/android
 
 ### 5.3 Signing (Required for real releases)
 
-The `release` build currently uses the **debug keystore**. This must be replaced with a real signing config before any Play Store upload.
+The `release` build uses the **real keystore when `keystore.properties` exists**, otherwise it falls back to the debug keystore. This must be replaced with a real signing config before any Play Store upload.
 
 #### 5.3.1 Create a release keystore (one-time)
 
@@ -145,7 +199,7 @@ keyAlias=minimum-standards
 keyPassword=REPLACE_ME
 ```
 
-#### 5.3.3 Wire signing config in Gradle
+#### 5.3.3 Wire signing config in Gradle (already done in repo)
 
 Add this near the top of `apps/mobile/android/app/build.gradle`:
 ```
@@ -185,7 +239,7 @@ buildTypes {
 }
 ```
 
-If the `keystore.properties` file is missing, release builds will fail — that is intentional.
+If the `keystore.properties` file is missing, release builds will still sign with the debug keystore. Replace it before any store upload.
 
 ---
 
@@ -195,11 +249,13 @@ This app uses `@react-native-firebase/*`, which requires **Google Services** con
 
 ### 6.1 Download config
 
-1. In Firebase Console, create Android app with package name `com.minimumstandardsmobile`.
+1. In Firebase Console, create Android app with package name `app.nine4.minimum_standards`.
 2. Download `google-services.json`.
 3. Place it at: `apps/mobile/android/app/google-services.json`.
 
-### 6.2 Wire the Gradle plugin
+**Note:** a file with package `app.assiist.minimum_standards` will not work for this app. Re-download with the correct package name.
+
+### 6.2 Wire the Gradle plugin (already done in repo)
 
 In `apps/mobile/android/build.gradle`, add the classpath dependency:
 ```
@@ -217,7 +273,7 @@ apply plugin: "com.google.gms.google-services"
 apply plugin: "com.google.firebase.crashlytics"
 ```
 
-Without this, Firebase Auth, Firestore, Crashlytics, and Messaging will not initialize on Android.
+Without this, Firebase Auth, Firestore, Crashlytics, and Messaging will not initialize on Android. This wiring is now present; the remaining blocker is the missing `google-services.json`.
 
 ---
 
@@ -225,9 +281,20 @@ Without this, Firebase Auth, Firestore, Crashlytics, and Messaging will not init
 
 This project uses `react-native-config`, which reads `.env` at build time. The file is intentionally ignored.
 
-Required steps:
-1. Copy the env template from your secrets store (or ask for it).
-2. Place it at `apps/mobile/.env`.
+### 7.1 Required Variables
+
+Currently, the only required variable is:
+
+```bash
+# Google Sign-In (Required for Firebase Auth)
+# Get this from Firebase Console > Authentication > Sign-in method > Google > Web client ID
+GOOGLE_SIGN_IN_WEB_CLIENT_ID=your-web-client-id-here.apps.googleusercontent.com
+```
+
+### 7.2 Setup
+
+1. Copy the env template: `cp apps/mobile/.env.example apps/mobile/.env`
+2. Fill in the real `GOOGLE_SIGN_IN_WEB_CLIENT_ID` (from your secrets manager or Firebase Console).
 3. Rebuild after changing `.env` — values are baked into the build.
 
 If `.env` is missing, Android builds may still complete, but runtime behavior will be wrong.
@@ -236,8 +303,11 @@ If `.env` is missing, Android builds may still complete, but runtime behavior wi
 
 ## 8. Troubleshooting Hooks
 
+- **"SDK location not found"** → Create `apps/mobile/android/local.properties` with content `sdk.dir=/Users/your-username/Library/Android/sdk`.
+- **"Unsupported class file major version 69"** (or similar high number) → You are running with a bleeding-edge Java version (e.g., Java 25).
+  - Fix: `export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"` (verify path with `brew --prefix openjdk@17`).
 - **Metro won’t pick up monorepo changes** → rebuild packages + `npm install` inside `apps/mobile`
-- **Gradle/SDK mismatch** → confirm SDK 36 and Build Tools 36.0.0 installed in Android Studio
+- **Gradle/SDK mismatch** → confirm SDK 35 and Build Tools 35.0.0 installed in Android Studio
 - **Firebase initialization crash** → verify `google-services.json` and plugin wiring
 - **Stale `.env` values** → clean + rebuild; `.env` is read at build time
 

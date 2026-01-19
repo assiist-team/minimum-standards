@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1055581806274",
+    "project_id": "minimum-standards",
+    "storage_bucket": "minimum-standards.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1055581806274:android:f50fe7955e2166738b255b",
+        "android_client_info": {
+          "package_name": "app.nine4.minimum_standards"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1055581806274-n7skrf7ei9lgi1mgsuuv7230eabmtfn1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEEUyygCFwxm11grPop9OEgP6MxFRQ3hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1055581806274-n7skrf7ei9lgi1mgsuuv7230eabmtfn1.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1055581806274-1n5keauch2qufmqirdcnvrdl8221q6m6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.assiist.minimum-standards"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

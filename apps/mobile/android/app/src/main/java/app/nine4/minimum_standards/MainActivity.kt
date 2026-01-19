@@ -1,4 +1,4 @@
-package com.minimumstandardsmobile
+package app.nine4.minimum_standards
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
