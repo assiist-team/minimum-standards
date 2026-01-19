@@ -1,6 +1,6 @@
 # MinimumStandardsMobile – Android Build & Launch
 
-_Last updated: 2026-01-18_
+_Last updated: 2026-01-19_
 
 This document captures the current Android build requirements, the dev loop, and the release build checklist for `apps/mobile`. It is intentionally explicit so a junior engineer can follow it without guesswork.
 
@@ -48,6 +48,19 @@ _Date: 2026-01-18_
 - [x] Fixed Gradle settings plugin error (`com.facebook.react.settings`) by matching RN 0.76 template structure in `settings.gradle`.
 - [x] Explicitly set AGP version to 8.2.1 and downgraded target SDK to 35 for stability.
 - [x] Run `./gradlew clean assembleRelease` to verify fixes — **SUCCESS**.
+- [x] Re-enabled Hermes in `apps/mobile/android/gradle.properties`.
+- [x] Fixed `UnsatisfiedLinkError` (missing `libhermes_executor.so`) by initializing `SoLoader` with `OpenSourceMergedSoMapping` in `MainApplication.kt`.
+- [x] Verified app launch on Emulator `Medium_Phone_API_36`.
+
+_Date: 2026-01-19_
+
+- [x] **Verification:** Verified Node (v20.19.6) and Java (OpenJDK 17 via Homebrew) environments.
+- [x] **Verification:** Verified `ANDROID_HOME` and `adb` connectivity (`emulator-5554` connected).
+- [x] **Fix:** Ran `watchman watch "/Users/benjaminmackenzie/Dev/minimum_standards"` to fix Metro preflight warning.
+- [x] **Fix:** Resolved "Unable to load script" error on emulator by running `adb reverse tcp:8081 tcp:8081`. This maps the emulator's localhost port to the machine's Metro server.
+- [x] **Verification:** Verified app launch and connectivity to Metro (reload successful).
+- [x] **Issue Identified:** Runtime error `Unable to resolve module react-native-dictation` in `LogEntryModal.tsx`.
+- [x] **Documentation Update:** Identified `react-native-dictation` as a local private package. It is **not** on NPM.
 
 ---
 
@@ -63,6 +76,16 @@ _Date: 2026-01-18_
 - **Vector icons:** fonts gradle applied (`react-native-vector-icons`)
 - **react-native-config:** `.env` is used for both debug + release variants
 
+### Runtime crash (RESOLVED)
+
+Previously, the app crashed on launch with `UnsatisfiedLinkError: dlopen failed: library "libhermes_executor.so" not found`.
+This was caused by React Native 0.76+ merging native libraries in a way that requires `SoLoader` to use a mapping.
+
+**Fix:** Updated `MainApplication.kt` to initialize `SoLoader` with `OpenSourceMergedSoMapping`:
+```kotlin
+SoLoader.init(this, OpenSourceMergedSoMapping)
+```
+
 ### Firebase / Google Services (Important)
 
 This app depends on `@react-native-firebase/*` packages, but the Android project does **not** currently include:
@@ -70,6 +93,19 @@ This app depends on `@react-native-firebase/*` packages, but the Android project
 - `com.google.gms.google-services` plugin wiring in Gradle
 
 That means Firebase will not initialize on Android until the Google Services config is added and the plugin is enabled. Treat this as a blocking setup requirement for real device builds.
+
+### Local Dependency: `react-native-dictation`
+
+The file `src/components/LogEntryModal.tsx` imports `react-native-dictation`.
+- **Status:** This is a **local private package**. It does **not** exist on NPM.
+- **Location:** The source code and documentation are located at `/Users/benjaminmackenzie/Dev/react_native_dictation/`.
+- **Integration:** You must follow the instructions in the [README](/Users/benjaminmackenzie/Dev/react_native_dictation/README.md) located in that directory to correctly link and build this dependency.
+- **Temporary State:** `LogEntryModal.tsx` may contain a mocked implementation or fail to resolve until this local package is properly linked in `package.json` or `metro.config.js`.
+
+**Action Required:**
+1.  Read `/Users/benjaminmackenzie/Dev/react_native_dictation/README.md`.
+2.  Link the package locally (e.g., `npm install ../../react_native_dictation` or via `wml`/`watchman` if outside the monorepo root).
+3.  Ensure native modules are linked (Autolinking should handle it if added to `package.json`).
 
 ---
 
@@ -310,11 +346,18 @@ If `.env` is missing, Android builds may still complete, but runtime behavior wi
 - **Gradle/SDK mismatch** → confirm SDK 35 and Build Tools 35.0.0 installed in Android Studio
 - **Firebase initialization crash** → verify `google-services.json` and plugin wiring
 - **Stale `.env` values** → clean + rebuild; `.env` is read at build time
+- **"Unable to load script" (Red screen)** → The app cannot connect to the Metro bundler.
+  - Fix 1: Ensure Metro is running (`npm start`).
+  - Fix 2: Run `adb reverse tcp:8081 tcp:8081` to map the emulator's localhost port to your machine.
+- **"Unable to resolve module react-native-dictation"** → The dependency is missing/private.
+  - Fix: The package is located at `/Users/benjaminmackenzie/Dev/react_native_dictation`. Follow its `README.md` to link it.
+
 
 ---
 
 ## 9. Open Decisions / Gaps
 
+- **Missing Dependency:** `react-native-dictation` is referenced but missing from `package.json`. It resides locally at `/Users/benjaminmackenzie/Dev/react_native_dictation`.
 - Confirm whether `google-services.json` should be committed or injected via CI.
 - Decide on release signing strategy (keystore location + CI secrets).
 - Validate Android-specific `.env` keys required by `react-native-config`.
