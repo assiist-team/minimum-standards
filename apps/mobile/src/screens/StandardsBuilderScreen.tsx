@@ -83,9 +83,10 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   } = useStandardsBuilderStore();
 
   const { createStandard, updateStandard, standards, unarchiveStandard } = useStandards();
-  const { activities, createActivity } = useActivities();
+  const { activities, createActivity, updateActivity } = useActivities();
   const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [activityDropdownVisible, setActivityDropdownVisible] = useState(false);
   const [activePreset, setActivePreset] = useState<CadencePreset | null>('weekly');
   const [customIntervalInput, setCustomIntervalInput] = useState('1');
@@ -208,12 +209,29 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   const handleActivityCreate = (activity: Activity) => {
     setSelectedActivity(activity);
     setActivityModalVisible(false);
+    setEditingActivity(null);
   };
 
   const handleActivitySave = async (
     activityData: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>
   ): Promise<Activity> => {
+    if (editingActivity) {
+      await updateActivity(editingActivity.id, activityData);
+      return {
+        ...editingActivity,
+        ...activityData,
+        updatedAtMs: Date.now(),
+      } as Activity;
+    }
     return await createActivity(activityData);
+  };
+
+  const handleActivityEdit = () => {
+    if (!selectedActivity) {
+      return;
+    }
+    setEditingActivity(selectedActivity);
+    setActivityModalVisible(true);
   };
 
   const handleWeekdaySelect = useCallback(
@@ -625,13 +643,37 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
             
             <TouchableOpacity
               style={[styles.createActivityButton, { backgroundColor: theme.button.primary.background }]}
-              onPress={() => setActivityModalVisible(true)}
+              onPress={() => {
+                setEditingActivity(null);
+                setActivityModalVisible(true);
+              }}
             >
               <Text style={[styles.createActivityButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>
                 Create
               </Text>
             </TouchableOpacity>
           </View>
+
+          {selectedActivity && (
+            <View style={[styles.selectedActivityCard, { borderTopColor: theme.border.secondary }]}>
+              <View style={styles.selectedActivityDetails}>
+                <Text style={[styles.selectedActivityTitle, { color: theme.text.primary }]}>
+                  {selectedActivity.name}
+                </Text>
+                <Text style={[styles.selectedActivitySubtitle, { color: theme.text.secondary }]}>
+                  {selectedActivity.unit}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleActivityEdit}
+                style={[styles.activityEditButton, { backgroundColor: theme.button.icon.background }]}
+                accessibilityRole="button"
+                accessibilityLabel="Edit activity"
+              >
+                <MaterialIcons name="edit" size={18} color={theme.button.icon.icon} />
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
@@ -1015,6 +1057,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
       />
       <ActivityModal
         visible={activityModalVisible}
+        activity={editingActivity}
         onClose={() => setActivityModalVisible(false)}
         onSave={handleActivitySave}
         onSelect={handleActivityCreate}
@@ -1294,6 +1337,32 @@ const styles = StyleSheet.create({
   },
   createActivityButtonText: {
     // fontSize and fontWeight come from typography.button.primary
+  },
+  selectedActivityCard: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  selectedActivityDetails: {
+    flex: 1,
+    gap: 4,
+  },
+  selectedActivityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectedActivitySubtitle: {
+    fontSize: 14,
+  },
+  activityEditButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dropdownBackdrop: {
     position: 'absolute',

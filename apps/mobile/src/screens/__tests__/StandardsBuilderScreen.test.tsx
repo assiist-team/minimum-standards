@@ -12,10 +12,6 @@ jest.mock('../../hooks/useStandards', () => ({
   useStandards: jest.fn(),
 }));
 
-jest.mock('../../components/ActivityLibraryModal', () => ({
-  ActivityLibraryModal: jest.fn(() => null),
-}));
-
 jest.mock('../../components/StandardsLibraryModal', () => ({
   StandardsLibraryModal: jest.fn(() => null),
 }));

@@ -1,19 +1,18 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivitiesStackParamList } from './types';
-import { ActivityLibraryScreenWrapper, ActivityHistoryScreenWrapper } from './screenWrappers';
+import { ScorecardScreenWrapper } from './screenWrappers';
 
 const Stack = createNativeStackNavigator<ActivitiesStackParamList>();
 
 export function ActivitiesStack() {
   return (
     <Stack.Navigator
-      initialRouteName="ActivityLibrary"
+      initialRouteName="Scorecard"
       screenOptions={{
         headerShown: false,
       }}
     >
-      <Stack.Screen name="ActivityLibrary" component={ActivityLibraryScreenWrapper} />
-      <Stack.Screen name="ActivityHistory" component={ActivityHistoryScreenWrapper} />
+      <Stack.Screen name="Scorecard" component={ScorecardScreenWrapper} />
     </Stack.Navigator>
   );
 }

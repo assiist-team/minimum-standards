@@ -7,6 +7,8 @@ import {
   ScrollView,
   ActivityIndicator,
   FlatList,
+  Modal,
+  Pressable,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -34,7 +36,7 @@ import {
 import { aggregateDailyVolume, aggregateDailyProgress } from '../utils/activityCharts';
 
 export interface ActivityHistoryScreenProps {
-  activityId: string;
+  activityId?: string;
   onBack: () => void;
 }
 
@@ -55,30 +57,60 @@ export function ActivityHistoryScreen({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
-  const nowMs = useMemo(() => Date.now(), [timeRange]);
 
   const scrollRef = useRef<ScrollView>(null);
   const cardPositions = useRef<Record<string, number>>({});
 
   const [timeRange, setTimeRange] = useState<TimeRange>('All');
   const [isRangeDrawerVisible, setIsRangeDrawerVisible] = useState(false);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(activityId ?? null);
+  const [isActivitySelectorVisible, setIsActivitySelectorVisible] = useState(false);
+
+  const nowMs = useMemo(() => Date.now(), [timeRange]);
 
   const { standards } = useStandards();
-  const { activities } = useActivities();
-  const { rows: persistedRows, loading: historyLoading, error: historyError } = useActivityHistory(activityId);
+  const { activities, loading: activitiesLoading, error: activitiesError } = useActivities();
+
+  const sortedActivities = useMemo(
+    () => [...activities].sort((a, b) => a.name.localeCompare(b.name)),
+    [activities]
+  );
+
+  useEffect(() => {
+    if (activityId) {
+      setSelectedActivityId(activityId);
+    }
+  }, [activityId]);
+
+  useEffect(() => {
+    if (sortedActivities.length === 0) {
+      setSelectedActivityId(null);
+      return;
+    }
+
+    const isValidSelection = selectedActivityId
+      ? sortedActivities.some((activity) => activity.id === selectedActivityId)
+      : false;
+
+    if (!isValidSelection) {
+      setSelectedActivityId(sortedActivities[0].id);
+    }
+  }, [sortedActivities, selectedActivityId]);
+
+  const { rows: persistedRows, loading: historyLoading, error: historyError } = useActivityHistory(selectedActivityId);
 
   // Get activity name
   const activity = useMemo(
-    () => activities.find((a) => a.id === activityId) ?? null,
-    [activities, activityId]
+    () => sortedActivities.find((a) => a.id === selectedActivityId) ?? null,
+    [sortedActivities, selectedActivityId]
   );
-  const activityName = activity?.name ?? activityId;
+  const activityName = activity?.name ?? 'Select activity';
   const unit = activity?.unit ?? '';
 
   // Get all standards (active and inactive) that reference this activity
   const relevantStandards = useMemo(
-    () => standards.filter((s) => s.activityId === activityId),
-    [standards, activityId]
+    () => (selectedActivityId ? standards.filter((s) => s.activityId === selectedActivityId) : []),
+    [standards, selectedActivityId]
   );
 
   const relevantStandardIds = useMemo(
@@ -94,7 +126,7 @@ export function ActivityHistoryScreen({
 
   // Fetch logs for active standards
   const { logs: currentPeriodLogs, loading: logsLoading, error: logsError } = useActivityLogs(
-    activityId,
+    selectedActivityId,
     relevantStandards,
     timezone
   );
@@ -115,12 +147,12 @@ export function ActivityHistoryScreen({
     }
     return computeSyntheticCurrentRows({
       standards: activeStandards,
-      activityId,
+      activityId: selectedActivityId ?? '',
       logs: currentPeriodLogs,
       timezone,
       nowMs,
     });
-  }, [activeStandards, activityId, currentPeriodLogs, timezone, nowMs]);
+  }, [activeStandards, selectedActivityId, currentPeriodLogs, timezone, nowMs]);
 
   // Merge persisted and synthetic rows
   const mergedRows = useMemo(() => {
@@ -354,8 +386,8 @@ export function ActivityHistoryScreen({
     };
   }, [filteredRowsForList, rangeLogs, effectiveRangeStartMs, nowMs, timezone]);
 
-  const loading = historyLoading || logsLoading || (rangeLogsLoading && mergedRows.length === 0);
-  const error = historyError || logsError || rangeLogsError;
+  const loading = activitiesLoading || historyLoading || logsLoading || (rangeLogsLoading && mergedRows.length === 0);
+  const error = historyError || logsError || rangeLogsError || activitiesError;
 
   useEffect(() => {
     if (rangeLogsError) {
@@ -409,6 +441,8 @@ export function ActivityHistoryScreen({
     };
   };
 
+  const hasActivities = sortedActivities.length > 0;
+
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
       <View
@@ -424,9 +458,7 @@ export function ActivityHistoryScreen({
         <TouchableOpacity onPress={onBack} accessibilityRole="button">
           <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>
-          {activityName}
-        </Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Scorecard</Text>
         <TouchableOpacity 
           onPress={() => setIsRangeDrawerVisible(true)}
           style={[styles.rangeTrigger, { backgroundColor: theme.background.surface, borderColor: theme.border.primary }]}
@@ -445,7 +477,37 @@ export function ActivityHistoryScreen({
 
       <ErrorBanner error={error} />
 
-      {loading && mergedRows.length === 0 ? (
+      <View style={[styles.selectorContainer, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+        <TouchableOpacity
+          style={[styles.selectorButton, { backgroundColor: theme.input.background, borderColor: theme.input.border }]}
+          onPress={() => {
+            if (hasActivities) {
+              setIsActivitySelectorVisible(true);
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Select activity"
+        >
+          <View style={styles.selectorTextBlock}>
+            <Text style={[styles.selectorLabel, { color: theme.text.secondary }]}>Activity</Text>
+            <Text style={[styles.selectorValue, { color: theme.text.primary }]}>
+              {activityName}
+            </Text>
+            {!!unit && (
+              <Text style={[styles.selectorUnit, { color: theme.text.secondary }]}>{unit}</Text>
+            )}
+          </View>
+          <MaterialIcon name="keyboard-arrow-down" size={22} color={theme.text.secondary} />
+        </TouchableOpacity>
+      </View>
+
+      {!hasActivities && !activitiesLoading ? (
+        <View style={styles.emptyContainer}>
+          <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
+            No activities yet. Create one in Standards to get started.
+          </Text>
+        </View>
+      ) : loading && mergedRows.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.activityIndicator} />
         </View>
@@ -529,6 +591,58 @@ export function ActivityHistoryScreen({
           })}
         </ScrollView>
       )}
+
+      <Modal
+        visible={isActivitySelectorVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsActivitySelectorVisible(false)}
+      >
+        <Pressable
+          style={[styles.selectorOverlay, { backgroundColor: theme.overlay }]}
+          onPress={() => setIsActivitySelectorVisible(false)}
+        >
+          <Pressable
+            style={[styles.selectorSheet, { backgroundColor: theme.background.modal }]}
+            onPress={(event) => event.stopPropagation()}
+          >
+            <Text style={[styles.selectorSheetTitle, { color: theme.text.primary }]}>Select activity</Text>
+            <FlatList
+              data={sortedActivities}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => {
+                const isSelected = item.id === selectedActivityId;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.selectorItem,
+                      isSelected && { backgroundColor: theme.background.tertiary },
+                    ]}
+                    onPress={() => {
+                      setSelectedActivityId(item.id);
+                      setIsActivitySelectorVisible(false);
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Select ${item.name}`}
+                  >
+                    <View style={styles.selectorItemText}>
+                      <Text style={[styles.selectorItemName, { color: theme.text.primary }]}>
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.selectorItemUnit, { color: theme.text.secondary }]}>
+                        {item.unit}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <MaterialIcon name="check" size={20} color={theme.primary.main} />
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -579,6 +693,72 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingTop: CARD_SPACING,
     gap: CARD_SPACING,
+  },
+  selectorContainer: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  selectorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  selectorTextBlock: {
+    gap: 2,
+  },
+  selectorLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  selectorValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectorUnit: {
+    fontSize: 12,
+  },
+  selectorOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  selectorSheet: {
+    padding: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    maxHeight: '70%',
+  },
+  selectorSheetTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 12,
+  },
+  selectorItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  selectorItemText: {
+    gap: 4,
+  },
+  selectorItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectorItemUnit: {
+    fontSize: 12,
   },
   rangeTrigger: {
     flexDirection: 'row',

@@ -149,11 +149,11 @@ export function BottomTabNavigator() {
         name="Activities"
         component={ActivitiesStack}
         options={{
-          tabBarLabel: 'Activities',
+          tabBarLabel: 'Scorecard',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="task-alt" size={size || 24} color={color} />
           ),
-          tabBarAccessibilityLabel: 'Activities tab',
+          tabBarAccessibilityLabel: 'Scorecard tab',
         }}
       />
       <Tab.Screen

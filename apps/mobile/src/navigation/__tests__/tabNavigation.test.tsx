@@ -90,7 +90,7 @@ jest.mock('../SettingsStack', () => ({
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 
 describe('Tab Navigation', () => {
-  test('BottomTabNavigator renders four tabs (Dashboard, Standards, Activities, Settings)', () => {
+  test('BottomTabNavigator renders four tabs (Dashboard, Standards, Scorecard, Settings)', () => {
     const { getByText } = render(
       <NavigationContainer>
         <BottomTabNavigator />
@@ -99,7 +99,7 @@ describe('Tab Navigation', () => {
 
     expect(getByText('Dashboard')).toBeTruthy();
     expect(getByText('Standards')).toBeTruthy();
-    expect(getByText('Activities')).toBeTruthy();
+    expect(getByText('Scorecard')).toBeTruthy();
     expect(getByText('Settings')).toBeTruthy();
   });
 
@@ -125,14 +125,14 @@ describe('Tab Navigation', () => {
     expect(getByText('Standards')).toBeTruthy();
   });
 
-  test('Activities tab shows ActivityLibraryScreen', () => {
+  test('Activities tab shows Scorecard screen', () => {
     const { getByText } = render(
       <NavigationContainer>
         <BottomTabNavigator />
       </NavigationContainer>
     );
 
-    expect(getByText('Activities')).toBeTruthy();
+    expect(getByText('Scorecard')).toBeTruthy();
   });
 
   test('Settings tab shows SettingsScreen', () => {

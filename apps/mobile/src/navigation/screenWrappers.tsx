@@ -7,7 +7,6 @@ import {
   StandardsStackParamList,
   ActivitiesStackParamList,
 } from './types';
-import { ActivityLibraryScreen } from '../screens/ActivityLibraryScreen';
 import { ActivityHistoryScreen } from '../screens/ActivityHistoryScreen';
 import { StandardsBuilderScreen } from '../screens/StandardsBuilderScreen';
 import { StandardsLibraryScreen } from '../screens/StandardsLibraryScreen';
@@ -21,28 +20,11 @@ type StandardsNavigationProp = NativeStackNavigationProp<StandardsStackParamList
 type ActivitiesNavigationProp = NativeStackNavigationProp<ActivitiesStackParamList>;
 
 // Wrapper components that adapt existing screens to React Navigation
-export function ActivityLibraryScreenWrapper() {
-  const navigation = useNavigation<ActivitiesNavigationProp>();
-  const canGoBack = navigation.canGoBack();
-  // When ActivityLibrary is tab root, don't show close button
-  return (
-    <ActivityLibraryScreen
-      onClose={canGoBack ? () => navigation.goBack() : undefined}
-    />
-  );
-}
-
-export function ActivityHistoryScreenWrapper() {
+export function ScorecardScreenWrapper() {
   const navigation = useNavigation<ActivitiesNavigationProp>();
   const route = useRoute();
-  const activityId = (route.params as { activityId: string })?.activityId;
-  
-  if (!activityId) {
-    // Guard for missing activityId - navigate back if not provided
-    navigation.goBack();
-    return null;
-  }
-  
+  const activityId = (route.params as { activityId?: string } | undefined)?.activityId;
+
   return (
     <ActivityHistoryScreen
       activityId={activityId}

@@ -23,8 +23,7 @@ export type StandardsStackParamList = {
 };
 
 export type ActivitiesStackParamList = {
-  ActivityLibrary: undefined;
-  ActivityHistory: { activityId: string };
+  Scorecard: { activityId?: string } | undefined;
 };
 
 export type SettingsStackParamList = {

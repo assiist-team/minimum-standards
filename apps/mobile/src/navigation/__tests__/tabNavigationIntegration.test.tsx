@@ -20,7 +20,7 @@ jest.mock('../BottomTabNavigator', () => ({
       } else if (tab === 'Standards') {
         setCurrentScreen('StandardsLibrary');
       } else if (tab === 'Activities') {
-        setCurrentScreen('ActivityLibrary');
+        setCurrentScreen('Scorecard');
       } else if (tab === SETTINGS_TAB_ROUTE_NAME) {
         setCurrentScreen(SETTINGS_STACK_ROOT_SCREEN_NAME);
       }
@@ -47,7 +47,7 @@ jest.mock('../BottomTabNavigator', () => ({
       React.createElement(
         TouchableOpacity,
         { testID: 'activities-tab', onPress: () => handleTabPress('Activities') },
-        React.createElement(Text, null, 'Activities')
+        React.createElement(Text, null, 'Scorecard')
       ),
       React.createElement(
         TouchableOpacity,
@@ -81,11 +81,11 @@ jest.mock('../BottomTabNavigator', () => ({
           { testID: 'standards-builder-screen' },
           React.createElement(Text, null, 'Create Standard')
         ),
-      currentScreen === 'ActivityLibrary' &&
+      currentScreen === 'Scorecard' &&
         React.createElement(
           View,
-          { testID: 'activity-library-screen' },
-          React.createElement(Text, null, 'Activity Library')
+          { testID: 'scorecard-screen' },
+          React.createElement(Text, null, 'Scorecard')
         )
     );
   },
@@ -154,7 +154,7 @@ describe('Tab Navigation Integration', () => {
     });
   });
 
-  test('Activities tab shows Activity Library screen', async () => {
+  test('Activities tab shows Scorecard screen', async () => {
     const { getByTestId, getByText } = render(
       React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
     );
@@ -163,10 +163,10 @@ describe('Tab Navigation Integration', () => {
     const activitiesTab = getByTestId('activities-tab');
     fireEvent.press(activitiesTab);
 
-    // Verify Activity Library screen is shown
+    // Verify Scorecard screen is shown
     await waitFor(() => {
-      expect(getByTestId('activity-library-screen')).toBeTruthy();
-      expect(getByText('Activity Library')).toBeTruthy();
+      expect(getByTestId('scorecard-screen')).toBeTruthy();
+      expect(getByText('Scorecard')).toBeTruthy();
     });
   });
 
