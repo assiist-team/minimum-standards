@@ -18,26 +18,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard } from '@minimum-standards/shared-model';
-// import { Waveform, useDictation, useWaveform } from 'react-native-dictation';
-
-// MOCK: react-native-dictation does not exist on npm, and was missing from the repo.
-// Mocking it here to allow the app to build/run.
-const Waveform = ({ levels, height, barColor }: any) => <View style={{ height, backgroundColor: 'transparent' }} />;
-const useDictation = (options: any) => ({
-  isInitialized: false,
-  isListening: false,
-  audioLevel: 0,
-  error: null,
-  initialize: async () => {},
-  startListening: async () => {},
-  stopListening: async () => {},
-  cancelListening: async () => {},
-});
-const useWaveform = (options: any) => ({
-  levels: [],
-  updateLevel: () => {},
-  reset: () => {},
-});
+import { Waveform, useDictation, useWaveform } from 'react-native-dictation';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';

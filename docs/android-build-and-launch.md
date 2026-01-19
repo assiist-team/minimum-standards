@@ -61,6 +61,26 @@ _Date: 2026-01-19_
 - [x] **Verification:** Verified app launch and connectivity to Metro (reload successful).
 - [x] **Issue Identified:** Runtime error `Unable to resolve module react-native-dictation` in `LogEntryModal.tsx`.
 - [x] **Documentation Update:** Identified `react-native-dictation` as a local private package. It is **not** on NPM.
+- [x] **Integration:** Integrated `react-native-dictation` local package.
+  - Installed via `npm install /Users/benjaminmackenzie/Dev/react_native_dictation/react-native`.
+  - Removed mocks in `LogEntryModal.tsx`.
+  - Validated `package.json` linking.
+- [x] **Issue Identified:** Red screen on emulator: `The development server returned response error code: 500`.
+  - URL: `http://10.0.2.2:8081/index.bundle?...`
+  - Body: `Unable to resolve module react-native-dictation` from `src/components/LogEntryModal.tsx`.
+  - Root cause: Metro could not resolve the local `react-native-dictation` package.
+- [ ] **Fix Attempt:** Updated `apps/mobile/metro.config.js` to watch the external dictation package and resolve its dependencies.
+- [x] **Verification:** Restart Metro (`npm start -- --reset-cache`) and rebuild Android (`npm run android`).
+- [x] **Run (2026-01-19):**
+  - What I did: `export JAVA_HOME="/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home"; export PATH="$JAVA_HOME/bin:$PATH"; npx react-native run-android --no-packager`
+  - Result: Gradle build + install succeeded, app launched, then Metro red screen showed HTTP 500 for `react-native-dictation`.
+- [x] **Code changes (2026-01-19):**
+  - What I did:
+    - `apps/mobile/android/settings.gradle` — RN settings plugin wiring update.
+    - `apps/mobile/android/build.gradle` — added `kotlin_version` to satisfy dictation module.
+    - `apps/mobile/node_modules/react-native-dictation/android/build.gradle` — set Java/Kotlin targets to 17.
+    - `apps/mobile/node_modules/react-native-dictation/android/src/main/java/com/reactnativedictation/DictationModule.kt` — updated `PermissionListener` signature.
+  - Result: Android build progressed past Gradle/Kotlin/PermissionListener errors; Metro still errors if `react-native-dictation` cannot be resolved.
 
 ---
 
@@ -99,13 +119,8 @@ That means Firebase will not initialize on Android until the Google Services con
 The file `src/components/LogEntryModal.tsx` imports `react-native-dictation`.
 - **Status:** This is a **local private package**. It does **not** exist on NPM.
 - **Location:** The source code and documentation are located at `/Users/benjaminmackenzie/Dev/react_native_dictation/`.
-- **Integration:** You must follow the instructions in the [README](/Users/benjaminmackenzie/Dev/react_native_dictation/README.md) located in that directory to correctly link and build this dependency.
-- **Temporary State:** `LogEntryModal.tsx` may contain a mocked implementation or fail to resolve until this local package is properly linked in `package.json` or `metro.config.js`.
-
-**Action Required:**
-1.  Read `/Users/benjaminmackenzie/Dev/react_native_dictation/README.md`.
-2.  Link the package locally (e.g., `npm install ../../react_native_dictation` or via `wml`/`watchman` if outside the monorepo root).
-3.  Ensure native modules are linked (Autolinking should handle it if added to `package.json`).
+- **Integration:** Installed via `npm install /Users/benjaminmackenzie/Dev/react_native_dictation/react-native`.
+- **State:** `LogEntryModal.tsx` uses the real implementation.
 
 ---
 
@@ -345,6 +360,11 @@ If `.env` is missing, Android builds may still complete, but runtime behavior wi
 - **Metro won’t pick up monorepo changes** → rebuild packages + `npm install` inside `apps/mobile`
 - **Gradle/SDK mismatch** → confirm SDK 35 and Build Tools 35.0.0 installed in Android Studio
 - **Firebase initialization crash** → verify `google-services.json` and plugin wiring
+- **Google Sign-In `DEVELOPER_ERROR` (error 10)** → Firebase Android OAuth client is missing/mismatched.
+  - Confirm the Android app package name is `app.nine4.minimum_standards` in Firebase.
+  - Add the debug SHA1 from your local keystore:
+    - `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`
+  - Download the updated `google-services.json` from Firebase and replace `apps/mobile/android/app/google-services.json`, then rebuild.
 - **Stale `.env` values** → clean + rebuild; `.env` is read at build time
 - **"Unable to load script" (Red screen)** → The app cannot connect to the Metro bundler.
   - Fix 1: Ensure Metro is running (`npm start`).
@@ -357,7 +377,7 @@ If `.env` is missing, Android builds may still complete, but runtime behavior wi
 
 ## 9. Open Decisions / Gaps
 
-- **Missing Dependency:** `react-native-dictation` is referenced but missing from `package.json`. It resides locally at `/Users/benjaminmackenzie/Dev/react_native_dictation`.
+- **Resolved Dependency:** `react-native-dictation` is now installed and linked from `/Users/benjaminmackenzie/Dev/react_native_dictation/react-native`.
 - Confirm whether `google-services.json` should be committed or injected via CI.
 - Decide on release signing strategy (keystore location + CI secrets).
 - Validate Android-specific `.env` keys required by `react-native-config`.

@@ -136,6 +136,7 @@ function getAuthErrorMessage(code: string): string {
     'PLAY_SERVICES_NOT_AVAILABLE': 'Google Play Services is not available.',
     'SIGN_IN_REQUIRED': 'Please sign in to continue.',
     '10': 'Google Sign-In configuration error. Please contact support.',
+    'DEVELOPER_ERROR': 'Google Sign-In configuration error. Verify SHA1/package name and web client ID.',
     '7': 'Network error. Check your connection and retry.',
     '8': 'An internal error occurred. Please try again.',
     '12500': 'Sign in failed. Please try again.',

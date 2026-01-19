@@ -28,11 +28,21 @@ import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
 function createAuthErrorFromAnyError(err: any): AuthError {
   // Log the error for debugging
   console.error('Google Sign-In error:', err);
-  
-  // Check if it's a Google Sign-In error (has code property)
-  if (err?.code && typeof err.code === 'string') {
-    return AuthError.fromFirebaseError(err);
+
+  const inferredCode =
+    err?.code ??
+    (typeof err?.message === 'string' && err.message.includes('DEVELOPER_ERROR')
+      ? 'DEVELOPER_ERROR'
+      : undefined);
+
+  // Normalize non-Firebase Google errors into AuthError for UX
+  if (inferredCode !== undefined) {
+    return AuthError.fromFirebaseError({
+      code: String(inferredCode),
+      message: err?.message,
+    });
   }
+
   // Otherwise wrap it as unknown error
   return AuthError.fromFirebaseError(err);
 }
