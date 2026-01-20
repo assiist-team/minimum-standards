@@ -155,8 +155,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     // Set up auth state listener for future changes
     console.log('[AuthStore] Setting up onAuthStateChanged listener...');
+    console.log('[AuthListener] Registering Firebase auth state listener');
     try {
       unsubscribeAuthState = onAuthStateChanged(firebaseAuth, async (user) => {
+        console.log('[AuthListener] onAuthStateChanged fired', {
+          uid: user?.uid,
+          email: user?.email,
+        });
         console.log('[AuthStore] [Remediation] onAuthStateChanged callback reached');
         const uid = user?.uid;
         console.log('[AuthStore] onAuthStateChanged callback fired:', uid ? `User ID: ${uid}` : 'No user');

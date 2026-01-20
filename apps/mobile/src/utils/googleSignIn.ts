@@ -1,5 +1,6 @@
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Config from 'react-native-config';
+import { googleSignInWebClientId } from '../config/googleSignIn';
 
 /**
  * Initializes Google Sign-In with Firebase configuration.
@@ -10,7 +11,7 @@ import Config from 'react-native-config';
  */
 export function initializeGoogleSignIn() {
   console.log('[Google Sign-In] Initializing Google Sign-In...');
-  const webClientId = Config.GOOGLE_SIGN_IN_WEB_CLIENT_ID;
+  const webClientId = Config.GOOGLE_SIGN_IN_WEB_CLIENT_ID || googleSignInWebClientId;
 
   if (!webClientId) {
     console.error(

@@ -134,7 +134,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       expect(input.props.value).toBe('');
     });
 
@@ -166,7 +166,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       expect(input.props.value).toBe('');
     });
   });
@@ -185,7 +185,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       fireEvent.changeText(input, '0');
@@ -214,7 +214,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       fireEvent.changeText(input, '-5');
@@ -251,7 +251,7 @@ describe('LogEntryModal', () => {
       expect(getByText('+5')).toBeTruthy();
 
       // Enter zero manually (zero can be logged even if chips don't include zero)
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       fireEvent.changeText(input, '0');
 
       const saveButton = getByText('Save');
@@ -286,7 +286,7 @@ describe('LogEntryModal', () => {
       fireEvent.press(whenButton);
 
       // Set zero value
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       fireEvent.changeText(input, '0');
 
       // Save with backdated time
@@ -383,7 +383,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       fireEvent.changeText(input, 'invalid');
@@ -527,7 +527,7 @@ describe('LogEntryModal', () => {
         />
       );
 
-      const valueInput = getByPlaceholderText('0');
+      const valueInput = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       // Change the value

@@ -1,6 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { BottomTabBar, type BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Platform, StyleSheet, View } from 'react-native';
+import { type LayoutChangeEvent, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CommonActions } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -21,6 +21,8 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
   const theme = useTheme();
   const { createLogEntry, updateLogEntry } = useStandards();
   const { allActivities } = useActivities();
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 0);
 
   const activityNameMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -33,12 +35,23 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
   // Only show the sticky log button on the Dashboard tab
   const currentRoute = props.state.routes[props.state.index]?.name;
   const showStickyLogButton = currentRoute === 'Dashboard';
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    if (__DEV__) {
+      const { height } = event.nativeEvent.layout;
+      console.info('[TabBarWithStickyLogButton] layout', { height });
+    }
+  }, []);
 
   return (
     <View
+      onLayout={handleLayout}
       style={[
         styles.tabBarShell,
-        { backgroundColor: theme.tabBar.background, borderTopColor: theme.tabBar.border },
+        {
+          backgroundColor: Platform.OS === 'android' ? theme.background.screen : theme.tabBar.background,
+          borderTopColor: theme.tabBar.border,
+          marginBottom: Platform.OS === 'android' ? bottomInset : 0,
+        },
       ]}
     >
       {showStickyLogButton && (
@@ -56,6 +69,17 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
 export function BottomTabNavigator() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const baseTabBarHeight = Platform.OS === 'ios' ? 88 : 64;
+  const baseBottomPadding = Platform.OS === 'ios' ? 20 : 12;
+  const bottomPadding =
+    Platform.OS === 'ios' ? Math.max(insets.bottom, baseBottomPadding) : baseBottomPadding;
+  const androidMinHeight = baseTabBarHeight + bottomPadding;
+
+  useEffect(() => {
+    if (__DEV__) {
+      console.info('[BottomTabNavigator] safe area insets', insets);
+    }
+  }, [insets]);
   
   // Mount the Activity History Engine once at the authenticated app root
   // This ensures it runs for the whole session and avoids duplicate timers
@@ -72,11 +96,17 @@ export function BottomTabNavigator() {
         tabBarStyle: {
           backgroundColor: 'transparent',
           borderTopWidth: 0,
-          paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 8),
+          elevation: 0,
+          shadowColor: 'transparent',
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          shadowOffset: { width: 0, height: 0 },
           paddingTop: 8,
           paddingLeft: Math.max(insets.left, 16),
           paddingRight: Math.max(insets.right, 16),
-          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: bottomPadding,
+          height: Platform.OS === 'ios' ? baseTabBarHeight : undefined,
+          minHeight: Platform.OS === 'ios' ? undefined : androidMinHeight,
         },
         tabBarLabelStyle: {
           fontSize: 12,
@@ -174,5 +204,10 @@ export function BottomTabNavigator() {
 const styles = StyleSheet.create({
   tabBarShell: {
     borderTopWidth: 1,
+    elevation: 0,
+    shadowColor: 'transparent',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
   },
 });

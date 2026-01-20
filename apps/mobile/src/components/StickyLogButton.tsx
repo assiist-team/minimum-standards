@@ -142,5 +142,7 @@ const styles = StyleSheet.create({
   },
   stickyLogButtonText: {
     // fontSize and fontWeight come from typography.button.primary
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });

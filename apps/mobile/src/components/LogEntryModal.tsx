@@ -15,6 +15,7 @@ import {
   Keyboard,
   KeyboardEvent,
   LayoutChangeEvent,
+  InteractionManager,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard } from '@minimum-standards/shared-model';
@@ -165,25 +166,24 @@ export function LogEntryModal({
   // Auto-focus the value input when entering the logging form
   useEffect(() => {
     if (visible && selectedStandard && !showPicker && !isEditMode) {
-      // Small delay to ensure the input is rendered before focusing
-      const timeoutId = setTimeout(() => {
-        valueInputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timeoutId);
+      // Delay focus until layout/animations settle (Android needs extra time).
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      const task = InteractionManager.runAfterInteractions(() => {
+        timeoutId = setTimeout(() => {
+          valueInputRef.current?.focus();
+        }, Platform.OS === 'android' ? 250 : 100);
+      });
+      return () => {
+        task.cancel();
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
     }
   }, [visible, selectedStandard, showPicker, isEditMode]);
 
-  useEffect(() => {
-    if (!showDictation || !visible || !showNote || !selectedStandard) {
-      return;
-    }
-    if (isDictationInitialized) {
-      return;
-    }
-    initializeDictation().catch((error) => {
-      console.warn('[LogEntryModal] Dictation initialize failed', error);
-    });
-  }, [showDictation, visible, showNote, selectedStandard, isDictationInitialized, initializeDictation]);
+  // Dictation is initialized lazily when the user taps "Dictate" to avoid
+  // triggering permission errors just by opening the note section.
 
   useEffect(() => {
     if (isDictationListening) {
@@ -463,10 +463,13 @@ export function LogEntryModal({
                   setSaveError(null);
                 }
               }}
-              placeholder="0"
+              onPressIn={() => valueInputRef.current?.focus()}
+              placeholder=""
               placeholderTextColor={theme.input.placeholder}
-              keyboardType="numeric"
+              keyboardType={Platform.OS === 'android' ? 'number-pad' : 'numeric'}
               editable={!saving}
+              autoFocus={Platform.OS === 'android' && !isEditMode}
+              showSoftInputOnFocus={true}
               accessibilityLabel={`Enter ${selectedStandard.unit}`}
             />
             
@@ -694,9 +697,6 @@ export function LogEntryModal({
     setNote(dictationBaseNoteRef.current);
   };
 
-  const handleOverlayPress = () => {
-    Keyboard.dismiss();
-  };
 
   const handleFooterLayout = (event: LayoutChangeEvent) => {
     if (keyboardHeight > 0) {
@@ -753,13 +753,11 @@ export function LogEntryModal({
       onRequestClose={handleClose}
     >
       <View style={[styles.modalOverlay, { backgroundColor: theme.background.overlay }]}>
-        <TouchableOpacity
-          style={StyleSheet.absoluteFill}
-          activeOpacity={1}
-          onPress={handleOverlayPress}
+        <View
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, styles.modalBackdrop]}
         />
         <View
-          onStartShouldSetResponder={() => true}
           style={[
             styles.modalContent,
             {
@@ -804,7 +802,7 @@ export function LogEntryModal({
                   styles.form,
                   { paddingBottom: 16 + footerHeight + effectiveKeyboardHeight },
                 ]}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
                 keyboardDismissMode="on-drag"
                 bounces={true}
                 showsVerticalScrollIndicator={true}
@@ -813,12 +811,7 @@ export function LogEntryModal({
                 scrollEventThrottle={16}
                 nestedScrollEnabled={true}
               >
-                <TouchableOpacity 
-                  activeOpacity={1} 
-                  onPress={Keyboard.dismiss}
-                >
-                  {renderLoggingForm()}
-                </TouchableOpacity>
+                {renderLoggingForm()}
               </ScrollView>
             )}
 
@@ -833,11 +826,16 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
   },
+  modalBackdrop: {
+    zIndex: 0,
+  },
   modalContent: {
     flex: 1,
     paddingHorizontal: 20,
     paddingBottom: 0,
     width: '100%',
+    zIndex: 1,
+    elevation: 1,
   },
   pickerContainer: {
     flex: 1,
@@ -919,6 +917,8 @@ const styles = StyleSheet.create({
   compactQuickButtonText: {
     fontSize: 36,
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   inputError: {},
   errorText: {
@@ -1017,6 +1017,8 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   footer: {
     borderTopWidth: 1,
@@ -1052,6 +1054,8 @@ const styles = StyleSheet.create({
   createStandardButtonText: {
     fontSize: 16,
     fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   standardsList: {
     flex: 1,

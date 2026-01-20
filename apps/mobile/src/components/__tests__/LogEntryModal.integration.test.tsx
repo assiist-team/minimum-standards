@@ -70,7 +70,7 @@ describe('LogEntryModal Integration Tests', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       fireEvent.changeText(input, '150');
@@ -117,7 +117,7 @@ describe('LogEntryModal Integration Tests', () => {
       });
 
       // Enter value and save
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       fireEvent.changeText(input, '200');
 
       const saveButton = getByText('Save');
@@ -163,7 +163,7 @@ describe('LogEntryModal Integration Tests', () => {
       fireEvent.press(nowButton);
 
       // Enter value and save
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       fireEvent.changeText(input, '100');
       const saveButton = getByText('Save');
       fireEvent.press(saveButton);
@@ -192,7 +192,7 @@ describe('LogEntryModal Integration Tests', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       fireEvent.changeText(input, '0');
@@ -223,7 +223,7 @@ describe('LogEntryModal Integration Tests', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       const saveButton = getByText('Save');
 
       // Try invalid input
@@ -268,7 +268,7 @@ describe('LogEntryModal Integration Tests', () => {
         />
       );
 
-      const input = getByPlaceholderText('0');
+      const input = getByPlaceholderText('');
       fireEvent.changeText(input, '100');
       expect(input.props.value).toBe('100');
 
@@ -300,7 +300,7 @@ describe('LogEntryModal Integration Tests', () => {
 
       // Wait for form to render and verify input is reset
       await waitFor(() => {
-        const newInput = getByPlaceholderText('0');
+        const newInput = getByPlaceholderText('');
         expect(newInput.props.value).toBe('');
       });
     });

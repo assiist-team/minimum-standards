@@ -365,6 +365,7 @@ If `.env` is missing, Android builds may still complete, but runtime behavior wi
   - Add the debug SHA1 from your local keystore:
     - `keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android`
   - Download the updated `google-services.json` from Firebase and replace `apps/mobile/android/app/google-services.json`, then rebuild.
+- **Gradle uses the wrong JDK** → this repo pins JDK 17 in `apps/mobile/android/gradle.properties` via `org.gradle.java.home`.
 - **Stale `.env` values** → clean + rebuild; `.env` is read at build time
 - **"Unable to load script" (Red screen)** → The app cannot connect to the Metro bundler.
   - Fix 1: Ensure Metro is running (`npm start`).

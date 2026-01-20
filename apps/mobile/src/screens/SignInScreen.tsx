@@ -149,6 +149,10 @@ export function SignInScreen() {
       // Sign in the user with the credential
       console.log('[Google Sign-In] Signing in with Firebase credential...');
       await firebaseAuth.signInWithCredential(googleCredential);
+      console.log('[Google Sign-In] Firebase currentUser after sign-in:', {
+        uid: firebaseAuth.currentUser?.uid,
+        email: firebaseAuth.currentUser?.email,
+      });
       console.log('[Google Sign-In] Successfully signed in with Firebase');
       // Navigation will be handled by AppNavigator based on auth state
     } catch (err: any) {

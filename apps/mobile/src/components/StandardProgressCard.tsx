@@ -181,14 +181,25 @@ export function StandardProgressCard({
                       styles.logButtonHeader,
                       {
                         backgroundColor: theme.button.primary.background,
-                        width: 50,
-                        height: 30,
                       },
                     ]}
                     accessibilityRole="button"
                     accessibilityLabel={`Log progress for ${activityName}`}
                   >
-                    <Text style={[styles.logButtonText, { fontSize: typography.button.primary.fontSize, fontWeight: typography.button.primary.fontWeight, color: theme.button.primary.text }]}>Log</Text>
+                    <Text
+                      style={[
+                        styles.logButtonText,
+                        {
+                          fontSize: 14, // Slightly smaller than primary for the card header
+                          fontWeight: typography.button.primary.fontWeight,
+                          color: theme.button.primary.text,
+                          includeFontPadding: false,
+                          textAlignVertical: 'center',
+                        },
+                      ]}
+                    >
+                      Log
+                    </Text>
                   </TouchableOpacity>
                 ) : (
                   <View
