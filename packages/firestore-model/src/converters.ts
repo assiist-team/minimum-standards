@@ -10,6 +10,7 @@ import {
   Activity,
   ActivityLog,
   Standard,
+  Category,
   ActivityHistoryDoc,
   ActivityHistoryStandardSnapshot,
   PeriodStartPreference,
@@ -17,6 +18,7 @@ import {
   activityLogSchema,
   activitySchema,
   standardSchema,
+  categorySchema,
   activityHistoryDocSchema,
   formatStandardSummary,
   DashboardPins,
@@ -26,6 +28,7 @@ import { msToTimestamp, timestampToMs } from './timestamps';
 
 type FirestoreActivity = Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'> & {
   notes: string | null;
+  categoryId?: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
   deletedAt: Timestamp | null;
@@ -38,6 +41,13 @@ type FirestoreStandard = Omit<Standard, 'id' | 'createdAtMs' | 'updatedAtMs' | '
   deletedAt: Timestamp | null;
   archivedAt: Timestamp | null;
   periodStartPreference?: Standard['periodStartPreference'];
+  categoryId?: string | null;
+};
+
+type FirestoreCategory = Omit<Category, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'> & {
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  deletedAt: Timestamp | null;
 };
 
 type FirestoreActivityLog = Omit<
@@ -101,6 +111,7 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
       name: model.name,
       unit: model.unit, // Already normalized via schema transform
       notes: model.notes,
+      categoryId: model.categoryId ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       deletedAt: model.deletedAtMs == null ? null : msToTimestamp(model.deletedAtMs)
@@ -114,6 +125,7 @@ export const activityConverter: FirestoreDataConverter<Activity> = {
       name: data.name,
       unit: data.unit,
       notes: data.notes ?? null,
+      categoryId: data.categoryId ?? null,
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
       deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
@@ -169,6 +181,7 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
             (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
           )
         : undefined,
+      categoryId: (data as any).categoryId ?? null,
       archivedAtMs: data.archivedAt == null ? null : timestampToMs(data.archivedAt),
       createdAtMs: timestampToMs(data.createdAt),
       updatedAtMs: timestampToMs(data.updatedAt),
@@ -176,6 +189,32 @@ export const standardConverter: FirestoreDataConverter<Standard> = {
     };
 
     return parseWith<Standard>(standardSchema, rawStandard);
+  }
+};
+
+export const categoryConverter: FirestoreDataConverter<Category> = {
+  toFirestore(model: Category) {
+    return {
+      name: model.name,
+      order: model.order,
+      isSystem: model.isSystem ?? false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      deletedAt: model.deletedAtMs == null ? null : msToTimestamp(model.deletedAtMs)
+    } as unknown as FirestoreCategory;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot, options: SnapshotOptions): Category {
+    const data = snapshot.data(options) as FirestoreCategory;
+
+    return parseWith<Category>(categorySchema, {
+      id: snapshot.id,
+      name: data.name,
+      order: data.order,
+      isSystem: data.isSystem ?? false,
+      createdAtMs: timestampToMs(data.createdAt),
+      updatedAtMs: timestampToMs(data.updatedAt),
+      deletedAtMs: data.deletedAt == null ? null : timestampToMs(data.deletedAt)
+    });
   }
 };
 

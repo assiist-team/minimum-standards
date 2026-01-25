@@ -1,18 +1,5 @@
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
-import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
-import firestoreModule from '@react-native-firebase/firestore';
-
-const FieldValue = firestoreModule.FieldValue;
-const Timestamp = firestoreModule.Timestamp;
-
-type FirestoreActivityData = {
-  name: string;
-  unit: string;
-  notes: string | null;
-  createdAt: FirebaseFirestoreTypes.Timestamp | null;
-  updatedAt: FirebaseFirestoreTypes.Timestamp | null;
-  deletedAt: FirebaseFirestoreTypes.Timestamp | null;
-};
+import { FirebaseFirestoreTypes, serverTimestamp, Timestamp } from '@react-native-firebase/firestore';
 
 /**
  * Converts a React Native Firebase Firestore document to an Activity model.
@@ -26,6 +13,7 @@ export function fromFirestoreActivity(
     name: data.name,
     unit: data.unit,
     notes: data.notes,
+    categoryId: data.categoryId ?? null,
     createdAtMs: data.createdAt?.toMillis() ?? Date.now(),
     updatedAtMs: data.updatedAt?.toMillis() ?? Date.now(),
     deletedAtMs: data.deletedAt?.toMillis() ?? null,
@@ -34,7 +22,7 @@ export function fromFirestoreActivity(
 
 /**
  * Converts an Activity model to Firestore data format for React Native Firebase.
- * Note: createdAt and updatedAt should use FieldValue.serverTimestamp() when writing.
+ * Note: createdAt and updatedAt should use serverTimestamp() when writing.
  */
 export function toFirestoreActivity(
   activity: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>
@@ -47,8 +35,9 @@ export function toFirestoreActivity(
     name: activity.name,
     unit: activity.unit, // Already normalized via schema transform
     notes: activity.notes ?? null,
-    createdAt: FieldValue.serverTimestamp(),
-    updatedAt: FieldValue.serverTimestamp(),
+    categoryId: activity.categoryId ?? null,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
     deletedAt: null,
   };
 }
@@ -62,7 +51,7 @@ export function toFirestoreActivityUpdate(
   updatedAt: FirebaseFirestoreTypes.FieldValue;
 } {
   const result: any = {
-    updatedAt: FieldValue.serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 
   if (updates.name !== undefined) {
@@ -73,6 +62,9 @@ export function toFirestoreActivityUpdate(
   }
   if (updates.notes !== undefined) {
     result.notes = updates.notes;
+  }
+  if (updates.categoryId !== undefined) {
+    result.categoryId = updates.categoryId ?? null;
   }
 
   return result;
@@ -87,6 +79,6 @@ export function toFirestoreActivityDelete(): {
 } {
   return {
     deletedAt: Timestamp.now(),
-    updatedAt: FieldValue.serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 }

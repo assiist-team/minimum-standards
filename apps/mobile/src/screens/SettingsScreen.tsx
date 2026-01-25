@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { SettingsStackParamList } from '../navigation/types';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
@@ -12,6 +15,7 @@ import { useUIPreferencesStore, ThemePreference } from '../stores/uiPreferencesS
 export function SettingsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const { signOut } = useAuthStore();
   const { themePreference, setThemePreference } = useUIPreferencesStore();
   const [loading, setLoading] = useState(false);
@@ -57,7 +61,21 @@ export function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Appearance</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Organization</Text>
+        <View style={[styles.card, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
+          <TouchableOpacity
+            style={[styles.optionRow, { borderBottomColor: theme.border.secondary }]}
+            onPress={() => navigation.navigate('Categories')}
+          >
+            <View style={styles.optionLabelContainer}>
+              <MaterialIcons name="category" size={22} color={theme.text.primary} style={styles.optionIcon} />
+              <Text style={[styles.optionLabel, { color: theme.text.primary }]}>Categories</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={theme.text.secondary} />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionTitle, { color: theme.text.secondary, marginTop: 24 }]}>Appearance</Text>
         <View style={[styles.card, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
           {themeOptions.map((option, index) => (
             <TouchableOpacity

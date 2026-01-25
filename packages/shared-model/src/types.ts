@@ -38,6 +38,17 @@ export type Activity = SoftDelete &
     name: string;
     unit: string;
     notes: string | null;
+    categoryId: string | null; // null means Uncategorized
+  };
+
+export const UNCATEGORIZED_CATEGORY_ID = 'uncategorized' as const;
+
+export type Category = SoftDelete &
+  AuditTimestamps & {
+    id: string;
+    name: string;
+    order: number; // Lower numbers appear first
+    isSystem?: boolean; // true for Uncategorized category
   };
 
 export type Standard = SoftDelete &
@@ -53,6 +64,8 @@ export type Standard = SoftDelete &
     quickAddValues?: number[]; // Optional preset chips for fast logging (e.g., [1])
     sessionConfig: StandardSessionConfig; // Required: session-based configuration
     periodStartPreference?: PeriodStartPreference;
+    /** @deprecated Legacy field - READ-ONLY. Categories now belong to Activities. Use Activity.categoryId instead. */
+    categoryId: string | null; // null means Uncategorized
   };
 
 export type ActivityLog = SoftDelete &

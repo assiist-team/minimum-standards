@@ -10,11 +10,17 @@ interface UIPreferencesState {
   setPreferredActivityChart: (chart: ChartType) => void;
   themePreference: ThemePreference;
   setThemePreference: (theme: ThemePreference) => void;
+  focusModeEnabled: boolean;
+  setFocusModeEnabled: (enabled: boolean) => void;
+  collapsedByCategoryId: Record<string, boolean>;
+  setCollapsedByCategoryId: (collapsed: Record<string, boolean>) => void;
+  focusedCategoryId: string | null;
+  setFocusedCategoryId: (categoryId: string | null) => void;
+  activityCategoryMigrationCompletedAtMs: number | null;
+  setActivityCategoryMigrationCompletedAtMs: (timestamp: number | null) => void;
+  activityCategoryMigrationConflictActivityIds: string[];
+  setActivityCategoryMigrationConflictActivityIds: (ids: string[]) => void;
 }
-
-// Since I didn't see @react-native-async-storage/async-storage in package.json earlier,
-// I should verify it or use a fallback. 
-// Actually, I'll check if any other store uses persistence.
 
 export const useUIPreferencesStore = create<UIPreferencesState>()(
   persist(
@@ -23,6 +29,16 @@ export const useUIPreferencesStore = create<UIPreferencesState>()(
       setPreferredActivityChart: (chart) => set({ preferredActivityChart: chart }),
       themePreference: 'system',
       setThemePreference: (theme) => set({ themePreference: theme }),
+      focusModeEnabled: false,
+      setFocusModeEnabled: (enabled) => set({ focusModeEnabled: enabled }),
+      collapsedByCategoryId: {},
+      setCollapsedByCategoryId: (collapsed) => set({ collapsedByCategoryId: collapsed }),
+      focusedCategoryId: null,
+      setFocusedCategoryId: (categoryId) => set({ focusedCategoryId: categoryId }),
+      activityCategoryMigrationCompletedAtMs: null,
+      setActivityCategoryMigrationCompletedAtMs: (timestamp) => set({ activityCategoryMigrationCompletedAtMs: timestamp }),
+      activityCategoryMigrationConflictActivityIds: [],
+      setActivityCategoryMigrationConflictActivityIds: (ids) => set({ activityCategoryMigrationConflictActivityIds: ids }),
     }),
     {
       name: 'ui-preferences-storage',

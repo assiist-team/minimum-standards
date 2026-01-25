@@ -30,6 +30,7 @@ import {
 } from '../utils/cadenceUtils';
 import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
+import { useCategories } from '../hooks/useCategories';
 import { findMatchingStandard } from '../utils/standardsFilter';
 import { trackStandardEvent } from '../utils/analytics';
 import { Standard } from '@minimum-standards/shared-model';
@@ -84,6 +85,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
 
   const { createStandard, updateStandard, standards, unarchiveStandard } = useStandards();
   const { activities, createActivity, updateActivity } = useActivities();
+  const { orderedCategories } = useCategories();
   const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
@@ -170,6 +172,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     }
 
     setPeriodStartPreference(standardToEdit.periodStartPreference ?? null);
+    // categoryId is legacy - standards inherit category from Activity
 
     hasPrefilledRef.current = standardId;
   }, [
@@ -187,6 +190,8 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     standardId,
     standardToEdit,
   ]);
+
+  // Standards inherit category from Activity - no inference needed
 
   useEffect(() => {
     if (goalTotal !== null && goalTotal > 0 && goalTotalError) {
@@ -268,6 +273,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
     
     setStandardsLibraryVisible(false);
     setPeriodStartPreference(standard.periodStartPreference ?? null);
+    // categoryId is legacy - standards inherit category from Activity
   };
 
   const handlePresetPress = useCallback(
@@ -434,6 +440,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
           ...standardPayload,
           periodStartPreference: preference,
           clearPeriodStartPreference: shouldClearPeriodPreference,
+          // categoryId is legacy - standards inherit category from Activity
         });
         trackStandardEvent('standard_edit', {
           standardId,
@@ -675,6 +682,24 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
             </View>
           )}
         </View>
+
+        {/* Category info (read-only, inherited from Activity) */}
+        {selectedActivity && (() => {
+          const activityCategory = orderedCategories.find((c) => c.id === selectedActivity.categoryId);
+          return (
+            <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+              <View style={styles.stepHeader}>
+                <Text style={[styles.sectionLabel, { color: theme.text.tertiary }]}>Category</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text.primary }]}>
+                  {activityCategory?.name ?? 'Uncategorized'}
+                </Text>
+              </View>
+              <Text style={[styles.helperText, { color: theme.text.secondary }]}>
+                Category is inherited from the selected activity. Manage categories in Settings.
+              </Text>
+            </View>
+          );
+        })()}
 
         <View style={[styles.section, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
           <View style={styles.stepHeader}>

@@ -119,6 +119,7 @@ export function ActivityModal({
         name: name.trim(),
         unit: unit.trim(),
         notes: notes.trim() || null,
+        categoryId: activity?.categoryId ?? null,
         createdAtMs: activity?.createdAtMs || Date.now(),
         updatedAtMs: Date.now(),
         deletedAtMs: activity?.deletedAtMs || null,
@@ -128,6 +129,7 @@ export function ActivityModal({
         name: activityData.name,
         unit: activityData.unit, // Already normalized by schema
         notes: activityData.notes,
+        categoryId: activityData.categoryId ?? null,
       };
 
       const createdActivity = await onSave(savePayload);

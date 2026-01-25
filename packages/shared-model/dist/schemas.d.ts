@@ -50,6 +50,31 @@ export declare const activitySchema: z.ZodObject<{
     deletedAtMs: number | null;
     notes?: string | null | undefined;
 }>;
+export declare const categorySchema: z.ZodObject<{
+    id: z.ZodString;
+    name: z.ZodString;
+    order: z.ZodNumber;
+    isSystem: z.ZodOptional<z.ZodBoolean>;
+    createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
+    updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
+    deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
+}, "strip", z.ZodTypeAny, {
+    id: string;
+    name: string;
+    createdAtMs: number;
+    updatedAtMs: number;
+    deletedAtMs: number | null;
+    order: number;
+    isSystem?: boolean | undefined;
+}, {
+    id: string;
+    name: string;
+    createdAtMs: number;
+    updatedAtMs: number;
+    deletedAtMs: number | null;
+    order: number;
+    isSystem?: boolean | undefined;
+}>;
 export declare const standardSchema: z.ZodEffects<z.ZodObject<{
     id: z.ZodString;
     activityId: z.ZodString;
@@ -98,6 +123,7 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         mode: "weekDay";
         weekStartDay: number;
     }>]>>;
+    categoryId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
@@ -128,6 +154,7 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         mode: "weekDay";
         weekStartDay: number;
     } | undefined;
+    categoryId?: string | null | undefined;
 }, {
     unit: string;
     minimum: number;
@@ -155,6 +182,7 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         mode: "weekDay";
         weekStartDay: number;
     } | undefined;
+    categoryId?: string | null | undefined;
 }>, {
     unit: string;
     minimum: number;
@@ -182,6 +210,7 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         mode: "weekDay";
         weekStartDay: number;
     } | undefined;
+    categoryId?: string | null | undefined;
 }, {
     unit: string;
     minimum: number;
@@ -209,6 +238,7 @@ export declare const standardSchema: z.ZodEffects<z.ZodObject<{
         mode: "weekDay";
         weekStartDay: number;
     } | undefined;
+    categoryId?: string | null | undefined;
 }>;
 export declare const activityLogSchema: z.ZodObject<{
     id: z.ZodString;
@@ -245,6 +275,7 @@ export type ActivitySchema = z.infer<typeof activitySchema>;
 export type StandardSchema = z.infer<typeof standardSchema>;
 export type ActivityLogSchema = z.infer<typeof activityLogSchema>;
 export type DashboardPinsSchema = z.infer<typeof dashboardPinsSchema>;
+export type CategorySchema = z.infer<typeof categorySchema>;
 export declare const dashboardPinsSchema: z.ZodObject<{
     id: z.ZodString;
     pinnedStandardIds: z.ZodArray<z.ZodString, "many">;

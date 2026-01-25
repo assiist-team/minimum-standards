@@ -1,9 +1,5 @@
-import type { FirebaseFirestoreTypes } from '@react-native-firebase/firestore';
-import firestoreModule from '@react-native-firebase/firestore';
+import { FirebaseFirestoreTypes, serverTimestamp, Timestamp } from '@react-native-firebase/firestore';
 import { Standard, standardSchema } from '@minimum-standards/shared-model';
-
-const FieldValue = firestoreModule.FieldValue;
-const Timestamp = firestoreModule.Timestamp;
 
 export type FirestoreStandardData = {
   activityId: string;
@@ -14,6 +10,7 @@ export type FirestoreStandardData = {
   summary: string;
   sessionConfig: Standard['sessionConfig'];
   quickAddValues?: number[];
+  categoryId?: string | null;
   archivedAt: FirebaseFirestoreTypes.Timestamp | null;
   createdAt: FirebaseFirestoreTypes.Timestamp | null;
   updatedAt: FirebaseFirestoreTypes.Timestamp | null;
@@ -42,7 +39,8 @@ export function fromFirestoreStandard(
     state: data.state,
     summary: data.summary,
     sessionConfig: data.sessionConfig,
-      periodStartPreference: data.periodStartPreference,
+    periodStartPreference: data.periodStartPreference,
+    categoryId: data.categoryId ?? null,
     quickAddValues: Array.isArray(data.quickAddValues)
       ? data.quickAddValues.filter(
           (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0
@@ -64,6 +62,6 @@ export function toFirestoreStandardDelete(): {
 } {
   return {
     deletedAt: Timestamp.now(),
-    updatedAt: FieldValue.serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 }

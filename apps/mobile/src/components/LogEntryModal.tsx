@@ -19,7 +19,6 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard } from '@minimum-standards/shared-model';
-import { Waveform, useDictation, useWaveform } from 'react-native-dictation';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
@@ -65,39 +64,10 @@ export function LogEntryModal({
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [footerHeight, setFooterHeight] = useState(0);
   const valueInputRef = useRef<TextInput>(null);
-  const dictationBaseNoteRef = useRef('');
 
   const { activeStandards, loading: standardsLoading } = useStandards();
-  const { levels: waveformLevels, updateLevel: updateWaveformLevel, reset: resetWaveform } = useWaveform({
-    bufferSize: 60,
-  });
-  const {
-    isInitialized: isDictationInitialized,
-    isListening: isDictationListening,
-    audioLevel: dictationAudioLevel,
-    error: dictationError,
-    initialize: initializeDictation,
-    startListening: startDictationListening,
-    stopListening: stopDictationListening,
-    cancelListening: cancelDictationListening,
-  } = useDictation({
-    onPartialResult: (text) => {
-      const base = dictationBaseNoteRef.current;
-      const trimmedText = text.trim();
-      const merged = base && trimmedText ? `${base} ${trimmedText}` : base || trimmedText;
-      setNote(merged);
-    },
-    onFinalResult: (text) => {
-      const base = dictationBaseNoteRef.current;
-      const trimmedText = text.trim();
-      const merged = base && trimmedText ? `${base} ${trimmedText}` : base || trimmedText;
-      dictationBaseNoteRef.current = merged;
-      setNote(merged);
-    },
-  });
 
   const isEditMode = !!logEntry;
-  const showDictation = Platform.OS === 'android';
 
   // Determine if we should show the picker (when no standard is currently selected)
   const showPicker = selectedStandard === null;
@@ -135,10 +105,6 @@ export function LogEntryModal({
       setShowWhen(false);
       setSelectedDate(new Date());
       setSaveError(null);
-      if (isDictationListening) {
-        void cancelDictationListening();
-      }
-      dictationBaseNoteRef.current = '';
       return;
     }
 
@@ -161,7 +127,7 @@ export function LogEntryModal({
       setSelectedStandard(standard ?? null);
     }
     setSaveError(null);
-  }, [visible, standard, logEntry, cancelDictationListening, isDictationListening]);
+  }, [visible, standard, logEntry]);
 
   // Auto-focus the value input when entering the logging form
   useEffect(() => {
@@ -182,20 +148,6 @@ export function LogEntryModal({
     }
   }, [visible, selectedStandard, showPicker, isEditMode]);
 
-  // Dictation is initialized lazily when the user taps "Dictate" to avoid
-  // triggering permission errors just by opening the note section.
-
-  useEffect(() => {
-    if (isDictationListening) {
-      updateWaveformLevel(dictationAudioLevel);
-    }
-  }, [dictationAudioLevel, isDictationListening, updateWaveformLevel]);
-
-  useEffect(() => {
-    if (!isDictationListening) {
-      resetWaveform();
-    }
-  }, [isDictationListening, resetWaveform]);
 
   const handleStandardSelect = (selected: Standard) => {
     setSelectedStandard(selected);
@@ -217,9 +169,6 @@ export function LogEntryModal({
     setSaveError(null);
 
     try {
-      if (isDictationListening) {
-        await stopDictationListening();
-      }
       const occurredAtMs = selectedDate.getTime();
       await onSave(
         targetStandard.id,
@@ -243,7 +192,6 @@ export function LogEntryModal({
       setShowNote(false);
       setShowWhen(false);
       setSelectedDate(new Date());
-      dictationBaseNoteRef.current = '';
       onClose();
     } catch (error) {
       if (error instanceof Error) {
@@ -290,9 +238,6 @@ export function LogEntryModal({
     if (saving) {
       return;
     }
-    if (isDictationListening) {
-      void cancelDictationListening();
-    }
     setValue('');
     setNote('');
     setShowNote(false);
@@ -300,7 +245,6 @@ export function LogEntryModal({
     setSelectedDate(new Date());
     setSaveError(null);
     setSelectedStandard(null);
-    dictationBaseNoteRef.current = '';
     onClose();
   };
 
@@ -325,10 +269,6 @@ export function LogEntryModal({
     setShowNote((prev) => {
       const next = !prev;
       if (!next) {
-        if (isDictationListening) {
-          void cancelDictationListening();
-        }
-        dictationBaseNoteRef.current = '';
         setNote('');
       }
       return next;
@@ -604,54 +544,6 @@ export function LogEntryModal({
         {showNote && (
           <View style={[styles.expandedSection, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary }]}>
             <Text style={[styles.expandedHeaderText, { color: theme.text.primary }]}>Add Note</Text>
-            {showDictation && (
-              <>
-                <View style={styles.dictationRow}>
-                  <TouchableOpacity
-                    onPress={handleDictationPress}
-                    disabled={saving}
-                    style={[
-                      styles.dictationButton,
-                      { backgroundColor: theme.button.primary.background },
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={isDictationListening ? 'Stop dictation' : 'Start dictation'}
-                  >
-                    <Text style={[styles.dictationButtonText, { color: theme.button.primary.text }]}>
-                      {isDictationListening ? 'Stop' : 'Dictate'}
-                    </Text>
-                  </TouchableOpacity>
-                  <View style={styles.waveformContainer}>
-                    <Waveform
-                      levels={waveformLevels}
-                      height={32}
-                      barColor={isDictationListening ? theme.button.primary.background : theme.text.secondary}
-                    />
-                  </View>
-                  {isDictationListening && (
-                    <TouchableOpacity
-                      onPress={handleDictationCancel}
-                      disabled={saving}
-                      style={[
-                        styles.dictationCancelButton,
-                        { borderColor: theme.border.primary },
-                      ]}
-                      accessibilityRole="button"
-                      accessibilityLabel="Cancel dictation"
-                    >
-                      <Text style={[styles.dictationCancelText, { color: theme.text.secondary }]}>
-                        Cancel
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                {dictationError && (
-                  <Text style={[styles.dictationError, { color: theme.input.borderError }]}>
-                    {dictationError}
-                  </Text>
-                )}
-              </>
-            )}
             <TextInput
               style={[styles.noteInput, { backgroundColor: theme.input.background, borderColor: theme.input.border, color: theme.input.text }]}
               value={note}
@@ -669,34 +561,6 @@ export function LogEntryModal({
       </>
     );
   };
-
-  const handleDictationPress = async () => {
-    if (!showDictation || saving) {
-      return;
-    }
-    try {
-      if (!isDictationInitialized) {
-        await initializeDictation();
-      }
-      if (isDictationListening) {
-        await stopDictationListening();
-        return;
-      }
-      dictationBaseNoteRef.current = note.trim();
-      await startDictationListening();
-    } catch (error) {
-      console.warn('[LogEntryModal] Dictation action failed', error);
-    }
-  };
-
-  const handleDictationCancel = async () => {
-    if (!showDictation || saving) {
-      return;
-    }
-    await cancelDictationListening();
-    setNote(dictationBaseNoteRef.current);
-  };
-
 
   const handleFooterLayout = (event: LayoutChangeEvent) => {
     if (keyboardHeight > 0) {
@@ -972,42 +836,6 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
     marginTop: 8,
-  },
-  dictationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  dictationButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 84,
-  },
-  dictationButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  waveformContainer: {
-    flex: 1,
-  },
-  dictationCancelButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  dictationCancelText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  dictationError: {
-    fontSize: 12,
-    marginTop: 4,
   },
   saveButton: {
     padding: 16,

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.activityHistoryDocSchema = exports.activityHistoryPeriodStatusSchema = exports.activityHistoryStandardSnapshotSchema = exports.activityHistorySourceSchema = exports.dashboardPinsSchema = exports.activityLogSchema = exports.standardSchema = exports.activitySchema = exports.standardSessionConfigSchema = exports.standardStateSchema = exports.legacyStandardCadenceSchema = exports.standardCadenceSchema = exports.cadenceUnitSchema = void 0;
+exports.activityHistoryDocSchema = exports.activityHistoryPeriodStatusSchema = exports.activityHistoryStandardSnapshotSchema = exports.activityHistorySourceSchema = exports.dashboardPinsSchema = exports.activityLogSchema = exports.standardSchema = exports.categorySchema = exports.activitySchema = exports.standardSessionConfigSchema = exports.standardStateSchema = exports.legacyStandardCadenceSchema = exports.standardCadenceSchema = exports.cadenceUnitSchema = void 0;
 const zod_1 = require("zod");
 const unit_normalization_1 = require("./unit-normalization");
 const timestampMsSchema = zod_1.z
@@ -61,6 +61,15 @@ exports.activitySchema = zod_1.z.object({
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()
 });
+exports.categorySchema = zod_1.z.object({
+    id: zod_1.z.string().min(1),
+    name: zod_1.z.string().min(1).max(120),
+    order: zod_1.z.number().int().nonnegative(),
+    isSystem: zod_1.z.boolean().optional(),
+    createdAtMs: timestampMsSchema,
+    updatedAtMs: timestampMsSchema,
+    deletedAtMs: timestampMsSchema.nullable()
+});
 exports.standardSchema = zod_1.z.object({
     id: zod_1.z.string().min(1),
     activityId: zod_1.z.string().min(1),
@@ -91,6 +100,7 @@ exports.standardSchema = zod_1.z.object({
     quickAddValues: zod_1.z.array(zod_1.z.number().positive()).max(5).optional(),
     sessionConfig: exports.standardSessionConfigSchema, // Required: session-based configuration
     periodStartPreference: periodStartPreferenceSchema.optional(),
+    categoryId: zod_1.z.string().min(1).nullable().optional(), // null means Uncategorized, optional for backwards compatibility
     createdAtMs: timestampMsSchema,
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()
@@ -133,7 +143,7 @@ exports.activityHistoryDocSchema = zod_1.z
     standardSnapshot: exports.activityHistoryStandardSnapshotSchema,
     total: zod_1.z.number().min(0),
     currentSessions: zod_1.z.number().int().nonnegative(),
-    targetSessions: zod_1.z.number().int().positive(),
+    targetSessions: zod_1.z.number().int().nonnegative(),
     status: exports.activityHistoryPeriodStatusSchema,
     progressPercent: zod_1.z.number().min(0).max(100),
     generatedAtMs: timestampMsSchema,

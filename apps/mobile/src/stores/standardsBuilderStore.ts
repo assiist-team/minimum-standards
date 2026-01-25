@@ -256,6 +256,7 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
       summary,
       sessionConfig,
       periodStartPreference: preference,
+      // categoryId is legacy - standards inherit category from Activity
     };
   },
 

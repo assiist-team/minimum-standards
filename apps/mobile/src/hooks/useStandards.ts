@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  FieldValue,
   collection,
   doc,
   query,
   serverTimestamp,
   Timestamp,
   where,
+  deleteField,
 } from '@react-native-firebase/firestore';
 import { firebaseAuth, firebaseFirestore } from '../firebase/firebaseApp';
 import {
@@ -33,6 +33,7 @@ export interface CreateStandardInput {
   cadence: StandardCadence;
   sessionConfig: StandardSessionConfig;
   periodStartPreference?: PeriodStartPreference;
+  // categoryId is legacy - categories belong to Activities
 }
 
 
@@ -72,6 +73,7 @@ export interface UpdateStandardInput {
   sessionConfig: StandardSessionConfig;
   periodStartPreference?: PeriodStartPreference;
   clearPeriodStartPreference?: boolean;
+  // categoryId is legacy - categories belong to Activities
 }
 
 export interface UseStandardsResult {
@@ -203,6 +205,7 @@ export function useStandards(): UseStandardsResult {
         ...(input.periodStartPreference
           ? { periodStartPreference: input.periodStartPreference }
           : {}),
+        // categoryId is legacy - no longer written. Categories belong to Activities.
         archivedAt: null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -255,8 +258,10 @@ export function useStandards(): UseStandardsResult {
       }
 
       if (input.clearPeriodStartPreference) {
-        payload.periodStartPreference = FieldValue.delete();
+        payload.periodStartPreference = deleteField();
       }
+
+      // categoryId is legacy - no longer written. Categories belong to Activities.
 
       await retryFirestoreWrite(async () => {
         await standardRef.update(payload);
