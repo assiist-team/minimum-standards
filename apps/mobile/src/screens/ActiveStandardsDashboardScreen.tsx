@@ -107,12 +107,21 @@ export function ActiveStandardsDashboardScreen({
   const hasCustomCategories = customCategories.length > 0;
   const cardCategorizeLabel = hasCustomCategories ? 'Categorize' : 'Create categories';
 
-  // If the user has no custom categories (or a category was deleted), clear any focused filter.
+  const hasInitializedCategoryFilter = useRef(false);
+
+  // Ensure a valid focus filter and default to the first custom category on launch.
   useEffect(() => {
     if (!hasCustomCategories) {
       if (focusedCategoryId !== null) {
         setFocusedCategoryId(null);
       }
+      hasInitializedCategoryFilter.current = false;
+      return;
+    }
+
+    if (!hasInitializedCategoryFilter.current) {
+      setFocusedCategoryId(customCategories[0].id);
+      hasInitializedCategoryFilter.current = true;
       return;
     }
 
@@ -125,7 +134,7 @@ export function ActiveStandardsDashboardScreen({
       UNCATEGORIZED_CATEGORY_ID,
     ]);
     if (!allowed.has(focusedCategoryId)) {
-      setFocusedCategoryId(null);
+      setFocusedCategoryId(customCategories[0].id);
     }
   }, [customCategories, focusedCategoryId, hasCustomCategories, setFocusedCategoryId]);
 
@@ -229,14 +238,6 @@ export function ActiveStandardsDashboardScreen({
       accessibilityLabel: string;
     }> = [];
 
-    const uncategorizedCount = categoryCounts.counts.get(UNCATEGORIZED_CATEGORY_ID) ?? 0;
-    tabs.push({
-      key: UNCATEGORIZED_CATEGORY_ID,
-      categoryId: UNCATEGORIZED_CATEGORY_ID,
-      label: `Uncategorized (${uncategorizedCount})`,
-      accessibilityLabel: `Uncategorized, ${uncategorizedCount} standards`,
-    });
-
     customCategories.forEach((category) => {
       const count = categoryCounts.counts.get(category.id) ?? 0;
       tabs.push({
@@ -245,6 +246,14 @@ export function ActiveStandardsDashboardScreen({
         label: `${category.name} (${count})`,
         accessibilityLabel: `${category.name} category, ${count} standards`,
       });
+    });
+
+    const uncategorizedCount = categoryCounts.counts.get(UNCATEGORIZED_CATEGORY_ID) ?? 0;
+    tabs.push({
+      key: UNCATEGORIZED_CATEGORY_ID,
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      label: `Uncategorized (${uncategorizedCount})`,
+      accessibilityLabel: `Uncategorized, ${uncategorizedCount} standards`,
     });
 
     tabs.push({

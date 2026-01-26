@@ -333,14 +333,6 @@ export function LogEntryModal({
         logEntry?.id // Pass logEntryId in edit mode
       );
       
-      // Show success confirmation
-      const successMessage = isEditMode ? 'Log updated' : 'Log submitted';
-      if (Platform.OS === 'android') {
-        ToastAndroid.show(successMessage, ToastAndroid.SHORT);
-      } else {
-        Alert.alert('Success', successMessage);
-      }
-
       // Reset form and close
       setValue('');
       setNote('');

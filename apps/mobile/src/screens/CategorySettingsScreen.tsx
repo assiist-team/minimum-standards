@@ -70,14 +70,24 @@ export function CategorySettingsScreen() {
     setTick(t => t + 1);
   }, [activities]);
 
-  // Get activities not in the selected category (for adding)
+  const activeActivityIds = useMemo(() => {
+    const ids = new Set<string>();
+    standards.forEach((standard) => {
+      if (standard.archivedAtMs === null && standard.state === 'active') {
+        ids.add(standard.activityId);
+      }
+    });
+    return ids;
+  }, [standards]);
+
+  // Only show uncategorized activities in the add picker with active standards.
   const availableActivitiesForCategory = useMemo(() => {
     if (!selectedCategoryForAdd) return [];
-    return activities.filter((activity) => {
-      const currentCategoryId = activity.categoryId ?? UNCATEGORIZED_CATEGORY_ID;
-      return currentCategoryId !== selectedCategoryForAdd;
-    });
-  }, [activities, selectedCategoryForAdd]);
+    return activities.filter(
+      (activity) =>
+        (activity.categoryId == null || activity.categoryId === '') && activeActivityIds.has(activity.id)
+    );
+  }, [activities, activeActivityIds, selectedCategoryForAdd]);
 
   // Deterministic migration runner
   const runMigration = useCallback(async () => {
@@ -226,7 +236,6 @@ export function CategorySettingsScreen() {
       setCreatingCategory(true);
       await createCategory({ name: trimmedName });
       setNewCategoryName('');
-      Alert.alert('Success', 'Category created successfully');
     } catch (error) {
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to create category');
     } finally {
@@ -281,7 +290,6 @@ export function CategorySettingsScreen() {
               onPress: async () => {
                 try {
                   await deleteCategory(categoryId);
-                  Alert.alert('Success', 'Category deleted successfully');
                 } catch (error) {
                   Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete category');
                 }
@@ -311,7 +319,6 @@ export function CategorySettingsScreen() {
                     )
                   );
                   await deleteCategory(categoryId);
-                  Alert.alert('Success', 'Category deleted and activities moved to Uncategorized');
                 } catch (error) {
                   Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete category');
                 }
@@ -484,7 +491,11 @@ export function CategorySettingsScreen() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Migration Status / Needs Review */}
         {conflictActivities.length > 0 && (
           <View style={[styles.section, { backgroundColor: theme.background.card, borderColor: theme.input.borderError }]}>
@@ -813,6 +824,10 @@ export function CategorySettingsScreen() {
             )}
           </View>
 
+          <Text style={[styles.modalNoticeText, { color: theme.text.secondary }]}>
+            Only activities with active standards are available for categorization.
+          </Text>
+
           {availableActivitiesForCategory.length === 0 ? (
             <View style={styles.modalEmptyContainer}>
               <Text style={[styles.modalEmptyText, { color: theme.text.secondary }]}>
@@ -1066,6 +1081,13 @@ const styles = StyleSheet.create({
   modalActionText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  modalNoticeText: {
+    fontSize: 12,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    textAlign: 'center',
   },
   modalContentContainer: {
     padding: 16,

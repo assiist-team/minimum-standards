@@ -143,7 +143,6 @@ export function ActivitySettingsScreen() {
       });
 
       handleCancelEdit();
-      Alert.alert('Success', 'Activity updated successfully');
     } catch (error) {
       if (error instanceof Error) {
         Alert.alert('Error', error.message);
@@ -166,7 +165,6 @@ export function ActivitySettingsScreen() {
             onPress: async () => {
               try {
                 await deleteActivity(activity.id);
-                Alert.alert('Success', 'Activity deleted successfully');
               } catch (error) {
                 Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete activity');
               }
