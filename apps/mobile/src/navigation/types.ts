@@ -29,6 +29,7 @@ export type ActivitiesStackParamList = {
 export type SettingsStackParamList = {
   SettingsRoot: undefined;
   Categories: { backTo?: 'Dashboard' } | undefined;
+  Activities: { backTo?: 'Dashboard' } | undefined;
 };
 
 // Bottom tab navigator param list

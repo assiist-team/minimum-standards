@@ -67,8 +67,8 @@ function formatTimeProgress(elapsedMs: number, remainingMs: number, durationMs: 
     const elapsedH = Math.floor(elapsedMs / MS_PER_HOUR);
     const remainingH = Math.ceil(remainingMs / MS_PER_HOUR);
     return {
-      elapsedLabel: `${elapsedH}h elapsed`,
-      remainingLabel: `${remainingH}h remaining`,
+      elapsedLabel: `${elapsedH} hours elapsed`,
+      remainingLabel: `${remainingH} hours remaining`,
     };
   } else {
     const elapsedDays = elapsedMs / MS_PER_DAY;
@@ -82,8 +82,8 @@ function formatTimeProgress(elapsedMs: number, remainingMs: number, durationMs: 
     };
 
     return {
-      elapsedLabel: `${formatDays(elapsedDays)}d elapsed`,
-      remainingLabel: `${formatDays(remainingDays)}d remaining`,
+      elapsedLabel: `${formatDays(elapsedDays)} days elapsed`,
+      remainingLabel: `${formatDays(remainingDays)} days remaining`,
     };
   }
 }
@@ -414,32 +414,38 @@ export function StandardProgressCard({
                   {timeLabels.remainingLabel}
                 </Text>
               </View>
-              <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${timePercent}%`, backgroundColor: theme.text.tertiary },
-                  ]}
-                  accessibilityRole="progressbar"
-                  accessibilityValue={{ now: timePercent, min: 0, max: 100 }}
-                />
+              <View style={styles.progressBarRow}>
+                <Text style={[styles.progressBarLabel, { color: theme.text.secondary }]}>t</Text>
+                <View style={[styles.progressBar, styles.progressBarRowBar, { backgroundColor: theme.border.secondary }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${timePercent}%`, backgroundColor: theme.text.tertiary },
+                    ]}
+                    accessibilityRole="progressbar"
+                    accessibilityValue={{ now: timePercent, min: 0, max: 100 }}
+                  />
+                </View>
               </View>
             </>
           )}
 
-          <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
-            <View
-              style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: progressBarColor }]}
-              accessibilityRole="progressbar"
-              accessibilityValue={{ now: progressPercent, min: 0, max: 100 }}
-            />
+          <View style={styles.progressBarRow}>
+            <Text style={[styles.progressBarLabel, { color: progressBarColor }]}>v</Text>
+            <View style={[styles.progressBar, styles.progressBarRowBar, { backgroundColor: theme.border.secondary }]}>
+              <View
+                style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: progressBarColor }]}
+                accessibilityRole="progressbar"
+                accessibilityValue={{ now: progressPercent, min: 0, max: 100 }}
+              />
+            </View>
           </View>
           <View style={styles.progressSummaries}>
-            <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
+            <Text style={[styles.progressSummaryText, { color: progressBarColor }]}>
               {periodSummary}
             </Text>
             {sessionsSummary !== null && (
-              <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
+              <Text style={[styles.progressSummaryText, { color: progressBarColor }]}>
                 {sessionsSummary}
               </Text>
             )}
@@ -890,6 +896,20 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 4,
     borderRadius: 2,
+  },
+  progressBarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  progressBarRowBar: {
+    flex: 1,
+  },
+  progressBarLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   progressFill: {
     height: '100%',

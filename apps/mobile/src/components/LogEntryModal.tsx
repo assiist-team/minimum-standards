@@ -16,6 +16,8 @@ import {
   KeyboardEvent,
   LayoutChangeEvent,
   InteractionManager,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard } from '@minimum-standards/shared-model';
@@ -24,6 +26,7 @@ import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardCard } from './StandardCard';
+import { normalizeUnitToPlural } from '@minimum-standards/shared-model';
 
 export interface EditLogEntry {
   id: string;
@@ -64,6 +67,15 @@ export function LogEntryModal({
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [footerHeight, setFooterHeight] = useState(0);
   const valueInputRef = useRef<TextInput>(null);
+  const [logMode, setLogMode] = useState<'manual' | 'stopwatch'>('manual');
+
+  // Stopwatch state
+  const [stopwatchRunning, setStopwatchRunning] = useState(false);
+  const [stopwatchStartedAtMs, setStopwatchStartedAtMs] = useState<number | null>(null);
+  const [stopwatchAccumulatedMs, setStopwatchAccumulatedMs] = useState(0);
+  const [stopwatchLastGeneratedValue, setStopwatchLastGeneratedValue] = useState<string | null>(null);
+  const [stopwatchNowMs, setStopwatchNowMs] = useState(Date.now());
+  const stopwatchIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { activeStandards, loading: standardsLoading } = useStandards();
 
@@ -74,17 +86,6 @@ export function LogEntryModal({
 
   const isSessionBased = !!selectedStandard && selectedStandard.sessionConfig.sessionsPerCadence > 1;
   const sessionLabel = selectedStandard?.sessionConfig.sessionLabel ?? 'session';
-  const sessionLabelPlural = useMemo(() => {
-    if (!selectedStandard) {
-      return 'sessions';
-    }
-    const count = selectedStandard.sessionConfig.sessionsPerCadence;
-    if (count === 1) {
-      return sessionLabel;
-    }
-    return `${sessionLabel}s`;
-  }, [selectedStandard, sessionLabel]);
-
   const activityName = useMemo(() => {
     if (!selectedStandard || showPicker) {
       return null;
@@ -94,6 +95,160 @@ export function LogEntryModal({
   }, [resolveActivityName, selectedStandard, showPicker]);
 
   const effectiveKeyboardHeight = Math.max(0, keyboardHeight - insets.bottom);
+
+  // Check if the standard's unit is time-based (minutes or hours)
+  const isTimeUnit = useMemo(() => {
+    if (!selectedStandard) return false;
+    const normalizedUnit = normalizeUnitToPlural(selectedStandard.unit);
+    return normalizedUnit === 'minutes' || normalizedUnit === 'hours';
+  }, [selectedStandard]);
+
+  // Calculate elapsed time in milliseconds
+  const stopwatchElapsedMs = useMemo(() => {
+    if (!stopwatchRunning || stopwatchStartedAtMs === null) {
+      return stopwatchAccumulatedMs;
+    }
+    return stopwatchAccumulatedMs + (stopwatchNowMs - stopwatchStartedAtMs);
+  }, [stopwatchRunning, stopwatchStartedAtMs, stopwatchAccumulatedMs, stopwatchNowMs]);
+
+  // Format elapsed time as mm:ss or hh:mm:ss
+  const formatElapsed = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Convert milliseconds to unit value (minutes or hours)
+  const msToUnitValue = (ms: number, unit: string): number => {
+    const normalizedUnit = normalizeUnitToPlural(unit);
+    if (normalizedUnit === 'minutes') {
+      return ms / 60000; // Convert to decimal minutes
+    } else if (normalizedUnit === 'hours') {
+      return ms / 3600000; // Convert to decimal hours
+    }
+    return 0;
+  };
+
+  // Format numeric value with 2 decimals, trimming trailing zeros
+  const formatNumericValue = (n: number): string => {
+    const rounded = Math.round(n * 100) / 100; // Round to 2 decimals
+    const trimmed = rounded.toFixed(2).replace(/\.?0+$/, ''); // Remove trailing zeros
+    return trimmed === '' ? '0' : trimmed;
+  };
+
+  // Stopwatch tick interval
+  useEffect(() => {
+    if (stopwatchRunning) {
+      stopwatchIntervalRef.current = setInterval(() => {
+        setStopwatchNowMs(Date.now());
+      }, 250);
+      return () => {
+        if (stopwatchIntervalRef.current) {
+          clearInterval(stopwatchIntervalRef.current);
+          stopwatchIntervalRef.current = null;
+        }
+      };
+    } else {
+      if (stopwatchIntervalRef.current) {
+        clearInterval(stopwatchIntervalRef.current);
+        stopwatchIntervalRef.current = null;
+      }
+    }
+  }, [stopwatchRunning]);
+
+  // AppState listener for background/resume handling
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && stopwatchRunning) {
+        // Refresh the timer when app comes to foreground
+        setStopwatchNowMs(Date.now());
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => {
+      subscription.remove();
+    };
+  }, [stopwatchRunning]);
+
+  // Reset stopwatch when modal closes, standard changes, or entering edit mode
+  useEffect(() => {
+    if (!visible || !selectedStandard || isEditMode) {
+      setStopwatchRunning(false);
+      setStopwatchStartedAtMs(null);
+      setStopwatchAccumulatedMs(0);
+      setStopwatchLastGeneratedValue(null);
+      setStopwatchNowMs(Date.now());
+      setLogMode('manual');
+    }
+  }, [visible, selectedStandard, isEditMode]);
+
+  useEffect(() => {
+    if (!selectedStandard) {
+      return;
+    }
+    if (!isTimeUnit || isEditMode) {
+      if (logMode !== 'manual') {
+        setLogMode('manual');
+      }
+    }
+  }, [selectedStandard, isTimeUnit, isEditMode, logMode]);
+
+  // Stopwatch control handlers
+  const handleStartStopwatch = () => {
+    if (saving) return;
+    setStopwatchRunning(true);
+    setStopwatchStartedAtMs(Date.now());
+    setStopwatchNowMs(Date.now());
+  };
+
+  const handlePauseStopwatch = () => {
+    if (!stopwatchRunning || stopwatchStartedAtMs === null) return;
+    const pausedElapsedMs = stopwatchAccumulatedMs + (Date.now() - stopwatchStartedAtMs);
+    setStopwatchRunning(false);
+    setStopwatchAccumulatedMs(pausedElapsedMs);
+    setStopwatchStartedAtMs(null);
+  };
+
+  const handleStopStopwatch = () => {
+    if (!stopwatchRunning || stopwatchStartedAtMs === null) return;
+    
+    const finalElapsedMs = stopwatchAccumulatedMs + (Date.now() - stopwatchStartedAtMs);
+    setStopwatchRunning(false);
+    setStopwatchAccumulatedMs(finalElapsedMs);
+    setStopwatchStartedAtMs(null);
+    
+    // Auto-fill the value
+    if (selectedStandard) {
+      const unitValue = msToUnitValue(finalElapsedMs, selectedStandard.unit);
+      const formattedValue = formatNumericValue(unitValue);
+      setValue(formattedValue);
+      setStopwatchLastGeneratedValue(formattedValue);
+      setSaveError(null);
+      // Set occurredAt to now (when timer stopped)
+      setSelectedDate(new Date());
+    }
+    setLogMode('manual');
+  };
+
+  const handleResetStopwatch = () => {
+    setStopwatchRunning(false);
+    setStopwatchStartedAtMs(null);
+    setStopwatchAccumulatedMs(0);
+    setStopwatchNowMs(Date.now());
+    
+    // Clear input only if it matches the last generated value
+    if (value === stopwatchLastGeneratedValue) {
+      setValue('');
+    }
+    setStopwatchLastGeneratedValue(null);
+  };
 
   useEffect(() => {
     if (!visible) {
@@ -131,7 +286,7 @@ export function LogEntryModal({
 
   // Auto-focus the value input when entering the logging form
   useEffect(() => {
-    if (visible && selectedStandard && !showPicker && !isEditMode) {
+    if (visible && selectedStandard && !showPicker && !isEditMode && logMode === 'manual') {
       // Delay focus until layout/animations settle (Android needs extra time).
       let timeoutId: ReturnType<typeof setTimeout> | null = null;
       const task = InteractionManager.runAfterInteractions(() => {
@@ -146,7 +301,7 @@ export function LogEntryModal({
         }
       };
     }
-  }, [visible, selectedStandard, showPicker, isEditMode]);
+  }, [visible, selectedStandard, showPicker, isEditMode, logMode]);
 
 
   const handleStandardSelect = (selected: Standard) => {
@@ -204,30 +359,6 @@ export function LogEntryModal({
     }
   };
 
-  const sessionQuickFillValue = useMemo(() => {
-    if (!selectedStandard) {
-      return null;
-    }
-    if (selectedStandard.sessionConfig.sessionsPerCadence <= 1) {
-      return null;
-    }
-    const v = selectedStandard.sessionConfig.volumePerSession;
-    return Number.isFinite(v) && v > 0 ? v : null;
-  }, [selectedStandard]);
-
-  // Only show the session-based quick add button (no +1 quick add values).
-  const quickAddValuesToShow: number[] | undefined = undefined;
-
-  const handleQuickAddPress = (quickValue: number) => {
-    if (saving) {
-      return;
-    }
-    setValue(String(quickValue));
-    if (saveError) {
-      setSaveError(null);
-    }
-  };
-
   const handleClose = () => {
     if (saving) {
       return;
@@ -239,6 +370,12 @@ export function LogEntryModal({
     setSelectedDate(new Date());
     setSaveError(null);
     setSelectedStandard(null);
+    // Reset stopwatch
+    setStopwatchRunning(false);
+    setStopwatchStartedAtMs(null);
+    setStopwatchAccumulatedMs(0);
+    setStopwatchLastGeneratedValue(null);
+    setLogMode('manual');
     onClose();
   };
 
@@ -367,71 +504,172 @@ export function LogEntryModal({
     };
   }, []);
 
+  const handleLogModeChange = (nextMode: 'manual' | 'stopwatch') => {
+    if (saving || nextMode === logMode) {
+      return;
+    }
+    if (nextMode === 'manual') {
+      if (stopwatchRunning) {
+        handleStopStopwatch();
+      }
+    } else {
+      setValue('');
+      setSaveError(null);
+      setStopwatchRunning(false);
+      setStopwatchStartedAtMs(null);
+      setStopwatchAccumulatedMs(0);
+      setStopwatchLastGeneratedValue(null);
+      setStopwatchNowMs(Date.now());
+    }
+    setLogMode(nextMode);
+  };
+
   const renderLoggingForm = () => {
     if (!selectedStandard) {
       return null;
     }
 
-    const hasQuickButtons = sessionQuickFillValue !== null;
+    const showStopwatchMode = isTimeUnit && !isEditMode;
+    const isManualMode = !showStopwatchMode || logMode === 'manual';
+    const isStopwatchMode = showStopwatchMode && logMode === 'stopwatch';
 
     return (
       <>
-        {/* Value Input Section */}
-        <View style={styles.field}>
-          <Text style={[styles.label, { color: theme.text.primary }]}>{selectedStandard.unit}</Text>
-          
-          <View style={styles.valueInputRow}>
-            <TextInput
-              ref={valueInputRef}
-              style={[
-                styles.input,
-                styles.valueInput,
-                hasQuickButtons && styles.valueInputWithButtons,
-                { backgroundColor: theme.input.background, borderColor: saveError ? theme.input.borderError : theme.input.border, color: theme.input.text },
-                saveError && styles.inputError
-              ]}
-              value={value}
-              onChangeText={(text) => {
-                setValue(text);
-                if (saveError) {
-                  setSaveError(null);
-                }
-              }}
-              onPressIn={() => valueInputRef.current?.focus()}
-              placeholder=""
-              placeholderTextColor={theme.input.placeholder}
-              keyboardType={Platform.OS === 'android' ? 'number-pad' : 'numeric'}
-              editable={!saving}
-              autoFocus={Platform.OS === 'android' && !isEditMode}
-              showSoftInputOnFocus={true}
-              accessibilityLabel={`Enter ${selectedStandard.unit}`}
-            />
-            
-            {/* Quick-add buttons next to input */}
-            {hasQuickButtons && (
-              <View style={styles.quickButtonsColumn}>
-                {sessionQuickFillValue !== null && (
-                  <TouchableOpacity
-                    onPress={() => handleQuickAddPress(sessionQuickFillValue)}
-                    disabled={saving}
+        {showStopwatchMode && (
+          <View style={[styles.modeTabsContainer, { borderBottomColor: theme.border.secondary }]}>
+            {(['manual', 'stopwatch'] as const).map((mode) => {
+              const isSelected = logMode === mode;
+              return (
+                <TouchableOpacity
+                  key={mode}
+                  onPress={() => handleLogModeChange(mode)}
+                  style={[
+                    styles.modeTab,
+                    isSelected && {
+                      borderBottomColor: theme.tabBar.activeTint,
+                      borderBottomWidth: 3,
+                    },
+                  ]}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={mode === 'manual' ? 'Manual entry mode' : 'Stopwatch mode'}
+                >
+                  <Text
                     style={[
-                      styles.compactQuickButton,
-                      { backgroundColor: theme.button.primary.background },
+                      styles.modeTabText,
+                      { color: isSelected ? theme.tabBar.activeTint : theme.text.secondary },
+                      isSelected && { fontWeight: '700' },
                     ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Log ${sessionQuickFillValue} ${selectedStandard.unit}`}
                   >
-                    <Text style={[styles.compactQuickButtonText, { color: '#FFFFFF' }]}>
-                      {sessionQuickFillValue}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+                    {mode === 'manual' ? 'Manual' : 'Stopwatch'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
-          
-          {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
-        </View>
+        )}
+
+        {isManualMode && (
+          <View style={styles.field}>
+            <Text style={[styles.label, { color: theme.text.primary }]}>{selectedStandard.unit}</Text>
+            <View style={styles.valueInputRow}>
+              <TextInput
+                ref={valueInputRef}
+                style={[
+                  styles.input,
+                  styles.valueInput,
+                  { backgroundColor: theme.input.background, borderColor: saveError ? theme.input.borderError : theme.input.border, color: theme.input.text },
+                  saveError && styles.inputError,
+                ]}
+                value={value}
+                onChangeText={(text) => {
+                  setValue(text);
+                  if (saveError) {
+                    setSaveError(null);
+                  }
+                }}
+                onPressIn={() => valueInputRef.current?.focus()}
+                placeholder=""
+                placeholderTextColor={theme.input.placeholder}
+                keyboardType={Platform.OS === 'android' ? 'number-pad' : 'numeric'}
+                editable={!saving}
+                autoFocus={Platform.OS === 'android' && !isEditMode}
+                showSoftInputOnFocus={true}
+                accessibilityLabel={`Enter ${selectedStandard.unit}`}
+              />
+            </View>
+          </View>
+        )}
+
+        {isStopwatchMode && (
+          <View style={styles.stopwatchSection}>
+            <Text style={[styles.stopwatchDisplay, { color: theme.text.primary }]}>
+              {formatElapsed(stopwatchElapsedMs)}
+            </Text>
+            <View style={styles.stopwatchButtonsRow}>
+              {stopwatchRunning && (
+                <TouchableOpacity
+                  onPress={handlePauseStopwatch}
+                  disabled={saving}
+                  style={[
+                    styles.timerButton,
+                    { backgroundColor: saving ? theme.button.disabled.background : theme.button.secondary.background },
+                  ]}
+                  accessibilityLabel="Pause timer"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.timerButtonText, { color: theme.button.secondary.text }]}>Pause</Text>
+                </TouchableOpacity>
+              )}
+              {stopwatchRunning && (
+                <TouchableOpacity
+                  onPress={handleStopStopwatch}
+                  disabled={saving}
+                  style={[
+                    styles.timerButton,
+                    { backgroundColor: saving ? theme.button.disabled.background : theme.button.secondary.background },
+                  ]}
+                  accessibilityLabel="Stop timer"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.timerButtonText, { color: theme.button.secondary.text }]}>Stop</Text>
+                </TouchableOpacity>
+              )}
+              {!stopwatchRunning && (
+                <TouchableOpacity
+                  onPress={handleStartStopwatch}
+                  disabled={saving}
+                  style={[
+                    styles.timerButton,
+                    { backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background },
+                  ]}
+                  accessibilityLabel={stopwatchElapsedMs > 0 ? 'Resume timer' : 'Start timer'}
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.timerButtonText, { color: theme.button.primary.text }]}>
+                    {stopwatchElapsedMs > 0 ? 'Resume' : 'Start'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {!stopwatchRunning && stopwatchElapsedMs > 0 && (
+                <TouchableOpacity
+                  onPress={handleResetStopwatch}
+                  disabled={saving}
+                  style={[
+                    styles.timerButton,
+                    { backgroundColor: saving ? theme.button.disabled.background : theme.button.secondary.background },
+                  ]}
+                  accessibilityLabel="Reset timer"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.timerButtonText, { color: theme.button.secondary.text }]}>Reset</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        )}
+
+        {saveError && <Text style={[styles.errorText, { color: theme.input.borderError }]}>{saveError}</Text>}
 
         {/* Simplified When/Note Row */}
         <View style={styles.metaRow}>
@@ -578,7 +816,7 @@ export function LogEntryModal({
             { backgroundColor: saving ? theme.button.disabled.background : theme.button.primary.background },
           ]}
           onPress={handleSave}
-          disabled={saving || !value.trim()}
+          disabled={saving || !value.trim() || (logMode === 'stopwatch' && stopwatchRunning)}
           accessibilityLabel="Save log entry"
           accessibilityRole="button"
         >
@@ -746,24 +984,49 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     minHeight: 70,
   },
-  valueInputWithButtons: {
-    flex: 1,
+  modeTabsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    marginBottom: 8,
   },
-  quickButtonsColumn: {
-    gap: 8,
+  modeTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: -1,
     justifyContent: 'center',
-    minWidth: 90,
+    alignItems: 'center',
   },
-  compactQuickButton: {
+  modeTabText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  stopwatchSection: {
+    alignItems: 'center',
+    gap: 20,
+    marginBottom: 8,
+  },
+  stopwatchDisplay: {
+    fontSize: 58,
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'android' ? 'RobotoMono' : 'Menlo',
+  },
+  stopwatchButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  timerButton: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 70,
   },
-  compactQuickButtonText: {
-    fontSize: 36,
+  timerButtonText: {
+    fontSize: 16,
     fontWeight: '600',
     includeFontPadding: false,
     textAlignVertical: 'center',

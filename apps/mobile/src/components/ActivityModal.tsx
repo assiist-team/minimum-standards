@@ -236,11 +236,11 @@ export function ActivityModal({
                 },
               ]}
             >
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
                 {isEditMode ? 'Edit Activity' : 'Add Activity'}
               </Text>
               <TouchableOpacity onPress={handleClose} disabled={saving}>
-                <Text style={styles.closeButton}>✕</Text>
+                <Text style={[styles.closeButton, { color: theme.text.secondary }]}>✕</Text>
               </TouchableOpacity>
             </View>
 
@@ -255,7 +255,7 @@ export function ActivityModal({
             >
               {/* Name field */}
               <View style={styles.field}>
-                <Text style={styles.label}>Name</Text>
+                <Text style={[styles.label, { color: theme.text.secondary }]}>Name</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -278,12 +278,16 @@ export function ActivityModal({
                   editable={!saving}
                   autoFocus={!isEditMode}
                 />
-                {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+                {errors.name && (
+                  <Text style={[styles.errorText, { color: theme.input.borderError }]}>
+                    {errors.name}
+                  </Text>
+                )}
               </View>
 
               {/* Unit field */}
               <View style={styles.field}>
-                <Text style={styles.label}>Unit</Text>
+                <Text style={[styles.label, { color: theme.text.secondary }]}>Unit</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -305,12 +309,16 @@ export function ActivityModal({
                   maxLength={40}
                   editable={!saving}
                 />
-                {errors.unit && <Text style={styles.errorText}>{errors.unit}</Text>}
+                {errors.unit && (
+                  <Text style={[styles.errorText, { color: theme.input.borderError }]}>
+                    {errors.unit}
+                  </Text>
+                )}
               </View>
 
               {/* Notes field */}
               <View style={styles.field}>
-                <Text style={styles.label}>Notes (optional)</Text>
+                <Text style={[styles.label, { color: theme.text.secondary }]}>Notes (optional)</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -336,11 +344,19 @@ export function ActivityModal({
                   textAlignVertical="top"
                   editable={!saving}
                 />
-                {errors.notes && <Text style={styles.errorText}>{errors.notes}</Text>}
+                {errors.notes && (
+                  <Text style={[styles.errorText, { color: theme.input.borderError }]}>
+                    {errors.notes}
+                  </Text>
+                )}
               </View>
 
               {/* Save error */}
-              {saveError && <Text style={styles.errorText}>{saveError}</Text>}
+              {saveError && (
+                <Text style={[styles.errorText, { color: theme.input.borderError }]}>
+                  {saveError}
+                </Text>
+              )}
             </ScrollView>
 
             {/* Sticky Footer */}
