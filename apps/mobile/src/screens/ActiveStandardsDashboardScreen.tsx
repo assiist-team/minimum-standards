@@ -1,19 +1,19 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import {
-  SectionList,
+  FlatList,
   RefreshControl,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
   Alert,
-  Platform,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../navigation/types';
+import { SETTINGS_TAB_ROUTE_NAME } from '../navigation/types';
 import type { Standard } from '@minimum-standards/shared-model';
 import { UNCATEGORIZED_CATEGORY_ID } from '@minimum-standards/shared-model';
 import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboard';
@@ -45,14 +45,6 @@ export interface ActiveStandardsDashboardScreenProps {
   backButtonLabel?: string;
 }
 
-type SectionData = {
-  key: string;
-  categoryId: string;
-  categoryName: string;
-  totalCount?: number;
-  data: DashboardStandard[];
-};
-
 export function ActiveStandardsDashboardScreen({
   onBack,
   onLaunchBuilder,
@@ -67,8 +59,10 @@ export function ActiveStandardsDashboardScreen({
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [logModalVisible, setLogModalVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('completion');
-  const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
-  const sectionListRef = useRef<SectionList>(null);
+  const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
+  const [sortMenuExpanded, setSortMenuExpanded] = useState(false);
+  const filterTabsScrollRef = useRef<ScrollView>(null);
+  const filterTabLayouts = useRef<Record<string, { x: number; width: number }>>({});
   
   const {
     dashboardStandards,
@@ -81,7 +75,7 @@ export function ActiveStandardsDashboardScreen({
     archiveStandard,
   } = useActiveStandardsDashboard();
 
-  const { activities } = useActivities();
+  const { activities, updateActivity } = useActivities();
   const { orderedCategories } = useCategories();
   
   // Create activity lookup map for category resolution
@@ -92,12 +86,7 @@ export function ActiveStandardsDashboardScreen({
     });
     return map;
   }, [activities]);
-  const {
-    collapsedByCategoryId,
-    setCollapsedByCategoryId,
-    focusedCategoryId,
-    setFocusedCategoryId,
-  } = useUIPreferencesStore();
+  const { focusedCategoryId, setFocusedCategoryId } = useUIPreferencesStore();
 
   // Create activity lookup map for efficient name resolution
   const activityNameMap = useMemo(() => {
@@ -107,6 +96,46 @@ export function ActiveStandardsDashboardScreen({
     });
     return map;
   }, [activities]);
+
+  const customCategories = useMemo(() => {
+    return orderedCategories.filter(
+      (c) => !c.isSystem && c.id !== UNCATEGORIZED_CATEGORY_ID
+    );
+  }, [orderedCategories]);
+
+  const hasCustomCategories = customCategories.length > 0;
+  const cardCategorizeLabel = hasCustomCategories ? 'Categorize' : 'Create categories';
+
+  // If the user has no custom categories (or a category was deleted), clear any focused filter.
+  useEffect(() => {
+    if (!hasCustomCategories) {
+      if (focusedCategoryId !== null) {
+        setFocusedCategoryId(null);
+      }
+      return;
+    }
+
+    if (focusedCategoryId === null) {
+      return;
+    }
+
+    const allowed = new Set<string>([
+      ...customCategories.map((c) => c.id),
+      UNCATEGORIZED_CATEGORY_ID,
+    ]);
+    if (!allowed.has(focusedCategoryId)) {
+      setFocusedCategoryId(null);
+    }
+  }, [customCategories, focusedCategoryId, hasCustomCategories, setFocusedCategoryId]);
+
+  const getEffectiveCategoryId = useCallback(
+    (entry: DashboardStandard): string => {
+      const activity = activityMap.get(entry.standard.activityId);
+      const effectiveCategoryId = activity?.categoryId ?? entry.standard.categoryId ?? null;
+      return effectiveCategoryId ?? UNCATEGORIZED_CATEGORY_ID;
+    },
+    [activityMap]
+  );
 
   const handleLogPress = useCallback(
     (entry: DashboardStandard) => {
@@ -174,126 +203,158 @@ export function ActiveStandardsDashboardScreen({
     });
   }, [navigation]);
 
-  // Group standards by category
-  const sections = useMemo(() => {
-    // Group standards by effective category (from Activity, with fallback to legacy Standard.categoryId)
-    const standardsByCategory = new Map<string, DashboardStandard[]>();
-    dashboardStandards.forEach((entry) => {
-      const activity = activityMap.get(entry.standard.activityId);
-      // Effective category: Activity.categoryId ?? Standard.categoryId (legacy) ?? null
-      const effectiveCategoryId = activity?.categoryId ?? entry.standard.categoryId ?? null;
-      const sectionCategoryId = effectiveCategoryId ?? UNCATEGORIZED_CATEGORY_ID;
-      if (!standardsByCategory.has(sectionCategoryId)) {
-        standardsByCategory.set(sectionCategoryId, []);
-      }
-      standardsByCategory.get(sectionCategoryId)!.push(entry);
-    });
-
-    // Sort function for standards within a category
-    const sortStandards = (a: DashboardStandard, b: DashboardStandard) => {
-      if (sortOption === 'completion') {
-        const aProgress = a.progress?.progressPercent ?? 0;
-        const bProgress = b.progress?.progressPercent ?? 0;
-        return aProgress - bProgress;
-      } else {
-        const aName = activityNameMap.get(a.standard.activityId) ?? a.standard.activityId;
-        const bName = activityNameMap.get(b.standard.activityId) ?? b.standard.activityId;
-        return aName.localeCompare(bName);
-      }
-    };
-
-    // Build sections in order
-    const sectionList: SectionData[] = [];
-
-    // Add other categories in order (excluding Uncategorized)
-    orderedCategories.forEach((cat) => {
-      if (cat.id === UNCATEGORIZED_CATEGORY_ID) return; // Skip, will add at end
-      const standards = standardsByCategory.get(cat.id);
-      if (standards && standards.length > 0) {
-        sectionList.push({
-          key: cat.id,
-          categoryId: cat.id,
-          categoryName: cat.name,
-          data: [...standards].sort(sortStandards),
-        });
-      }
-    });
-    
-    // Add Uncategorized last if it has standards
-    if (standardsByCategory.has(UNCATEGORIZED_CATEGORY_ID)) {
-      const uncategorizedStandards = standardsByCategory.get(UNCATEGORIZED_CATEGORY_ID)!;
-      if (uncategorizedStandards.length > 0) {
-        sectionList.push({
-          key: UNCATEGORIZED_CATEGORY_ID,
-          categoryId: UNCATEGORIZED_CATEGORY_ID,
-          categoryName: 'Uncategorized',
-          data: [...uncategorizedStandards].sort(sortStandards),
-        });
-      }
-    }
-
-    return sectionList;
-  }, [dashboardStandards, sortOption, activityNameMap, orderedCategories, activityMap]);
-
   // Calculate counts for chips
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
-    sections.forEach((section) => {
-      counts.set(section.categoryId, section.data.length);
+    dashboardStandards.forEach((entry) => {
+      const categoryId = getEffectiveCategoryId(entry);
+      counts.set(categoryId, (counts.get(categoryId) ?? 0) + 1);
     });
-    // Add total count
-    const total = dashboardStandards.length;
-    return { counts, total };
-  }, [sections, dashboardStandards.length]);
+    return { counts, total: dashboardStandards.length };
+  }, [dashboardStandards, getEffectiveCategoryId]);
 
-  // Handle chip press (selection/jump to section)
-  const handleChipPress = useCallback(
+  const handleFilterTabPress = useCallback(
     (categoryId: string | null) => {
-      if (categoryId === null) {
-        // "All" chip - expand all sections and clear focus
-        setFocusedCategoryId(null);
-        const expanded: Record<string, boolean> = {};
-        sections.forEach((s) => {
-          expanded[s.categoryId] = false;
-        });
-        setCollapsedByCategoryId(expanded);
-      } else {
-        // Find section index
-        const sectionIndex = sections.findIndex((s) => s.categoryId === categoryId);
-        if (sectionIndex >= 0) {
-          // Collapse all other sections and expand the selected one
-          const newCollapsed: Record<string, boolean> = {};
-          sections.forEach((s) => {
-            newCollapsed[s.categoryId] = s.categoryId !== categoryId;
-          });
-          setCollapsedByCategoryId(newCollapsed);
-
-          // Scroll to section
-          setTimeout(() => {
-            sectionListRef.current?.scrollToLocation({
-              sectionIndex,
-              itemIndex: -1, // Scroll to section header
-              viewPosition: 0,
-              animated: true,
-            });
-          }, 100);
-
-          setFocusedCategoryId(categoryId);
-        }
-      }
+      setFocusedCategoryId(categoryId);
     },
-    [sections, setCollapsedByCategoryId, setFocusedCategoryId]
+    [setFocusedCategoryId]
   );
 
-  // Toggle section collapse
-  const toggleSectionCollapse = useCallback(
-    (categoryId: string) => {
-      setCollapsedByCategoryId({
-        ...collapsedByCategoryId,
-        [categoryId]: !collapsedByCategoryId[categoryId],
+  const filterTabs = useMemo(() => {
+    const tabs: Array<{
+      key: string;
+      categoryId: string | null;
+      label: string;
+      accessibilityLabel: string;
+    }> = [];
+
+    const uncategorizedCount = categoryCounts.counts.get(UNCATEGORIZED_CATEGORY_ID) ?? 0;
+    tabs.push({
+      key: UNCATEGORIZED_CATEGORY_ID,
+      categoryId: UNCATEGORIZED_CATEGORY_ID,
+      label: `Uncategorized (${uncategorizedCount})`,
+      accessibilityLabel: `Uncategorized, ${uncategorizedCount} standards`,
+    });
+
+    customCategories.forEach((category) => {
+      const count = categoryCounts.counts.get(category.id) ?? 0;
+      tabs.push({
+        key: category.id,
+        categoryId: category.id,
+        label: `${category.name} (${count})`,
+        accessibilityLabel: `${category.name} category, ${count} standards`,
       });
+    });
+
+    tabs.push({
+      key: '__all__',
+      categoryId: null,
+      label: `All (${categoryCounts.total})`,
+      accessibilityLabel: `All standards, ${categoryCounts.total} total`,
+    });
+
+    return tabs;
+  }, [categoryCounts.counts, categoryCounts.total, customCategories]);
+
+  const selectedFilterTabKey = focusedCategoryId ?? '__all__';
+
+  const sortLabel = sortOption === 'completion' ? 'Completion' : 'Alpha';
+
+  const closeHeaderMenu = useCallback(() => {
+    setHeaderMenuVisible(false);
+    setSortMenuExpanded(false);
+  }, []);
+
+  // Keep the selected tab in view (same behavior as chart tabs).
+  useEffect(() => {
+    const layout = filterTabLayouts.current[selectedFilterTabKey];
+    if (layout && filterTabsScrollRef.current) {
+      filterTabsScrollRef.current.scrollTo({
+        x: layout.x - 16,
+        animated: true,
+      });
+    }
+  }, [selectedFilterTabKey]);
+
+  const handleCategorizePress = useCallback(() => {
+    navigation.navigate(
+      SETTINGS_TAB_ROUTE_NAME as any,
+      { screen: 'Categories', params: { backTo: 'Dashboard' } } as any
+    );
+  }, [navigation]);
+
+  const handleCardCategorize = useCallback(
+    (entry: DashboardStandard) => {
+      const activityName = activityNameMap.get(entry.standard.activityId) ?? entry.standard.activityId;
+
+      if (!hasCustomCategories) {
+        trackStandardEvent('dashboard_categorize_missing_categories', {
+          standardId: entry.standard.id,
+          activityId: entry.standard.activityId,
+        });
+        handleCategorizePress();
+        return;
+      }
+
+      const options = [
+        { text: 'Cancel', style: 'cancel' as const },
+        ...customCategories.map((category) => ({
+          text: category.name,
+          onPress: async () => {
+            try {
+              trackStandardEvent('dashboard_categorize_assign', {
+                standardId: entry.standard.id,
+                activityId: entry.standard.activityId,
+                categoryId: category.id,
+              });
+              await updateActivity(entry.standard.activityId, { categoryId: category.id });
+            } catch (err) {
+              Alert.alert('Error', 'Failed to assign category');
+              console.error('Failed to assign category:', err);
+            }
+          },
+        })),
+        {
+          text: 'Uncategorized',
+          onPress: async () => {
+            try {
+              trackStandardEvent('dashboard_categorize_assign', {
+                standardId: entry.standard.id,
+                activityId: entry.standard.activityId,
+                categoryId: UNCATEGORIZED_CATEGORY_ID,
+              });
+              await updateActivity(entry.standard.activityId, { categoryId: null });
+            } catch (err) {
+              Alert.alert('Error', 'Failed to assign category');
+              console.error('Failed to assign category:', err);
+            }
+          },
+        },
+      ];
+
+      Alert.alert('Categorize', `Assign "${activityName}" to a category:`, options);
     },
-    [collapsedByCategoryId, setCollapsedByCategoryId]
+    [activityNameMap, customCategories, handleCategorizePress, hasCustomCategories, updateActivity]
+  );
+
+  const handleAssignCategory = useCallback(
+    async (entry: DashboardStandard, categoryId: string) => {
+      const activityName = activityNameMap.get(entry.standard.activityId) ?? entry.standard.activityId;
+      try {
+        trackStandardEvent('dashboard_categorize_assign', {
+          standardId: entry.standard.id,
+          activityId: entry.standard.activityId,
+          categoryId,
+        });
+        await updateActivity(entry.standard.activityId, {
+          categoryId: categoryId === UNCATEGORIZED_CATEGORY_ID ? null : categoryId,
+        });
+      } catch (err) {
+        Alert.alert('Error', `Failed to assign "${activityName}" to a category`);
+        console.error('Failed to assign category:', err);
+      }
+    },
+    [activityNameMap, updateActivity]
   );
 
   const renderCard = useCallback(
@@ -302,53 +363,52 @@ export function ActiveStandardsDashboardScreen({
         <StandardCard
           entry={item}
           onLogPress={() => handleLogPress(item)}
-          onCardPress={() => handleCardPress(item.standard.id)}
+          onCardPress={() => handleLogPress(item)}
+          onViewLogs={() => handleCardPress(item.standard.id)}
+          onCategorize={() => handleCardCategorize(item)}
+          categorizeLabel={cardCategorizeLabel}
+          categoryOptions={customCategories.map((c) => ({ id: c.id, name: c.name }))}
+          selectedCategoryId={getEffectiveCategoryId(item)}
+          onAssignCategoryId={(categoryId) => handleAssignCategory(item, categoryId)}
           onEdit={() => handleEdit(item.standard.id)}
           onDeactivate={() => handleDeactivate(item.standard.id)}
           activityNameMap={activityNameMap}
         />
       );
     },
-    [handleLogPress, handleCardPress, handleEdit, handleDeactivate, activityNameMap]
+    [
+      cardCategorizeLabel,
+      customCategories,
+      getEffectiveCategoryId,
+      handleAssignCategory,
+      handleCardCategorize,
+      handleCardPress,
+      handleDeactivate,
+      handleEdit,
+      handleLogPress,
+      activityNameMap,
+    ]
   );
 
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: SectionData }) => {
-      const isCollapsed = collapsedByCategoryId[section.categoryId] ?? false;
-      const count = section.totalCount ?? section.data.length;
+  const sortedAndFilteredStandards = useMemo(() => {
+    const sortStandards = (a: DashboardStandard, b: DashboardStandard) => {
+      if (sortOption === 'completion') {
+        const aProgress = a.progress?.progressPercent ?? 0;
+        const bProgress = b.progress?.progressPercent ?? 0;
+        return aProgress - bProgress;
+      }
+      const aName = activityNameMap.get(a.standard.activityId) ?? a.standard.activityId;
+      const bName = activityNameMap.get(b.standard.activityId) ?? b.standard.activityId;
+      return aName.localeCompare(bName);
+    };
 
-      return (
-        <TouchableOpacity
-          style={[styles.sectionHeader, { backgroundColor: theme.background.surface, borderBottomColor: theme.border.secondary }]}
-          onPress={() => toggleSectionCollapse(section.categoryId)}
-          accessibilityRole="button"
-          accessibilityLabel={`${section.categoryName} section, ${count} standards`}
-        >
-          <Text style={[styles.sectionHeaderText, { color: theme.text.primary }]}>
-            {section.categoryName} ({count})
-          </Text>
-          <MaterialIcons
-            name={isCollapsed ? 'chevron-right' : 'expand-more'}
-            size={24}
-            color={theme.text.secondary}
-          />
-        </TouchableOpacity>
-      );
-    },
-    [collapsedByCategoryId, toggleSectionCollapse, theme]
-  );
-
-  // Filter sections based on collapse state
-  const visibleSections = useMemo(() => {
-    return sections.map((section) => {
-      const isCollapsed = collapsedByCategoryId[section.categoryId] ?? false;
-      return {
-        ...section,
-        totalCount: section.data.length,
-        data: isCollapsed ? [] : section.data,
-      };
-    });
-  }, [sections, collapsedByCategoryId]);
+    const base = dashboardStandards;
+    const filtered =
+      focusedCategoryId === null
+        ? base
+        : base.filter((entry) => getEffectiveCategoryId(entry) === focusedCategoryId);
+    return [...filtered].sort(sortStandards);
+  }, [activityNameMap, dashboardStandards, focusedCategoryId, getEffectiveCategoryId, sortOption]);
 
   const content = useMemo(() => {
     if (loading && dashboardStandards.length === 0) {
@@ -383,18 +443,32 @@ export function ActiveStandardsDashboardScreen({
     }
 
     return (
-      <SectionList
-        ref={sectionListRef}
+      <FlatList
         testID="dashboard-list"
-        sections={visibleSections}
+        data={sortedAndFilteredStandards}
         renderItem={renderCard}
-        renderSectionHeader={renderSectionHeader}
         keyExtractor={(item) => item.standard.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={loading} onRefresh={refreshProgress} />
         }
-        stickySectionHeadersEnabled={false}
+        ListEmptyComponent={
+          <View style={styles.emptyFilteredContainer} testID="dashboard-empty-filter">
+            <Text style={[styles.emptyFilteredText, { color: theme.text.secondary }]}>
+              No standards in this category
+            </Text>
+            <TouchableOpacity
+              onPress={() => setFocusedCategoryId(null)}
+              style={[styles.clearFilterButton, { borderColor: theme.border.secondary }]}
+              accessibilityRole="button"
+              accessibilityLabel="Show all standards"
+            >
+              <Text style={[styles.clearFilterButtonText, { color: theme.text.secondary }]}>
+                Show All
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
     );
   }, [
@@ -403,9 +477,9 @@ export function ActiveStandardsDashboardScreen({
     onLaunchBuilder,
     refreshProgress,
     renderCard,
-    renderSectionHeader,
+    setFocusedCategoryId,
     theme,
-    visibleSections,
+    sortedAndFilteredStandards,
   ]);
 
   return (
@@ -420,72 +494,163 @@ export function ActiveStandardsDashboardScreen({
         )}
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Active Standards</Text>
         <TouchableOpacity
-          onPress={() => setSortDropdownVisible(true)}
-          style={styles.sortButton}
+          onPress={() => setHeaderMenuVisible(true)}
+          style={styles.headerMenuButton}
           accessibilityRole="button"
-          accessibilityLabel="Sort options"
+          accessibilityLabel="More options"
         >
-          <MaterialIcons name="swap-vert" size={20} color={theme.text.secondary} />
-          <Text style={[styles.sortButtonText, { color: theme.text.secondary }]}>
-            {sortOption === 'completion' ? 'Completion' : 'Alpha'}
-          </Text>
-          <MaterialIcons name="arrow-drop-down" size={20} color={theme.text.secondary} />
+          <MaterialIcons name="more-vert" size={24} color={theme.button.icon.icon} />
         </TouchableOpacity>
       </View>
 
-      {/* Focus Chips Row */}
-      {dashboardStandards.length > 0 && (
-        <View style={[styles.chipsContainer, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary }]}>
+      {/* Focus Tabs Row */}
+      {dashboardStandards.length > 0 && hasCustomCategories && (
+        <View
+          style={[
+            styles.filterTabsContainer,
+            {
+              backgroundColor: theme.background.chrome,
+              borderBottomColor: theme.border.secondary,
+            },
+          ]}
+        >
           <ScrollView
+            ref={filterTabsScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScrollContent}
+            contentContainerStyle={styles.filterTabsScrollContent}
           >
-            <TouchableOpacity
-              style={[
-                styles.chip,
-                focusedCategoryId === null && [styles.chipActive, { backgroundColor: theme.button.primary.background }],
-                { borderColor: theme.border.secondary }
-              ]}
-              onPress={() => handleChipPress(null)}
-              accessibilityRole="button"
-              accessibilityLabel={`All standards, ${categoryCounts.total} total`}
-            >
-              <Text style={[
-                styles.chipText,
-                focusedCategoryId === null && { color: theme.button.primary.text },
-                focusedCategoryId !== null && { color: theme.text.secondary }
-              ]}>
-                All ({categoryCounts.total})
-              </Text>
-            </TouchableOpacity>
-            {sections.map((section) => {
-              const count = categoryCounts.counts.get(section.categoryId) ?? 0;
-              const isActive = focusedCategoryId === section.categoryId;
+            {filterTabs.map((tab) => {
+              const isSelected = (tab.categoryId ?? '__all__') === selectedFilterTabKey;
               return (
                 <TouchableOpacity
-                  key={section.categoryId}
+                  key={tab.key}
+                  onLayout={(event) => {
+                    filterTabLayouts.current[tab.key] = event.nativeEvent.layout;
+                    // If this is the selected tab, snap to it immediately (no animation)
+                    if (tab.key === selectedFilterTabKey) {
+                      filterTabsScrollRef.current?.scrollTo({
+                        x: event.nativeEvent.layout.x - 16,
+                        animated: false,
+                      });
+                    }
+                  }}
                   style={[
-                    styles.chip,
-                    isActive && [styles.chipActive, { backgroundColor: theme.button.primary.background }],
-                    { borderColor: theme.border.secondary }
+                    styles.filterTab,
+                    isSelected && {
+                      borderBottomColor: theme.tabBar.activeTint,
+                      borderBottomWidth: 3,
+                    },
                   ]}
-                  onPress={() => handleChipPress(section.categoryId)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${section.categoryName} category, ${count} standards`}
+                  onPress={() => handleFilterTabPress(tab.categoryId)}
+                  activeOpacity={0.7}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={tab.accessibilityLabel}
                 >
-                  <Text style={[
-                    styles.chipText,
-                    isActive && { color: theme.button.primary.text },
-                    !isActive && { color: theme.text.secondary }
-                  ]}>
-                    {section.categoryName} ({count})
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      { color: isSelected ? theme.tabBar.activeTint : theme.text.secondary },
+                      isSelected && { fontWeight: '700' },
+                    ]}
+                  >
+                    {tab.label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
         </View>
+      )}
+
+      {/* Header Kebab Menu */}
+      {headerMenuVisible && (
+        <TouchableOpacity
+          style={[
+            styles.menuOverlay,
+            { paddingTop: Math.max(insets.top, 12) + 44 },
+          ]}
+          activeOpacity={1}
+          onPress={closeHeaderMenu}
+          accessibilityRole="button"
+          accessibilityLabel="Close menu"
+        >
+          <View style={[styles.menuContainer, { backgroundColor: theme.background.modal, borderColor: theme.border.secondary }]}>
+            <TouchableOpacity
+              onPress={() => setSortMenuExpanded((prev) => !prev)}
+              style={styles.menuSectionHeader}
+              accessibilityRole="button"
+              accessibilityLabel="Sort"
+            >
+              <Text style={[styles.menuSectionTitle, { color: theme.button.primary.background }]}>Sort</Text>
+              <View style={styles.menuSectionRight}>
+                <Text style={[styles.menuSectionValue, { color: theme.button.primary.background }]}>{sortLabel}</Text>
+                <MaterialIcons
+                  name={sortMenuExpanded ? 'expand-more' : 'chevron-right'}
+                  size={22}
+                  color={theme.button.primary.background}
+                />
+              </View>
+            </TouchableOpacity>
+
+            {sortMenuExpanded && (
+              <View
+                style={[
+                  styles.menuSectionBody,
+                  {
+                    backgroundColor: theme.background.surface,
+                    borderTopColor: theme.border.secondary,
+                    borderBottomColor: theme.border.secondary,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  onPress={() => {
+                    setSortOption('completion');
+                    closeHeaderMenu();
+                  }}
+                  style={styles.submenuItem}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sort by completion percentage"
+                >
+                  <Text style={[styles.menuItemText, { color: theme.button.primary.background }]}>Completion</Text>
+                  {sortOption === 'completion' && (
+                    <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSortOption('alpha');
+                    closeHeaderMenu();
+                  }}
+                  style={styles.submenuItem}
+                  accessibilityRole="button"
+                  accessibilityLabel="Sort alphabetically"
+                >
+                  <Text style={[styles.menuItemText, { color: theme.button.primary.background }]}>Alpha</Text>
+                  {sortOption === 'alpha' && (
+                    <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+
+            <TouchableOpacity
+              onPress={() => {
+                closeHeaderMenu();
+                handleCategorizePress();
+              }}
+              style={styles.menuActionItem}
+              accessibilityRole="button"
+              accessibilityLabel="Manage Categories"
+            >
+              <Text style={[styles.menuItemText, { color: theme.button.primary.background }]}>Manage Categories</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       )}
 
       <ErrorBanner error={error} onRetry={handleRetry} />
@@ -499,50 +664,6 @@ export function ActiveStandardsDashboardScreen({
         onSave={handleLogSave}
         resolveActivityName={(activityId) => activityNameMap.get(activityId)}
       />
-
-      {/* Sort Options Dropdown */}
-      {sortDropdownVisible && (
-        <TouchableOpacity
-          style={[styles.dropdownOverlay, { paddingTop: Math.max(insets.top, 12) + 44 }]}
-          activeOpacity={1}
-          onPress={() => setSortDropdownVisible(false)}
-        >
-          <View style={[styles.dropdownContainer, { backgroundColor: theme.background.modal, borderColor: theme.border.secondary }]}>
-            <TouchableOpacity
-              onPress={() => {
-                setSortOption('completion');
-                setSortDropdownVisible(false);
-              }}
-              style={styles.dropdownItem}
-              accessibilityRole="button"
-              accessibilityLabel="Sort by completion percentage"
-            >
-              <Text style={[styles.dropdownItemText, { color: theme.text.primary }]}>
-                Completion
-              </Text>
-              {sortOption === 'completion' && (
-                <MaterialIcons name="check" size={20} color={theme.primary.main} />
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setSortOption('alpha');
-                setSortDropdownVisible(false);
-              }}
-              style={styles.dropdownItem}
-              accessibilityRole="button"
-              accessibilityLabel="Sort alphabetically"
-            >
-              <Text style={[styles.dropdownItemText, { color: theme.text.primary }]}>
-                Alpha
-              </Text>
-              {sortOption === 'alpha' && (
-                <MaterialIcons name="check" size={20} color={theme.primary.main} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      )}
     </View>
   );
 }
@@ -551,6 +672,12 @@ function StandardCard({
   entry,
   onLogPress,
   onCardPress,
+  onViewLogs,
+  categorizeLabel,
+  onCategorize,
+  categoryOptions,
+  selectedCategoryId,
+  onAssignCategoryId,
   onEdit,
   onDeactivate,
   activityNameMap,
@@ -558,6 +685,12 @@ function StandardCard({
   entry: DashboardStandard;
   onLogPress: () => void;
   onCardPress?: () => void;
+  onViewLogs?: () => void;
+  categorizeLabel?: string;
+  onCategorize?: () => void;
+  categoryOptions?: Array<{ id: string; name: string }>;
+  selectedCategoryId?: string;
+  onAssignCategoryId?: (categoryId: string) => void | Promise<void>;
   onEdit?: () => void;
   onDeactivate?: () => void;
   activityNameMap: Map<string, string>;
@@ -599,9 +732,16 @@ function StandardCard({
       targetSessions={targetSessions}
       sessionLabel={sessionLabel}
       unit={standard.unit}
-      showLogButton={true}
+      variant="compact"
+      showStatusPill={false}
       onLogPress={onLogPress}
       onCardPress={onCardPress}
+      onViewLogs={onViewLogs}
+      categorizeLabel={categorizeLabel}
+      onCategorize={onCategorize}
+      categoryOptions={categoryOptions}
+      selectedCategoryId={selectedCategoryId}
+      onAssignCategoryId={onAssignCategoryId}
       onEdit={onEdit}
       onDeactivate={onDeactivate}
     />
@@ -633,19 +773,13 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 64,
   },
-  sortButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: BUTTON_BORDER_RADIUS,
+  headerMenuButton: {
+    width: 64,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingVertical: 4,
   },
-  sortButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  dropdownOverlay: {
+  menuOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -655,27 +789,80 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
     paddingRight: 16,
+    zIndex: 1000,
+    elevation: 1000,
   },
-  dropdownContainer: {
+  menuContainer: {
     borderRadius: 8,
     borderWidth: 1,
-    minWidth: 120,
+    minWidth: 220,
+    maxWidth: 280,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
   },
-  dropdownItem: {
+  menuSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'transparent',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
-  dropdownItemText: {
+  menuSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  menuSectionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 12,
+  },
+  menuSectionValue: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  menuSectionBody: {
+    paddingBottom: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  submenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingLeft: 28,
+  },
+  menuActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  menuItemText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  menuDivider: {
+    height: 1,
+    opacity: 0.6,
   },
   skeletonContainer: {
     padding: CARD_SPACING,
@@ -722,42 +909,45 @@ const styles = StyleSheet.create({
     padding: CARD_SPACING,
     gap: CARD_VERTICAL_GAP,
   },
-  chipsContainer: {
-    flexDirection: 'row',
+  emptyFilteredContainer: {
+    paddingTop: 24,
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: CARD_SPACING,
-    borderBottomWidth: 1,
-    gap: 8,
+    gap: 12,
   },
-  chipsScrollContent: {
-    flexDirection: 'row',
-    gap: 8,
-    flex: 1,
+  emptyFilteredText: {
+    fontSize: 14,
   },
-  chip: {
+  clearFilterButton: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
     borderWidth: 1,
   },
-  chipActive: {
-    borderWidth: 0,
-  },
-  chipText: {
+  clearFilterButtonText: {
     fontSize: 14,
     fontWeight: '500',
   },
-  sectionHeader: {
+  filterTabsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: CARD_SPACING,
-    paddingVertical: 12,
     borderBottomWidth: 1,
   },
-  sectionHeaderText: {
-    fontSize: 16,
-    fontWeight: '600',
+  filterTabsScrollContent: {
+    flexDirection: 'row',
+    paddingHorizontal: CARD_SPACING,
+    paddingRight: 16,
+    flex: 1,
+  },
+  filterTab: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: -1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterTabText: {
+    fontSize: 13,
+    fontWeight: '500',
   },
 });

@@ -2,13 +2,14 @@ import React, { useCallback, useRef, useState } from 'react';
 import {
   StyleSheet,
   Text,
+  Pressable,
   TouchableOpacity,
   View,
   Modal,
   Dimensions,
 } from 'react-native';
 import type { Standard } from '@minimum-standards/shared-model';
-import { formatUnitWithCount } from '@minimum-standards/shared-model';
+import { formatUnitWithCount, UNCATEGORIZED_CATEGORY_ID } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
 import { getStatusColors } from '../theme/colors';
@@ -29,12 +30,20 @@ export interface StandardProgressCardProps {
   targetSessions: number;
   sessionLabel: string;
   unit: string;
+  variant?: 'detailed' | 'compact';
   showLogButton?: boolean;
+  showStatusPill?: boolean;
   onLogPress?: () => void;
   onCardPress?: () => void;
+  categorizeLabel?: string;
+  onCategorize?: () => void;
+  categoryOptions?: Array<{ id: string; name: string }>;
+  selectedCategoryId?: string;
+  onAssignCategoryId?: (categoryId: string) => void | Promise<void>;
   onEdit?: () => void;
   onDelete?: () => void;
   onDeactivate?: () => void;
+  onViewLogs?: () => void;
 }
 
 const CARD_SPACING = 16;
@@ -53,17 +62,30 @@ export function StandardProgressCard({
   targetSessions,
   sessionLabel,
   unit,
+  variant = 'detailed',
   showLogButton = false,
+  showStatusPill = true,
   onLogPress,
   onCardPress,
+  categorizeLabel,
+  onCategorize,
+  categoryOptions,
+  selectedCategoryId,
+  onAssignCategoryId,
   onEdit,
   onDelete,
   onDeactivate,
+  onViewLogs,
 }: StandardProgressCardProps) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuButtonLayout, setMenuButtonLayout] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const menuButtonRef = useRef<View>(null);
+  const [categorizeExpanded, setCategorizeExpanded] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const isCompact = variant === 'compact';
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   
   // Use green when progress is complete (100%+), otherwise use brown
   const progressBarColor = progressPercent >= 100 ? theme.status.met.barComplete : getStatusColors(theme, 'Met').bar;
@@ -102,6 +124,12 @@ export function StandardProgressCard({
     if (onLogPress) onLogPress();
   }, [onLogPress]);
 
+  const handleMenuLogPress = useCallback(() => {
+    setPendingAction(() => onLogPress);
+    setMenuVisible(false);
+    setCategorizeExpanded(false);
+  }, [onLogPress]);
+
   const handleMenuPress = useCallback((e: any) => {
     e.stopPropagation();
     // Measure button position when opening menu
@@ -111,74 +139,153 @@ export function StandardProgressCard({
     });
   }, []);
 
-  const handleEditPress = useCallback(() => {
+  const handleViewLogsPress = useCallback(() => {
+    setPendingAction(() => onViewLogs);
     setMenuVisible(false);
-    if (onEdit) onEdit();
+    setCategorizeExpanded(false);
+  }, [onViewLogs]);
+
+  const handleEditPress = useCallback(() => {
+    setPendingAction(() => onEdit);
+    setMenuVisible(false);
+    setCategorizeExpanded(false);
   }, [onEdit]);
 
   const handleDeletePress = useCallback(() => {
+    setPendingAction(() => onDelete);
     setMenuVisible(false);
-    if (onDelete) onDelete();
+    setCategorizeExpanded(false);
   }, [onDelete]);
 
   const handleDeactivatePress = useCallback(() => {
+    setPendingAction(() => onDeactivate);
     setMenuVisible(false);
-    if (onDeactivate) onDeactivate();
+    setCategorizeExpanded(false);
   }, [onDeactivate]);
 
-  // Determine if we should show the menu (if we have Edit, Delete, or Deactivate)
-  const showMenu = onEdit || onDelete || onDeactivate;
+  const handleCategorizePress = useCallback(() => {
+    setPendingAction(() => onCategorize);
+    setMenuVisible(false);
+    setCategorizeExpanded(false);
+  }, [onCategorize]);
+
+  const showCategorizeSubmenu = Boolean(onAssignCategoryId) && (categoryOptions?.length ?? 0) > 0;
+  const showCategorizeAction = Boolean(onCategorize) && !showCategorizeSubmenu;
+  const showMenu = Boolean(showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
+  const showLogMenuItem = Boolean(onLogPress) && showMenu;
+  const showLogDivider = showLogMenuItem && (showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
 
   return (
     <>
-      <TouchableOpacity
-        style={[styles.card, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          { 
+            backgroundColor: theme.background.card, 
+            shadowColor: theme.shadow,
+            opacity: pressed && onCardPress ? 0.9 : 1
+          }
+        ]}
         onPress={onCardPress}
-        activeOpacity={onCardPress ? 0.7 : 1}
         accessibilityRole={onCardPress ? 'button' : undefined}
         accessibilityLabel={onCardPress ? `View details for ${activityName}` : undefined}
       >
         <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
+          <View style={[styles.cardHeader, isCompact && styles.cardHeaderCompact]}>
             <View style={styles.titleBlock}>
-              <Text
-                style={[styles.activityName, { color: theme.text.primary }]}
-                numberOfLines={1}
-                accessibilityLabel={`Activity ${activityName}`}
-              >
-                {activityName}
-              </Text>
-              <Text
-                style={[styles.volumePeriodText, { color: theme.text.primary }]}
-                numberOfLines={1}
-                accessibilityLabel={`Volume: ${volumePeriodText}`}
-              >
-                {volumePeriodText}
-              </Text>
-              {sessionParamsText !== null && (
+              <View style={styles.titleRow}>
                 <Text
-                  style={[styles.sessionParamsText, { color: theme.text.secondary }]}
+                  style={[styles.activityName, { color: theme.text.primary }]}
                   numberOfLines={1}
-                  accessibilityLabel={`Session params: ${sessionParamsText}`}
+                  accessibilityLabel={`Activity ${activityName}`}
                 >
-                  {sessionParamsText}
+                  {activityName}
                 </Text>
+                {isCompact && (
+                  <TouchableOpacity
+                    onPress={(e: any) => {
+                      e.stopPropagation();
+                      setDetailsExpanded((prev) => !prev);
+                    }}
+                    style={styles.expandButton}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      detailsExpanded
+                        ? `Hide details for ${activityName}`
+                        : `Show details for ${activityName}`
+                    }
+                  >
+                    <MaterialIcons
+                      name={detailsExpanded ? 'expand-less' : 'expand-more'}
+                      size={20}
+                      color={theme.text.secondary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {!isCompact && (
+                <>
+                  <Text
+                    style={[styles.volumePeriodText, { color: theme.text.primary }]}
+                    numberOfLines={1}
+                    accessibilityLabel={`Volume: ${volumePeriodText}`}
+                  >
+                    {volumePeriodText}
+                  </Text>
+                  {sessionParamsText !== null && (
+                    <Text
+                      style={[styles.sessionParamsText, { color: theme.text.secondary }]}
+                      numberOfLines={1}
+                      accessibilityLabel={`Session params: ${sessionParamsText}`}
+                    >
+                      {sessionParamsText}
+                    </Text>
+                  )}
+                  <Text
+                    style={[styles.dateLine, { color: theme.text.secondary }]}
+                    numberOfLines={1}
+                    accessibilityLabel={`Period: ${periodLabel}`}
+                  >
+                    {periodLabel}
+                  </Text>
+                </>
               )}
-              <Text 
-                style={[styles.dateLine, { color: theme.text.secondary }]} 
-                numberOfLines={1}
-                accessibilityLabel={`Period: ${periodLabel}`}
-              >
-                {periodLabel}
-              </Text>
+              {isCompact && detailsExpanded && (
+                <>
+                  <Text
+                    style={[styles.volumePeriodText, { color: theme.text.primary }]}
+                    numberOfLines={1}
+                    accessibilityLabel={`Volume: ${volumePeriodText}`}
+                  >
+                    {volumePeriodText}
+                  </Text>
+                  {sessionParamsText !== null && (
+                    <Text
+                      style={[styles.sessionParamsText, { color: theme.text.secondary }]}
+                      numberOfLines={1}
+                      accessibilityLabel={`Session params: ${sessionParamsText}`}
+                    >
+                      {sessionParamsText}
+                    </Text>
+                  )}
+                  <Text
+                    style={[styles.dateLine, { color: theme.text.secondary }]}
+                    numberOfLines={1}
+                    accessibilityLabel={`Period: ${periodLabel}`}
+                  >
+                    {periodLabel}
+                  </Text>
+                </>
+              )}
             </View>
-            <View style={styles.headerActions}>
+            <View style={[styles.headerActions, isCompact && styles.headerActionsCompact]}>
               <View style={styles.actionButtonsRow}>
                 {showLogButton ? (
                   <TouchableOpacity
                     onPress={handleLogPress}
                     style={[
                       styles.logButtonHeader,
+                      isCompact && styles.logButtonHeaderCompact,
                       {
                         backgroundColor: theme.button.primary.background,
                       },
@@ -201,14 +308,14 @@ export function StandardProgressCard({
                       Log
                     </Text>
                   </TouchableOpacity>
-                ) : (
+                ) : showStatusPill ? (
                   <View
                     style={[styles.statusPill, { backgroundColor: statusColors.background }]}
                     accessibilityRole="text"
                   >
                     <Text style={[styles.statusText, { color: statusColors.text }]}>{status}</Text>
                   </View>
-                )}
+                ) : null}
                 {showMenu && (
                   <View ref={menuButtonRef}>
                     <TouchableOpacity
@@ -225,7 +332,13 @@ export function StandardProgressCard({
             </View>
           </View>
 
-        <View style={[styles.progressContainer, { backgroundColor: theme.background.card, borderTopColor: theme.border.secondary }]}>
+        <View
+          style={[
+            styles.progressContainer,
+            isCompact && styles.progressContainerCompact,
+            { backgroundColor: theme.background.card, borderTopColor: theme.border.secondary },
+          ]}
+        >
           <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
             <View
               style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: progressBarColor }]}
@@ -245,18 +358,29 @@ export function StandardProgressCard({
           </View>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
 
     <Modal
       visible={menuVisible}
       transparent={true}
       animationType="fade"
-      onRequestClose={() => setMenuVisible(false)}
+      onRequestClose={() => {
+        setMenuVisible(false);
+        setCategorizeExpanded(false);
+      }}
+      onDismiss={() => {
+        if (pendingAction) {
+          pendingAction();
+          setPendingAction(null);
+        }
+      }}
     >
-      <TouchableOpacity
+      <Pressable
         style={styles.menuOverlay}
-        activeOpacity={1}
-        onPress={() => setMenuVisible(false)}
+        onPress={() => {
+          setMenuVisible(false);
+          setCategorizeExpanded(false);
+        }}
       >
         {menuButtonLayout && (() => {
           const screenWidth = Dimensions.get('window').width;
@@ -268,54 +392,220 @@ export function StandardProgressCard({
           menuLeft = Math.max(16, Math.min(menuLeft, screenWidth - menuWidth - 16));
           
           return (
-            <View
+            <Pressable
+              onPress={(e) => e.stopPropagation()}
               style={[
                 styles.menuContainer,
                 {
                   backgroundColor: theme.background.modal,
                   top: menuButtonLayout.y + menuButtonLayout.height + 4,
                   left: menuLeft,
+                  width: menuWidth,
+                  borderColor: theme.border.secondary,
                 },
               ]}
-              onStartShouldSetResponder={() => true}
             >
+              {showLogMenuItem && (
+                <>
+                  <Pressable
+                    onPress={handleMenuLogPress}
+                    style={({ pressed }) => [styles.menuActionItem, pressed && { opacity: 0.7 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Log progress for ${activityName}`}
+                  >
+                    <Text
+                      style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      Log
+                    </Text>
+                  </Pressable>
+                  {showLogDivider && (
+                    <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+                  )}
+                </>
+              )}
+
+              {onViewLogs && (
+                <Pressable
+                  onPress={handleViewLogsPress}
+                  style={({ pressed }) => [styles.menuActionItem, pressed && { opacity: 0.7 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Period logs for ${activityName}`}
+                >
+                  <Text
+                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    Period Logs
+                  </Text>
+                </Pressable>
+              )}
+
+              {showCategorizeSubmenu && (
+                <>
+                  <Pressable
+                    onPress={() => setCategorizeExpanded((prev) => !prev)}
+                    style={({ pressed }) => [styles.menuSectionHeader, pressed && { opacity: 0.7 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${categorizeLabel ?? 'Categorize'}`}
+                  >
+                    <Text
+                      style={[styles.menuSectionTitle, { color: theme.button.primary.background }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {categorizeLabel ?? 'Categorize'}
+                    </Text>
+                    <View style={styles.menuSectionRight}>
+                      <MaterialIcons
+                        name={categorizeExpanded ? 'expand-more' : 'chevron-right'}
+                        size={22}
+                        color={theme.button.primary.background}
+                      />
+                    </View>
+                  </Pressable>
+
+                  {categorizeExpanded && (
+                    <View
+                      style={[
+                        styles.menuSectionBody,
+                        {
+                          backgroundColor: theme.background.surface,
+                          borderTopColor: theme.border.secondary,
+                          borderBottomColor: theme.border.secondary,
+                        },
+                      ]}
+                    >
+                      {categoryOptions!.map((category) => (
+                        <Pressable
+                          key={category.id}
+                          onPress={async () => {
+                            setPendingAction(() => () => onAssignCategoryId?.(category.id));
+                            setMenuVisible(false);
+                            setCategorizeExpanded(false);
+                          }}
+                          style={({ pressed }) => [styles.submenuItem, pressed && { opacity: 0.7 }]}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Assign ${activityName} to ${category.name}`}
+                        >
+                          <Text
+                            style={[styles.menuItemText, { color: theme.button.primary.background, flexShrink: 1 }]}
+                            numberOfLines={1}
+                            ellipsizeMode="tail"
+                          >
+                            {category.name}
+                          </Text>
+                          {selectedCategoryId === category.id && (
+                            <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                          )}
+                        </Pressable>
+                      ))}
+
+                      <Pressable
+                        onPress={async () => {
+                          setPendingAction(() => () => onAssignCategoryId?.(UNCATEGORIZED_CATEGORY_ID));
+                          setMenuVisible(false);
+                          setCategorizeExpanded(false);
+                        }}
+                        style={({ pressed }) => [styles.submenuItem, pressed && { opacity: 0.7 }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Assign ${activityName} to Uncategorized`}
+                      >
+                        <Text
+                          style={[styles.menuItemText, { color: theme.button.primary.background, flexShrink: 1 }]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                        >
+                          Uncategorized
+                        </Text>
+                        {selectedCategoryId === UNCATEGORIZED_CATEGORY_ID && (
+                          <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                        )}
+                      </Pressable>
+                    </View>
+                  )}
+
+                  <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+                </>
+              )}
+
+              {showCategorizeAction && (
+                <>
+                  <Pressable
+                    onPress={handleCategorizePress}
+                    style={({ pressed }) => [styles.menuActionItem, pressed && { opacity: 0.7 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${categorizeLabel ?? 'Categorize'} ${activityName}`}
+                  >
+                    <Text
+                      style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {categorizeLabel ?? 'Categorize'}
+                    </Text>
+                  </Pressable>
+                  {(onEdit || onDeactivate || onDelete) && (
+                    <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+                  )}
+                </>
+              )}
+
               {onEdit && (
-                <TouchableOpacity
+                <Pressable
                   onPress={handleEditPress}
-                  style={[styles.menuItem, { borderBottomColor: theme.border.secondary }]}
+                  style={({ pressed }) => [styles.menuActionItem, pressed && { opacity: 0.7 }]}
                   accessibilityRole="button"
                   accessibilityLabel={`Edit ${activityName}`}
                 >
-                  <MaterialIcons name="edit" size={20} color={theme.button.icon.icon} />
-                  <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Edit</Text>
-                </TouchableOpacity>
+                  <Text
+                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    Edit
+                  </Text>
+                </Pressable>
               )}
               {onDeactivate && (
-                <TouchableOpacity
+                <Pressable
                   onPress={handleDeactivatePress}
-                  style={onDelete ? [styles.menuItem, { borderBottomColor: theme.border.secondary }] : [styles.menuItem, { borderBottomWidth: 0 }]}
+                  style={({ pressed }) => [styles.menuActionItem, pressed && { opacity: 0.7 }]}
                   accessibilityRole="button"
                   accessibilityLabel={`Deactivate ${activityName}`}
                 >
-                  <MaterialIcons name="toggle-off" size={20} color={theme.button.icon.icon} />
-                  <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Deactivate</Text>
-                </TouchableOpacity>
+                  <Text
+                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    Deactivate
+                  </Text>
+                </Pressable>
               )}
               {onDelete && (
-                <TouchableOpacity
+                <Pressable
                   onPress={handleDeletePress}
-                  style={[styles.menuItem, { borderBottomWidth: 0 }]}
+                  style={({ pressed }) => [styles.menuActionItem, pressed && { opacity: 0.7 }]}
                   accessibilityRole="button"
                   accessibilityLabel={`Delete ${activityName}`}
                 >
-                  <MaterialIcons name="delete" size={20} color={theme.button.icon.icon} />
-                  <Text style={[styles.menuItemText, { color: theme.button.icon.icon }]}>Delete</Text>
-                </TouchableOpacity>
+                  <Text
+                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    Delete
+                  </Text>
+                </Pressable>
               )}
-            </View>
+            </Pressable>
           );
         })()}
-      </TouchableOpacity>
+      </Pressable>
     </Modal>
     </>
   );
@@ -336,16 +626,37 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: 12,
     padding: CARD_SPACING,
+  },
+  cardHeaderCompact: {
+    padding: 12,
+    alignItems: 'center',
   },
   titleBlock: {
     flex: 1,
     gap: 4,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  expandButton: {
+    padding: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 24,
+    minHeight: 24,
+  },
   activityName: {
     fontSize: 16,
     fontWeight: '600',
+    flexShrink: 1,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: 20,
   },
   volumePeriodText: {
     fontSize: 14,
@@ -362,6 +673,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
   },
+  headerActionsCompact: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   actionButtonsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -373,6 +688,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logButtonHeaderCompact: {
+    minHeight: 32,
   },
   logButtonText: {
     // fontSize and fontWeight come from typography.button.primary
@@ -386,28 +704,81 @@ const styles = StyleSheet.create({
   },
   menuOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   menuContainer: {
     position: 'absolute',
-    borderRadius: 12,
+    borderRadius: 8,
+    borderWidth: 1,
     minWidth: 200,
+    maxWidth: 280,
     shadowOpacity: 0.2,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
     overflow: 'hidden',
   },
+  menuSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  menuSectionRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 12,
+  },
+  menuSectionValue: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  menuSectionBody: {
+    paddingBottom: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
-    borderBottomWidth: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  submenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingLeft: 28,
+  },
+  menuActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  menuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   menuItemText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
+  },
+  menuDivider: {
+    height: 1,
+    opacity: 0.6,
   },
   statusPill: {
     borderRadius: 999,
@@ -422,6 +793,10 @@ const styles = StyleSheet.create({
     padding: CARD_SPACING,
     borderTopWidth: 1,
     gap: 12,
+  },
+  progressContainerCompact: {
+    padding: 12,
+    gap: 8,
   },
   progressBar: {
     width: '100%',

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   collection,
   doc,
@@ -14,6 +14,7 @@ import {
   toFirestoreActivityUpdate,
   toFirestoreActivityDelete,
 } from '../utils/activityConverter';
+import { toFirestoreStandardDelete } from '../utils/standardConverter';
 import debounce from 'lodash.debounce';
 
 export interface UseActivitiesResult {
@@ -82,6 +83,21 @@ export function useActivities(): UseActivitiesResult {
   const [error, setError] = useState<Error | null>(null);
   const [searchQueryInput, setSearchQueryInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const pendingActivityUpdatesRef = useRef<
+    Map<
+      string,
+      {
+        updates: Partial<
+          Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>
+        >;
+        updatedAtMs: number;
+      }
+    >
+  >(new Map());
+  const lastCategoryUpdateRef = useRef<{
+    activityId: string;
+    optimisticUpdatedAtMs: number;
+  } | null>(null);
 
   const userId = firebaseAuth.currentUser?.uid;
 
@@ -124,15 +140,62 @@ export function useActivities(): UseActivitiesResult {
           snapshot.forEach((doc) => {
             try {
               const data = doc.data() as any;
+              if (lastCategoryUpdateRef.current?.activityId === doc.id) {
+                console.debug('[useActivities] Raw snapshot category field', {
+                  activityId: doc.id,
+                  categoryId: data?.categoryId ?? null,
+                  updatedAt: data?.updatedAt ?? null,
+                });
+              }
               const activity = fromFirestoreActivity(doc.id, data);
               activitiesList.push(activity);
             } catch (err) {
-              console.error(`Error parsing activity ${doc.id}:`, err);
+              console.error('[useActivities] Error parsing activity', {
+                activityId: doc.id,
+                error: err instanceof Error ? err.message : err,
+              });
             }
           });
 
+          const pendingUpdates = pendingActivityUpdatesRef.current;
+          const mergedWithPending = activitiesList.map((activity) => {
+            const pending = pendingUpdates.get(activity.id);
+            if (!pending) {
+              return activity;
+            }
+
+            if (activity.updatedAtMs >= pending.updatedAtMs) {
+              pendingUpdates.delete(activity.id);
+              return activity;
+            }
+
+            return {
+              ...activity,
+              ...pending.updates,
+              updatedAtMs: pending.updatedAtMs,
+            };
+          });
+
           // Deduplicate and sort to prevent duplicates from race conditions
-          const deduplicated = deduplicateActivitiesById(activitiesList);
+          const deduplicated = deduplicateActivitiesById(mergedWithPending);
+          if (lastCategoryUpdateRef.current) {
+            const { activityId, optimisticUpdatedAtMs } = lastCategoryUpdateRef.current;
+            const updatedActivity = deduplicated.find((activity) => activity.id === activityId);
+            console.debug('[useActivities] Snapshot category check', {
+              activityId,
+              optimisticUpdatedAtMs,
+              found: Boolean(updatedActivity),
+              categoryId: updatedActivity?.categoryId ?? null,
+              updatedAtMs: updatedActivity?.updatedAtMs ?? null,
+              pendingUpdate: pendingUpdates.has(activityId),
+            });
+          }
+          console.debug('[useActivities] Snapshot received', {
+            count: deduplicated.length,
+            pendingUpdates: pendingUpdates.size,
+            fromCache: snapshot.metadata.fromCache,
+            hasPendingWrites: snapshot.metadata.hasPendingWrites,
+          });
           setActivities(deduplicated);
           setLoading(false);
           setError(null);
@@ -230,17 +293,59 @@ export function useActivities(): UseActivitiesResult {
           activityId
         );
 
+      const normalizedUpdates: Partial<
+        Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>
+      > = {};
+      if (updates.name !== undefined) {
+        normalizedUpdates.name = updates.name;
+      }
+      if (updates.unit !== undefined) {
+        normalizedUpdates.unit = updates.unit;
+      }
+      if (updates.notes !== undefined) {
+        normalizedUpdates.notes = updates.notes;
+      }
+      if (updates.categoryId !== undefined) {
+        normalizedUpdates.categoryId = updates.categoryId ?? null;
+      }
+
+      const optimisticUpdatedAtMs = Date.now();
+      console.debug('[useActivities] Optimistic update start', {
+        activityId,
+        updates: normalizedUpdates,
+        optimisticUpdatedAtMs,
+      });
+      if (normalizedUpdates.categoryId !== undefined) {
+        lastCategoryUpdateRef.current = { activityId, optimisticUpdatedAtMs };
+      }
+
       // Optimistic update
       setActivities((prev) => {
         const activity = prev.find((a) => a.id === activityId);
         if (!activity) {
+          pendingActivityUpdatesRef.current.delete(activityId);
+          console.warn('[useActivities] Activity not found for update', {
+            activityId,
+            updates: normalizedUpdates,
+          });
           return prev;
         }
 
+        pendingActivityUpdatesRef.current.set(activityId, {
+          updates: normalizedUpdates,
+          updatedAtMs: optimisticUpdatedAtMs,
+        });
+        console.debug('[useActivities] Optimistic update applied', {
+          activityId,
+          categoryId: normalizedUpdates.categoryId ?? activity.categoryId ?? null,
+          optimisticUpdatedAtMs,
+          pendingUpdates: pendingActivityUpdatesRef.current.size,
+        });
+
         const updated = {
           ...activity,
-          ...updates,
-          updatedAtMs: Date.now(),
+          ...normalizedUpdates,
+          updatedAtMs: optimisticUpdatedAtMs,
         };
 
         const filtered = prev.filter((a) => a.id !== activityId);
@@ -250,20 +355,21 @@ export function useActivities(): UseActivitiesResult {
       });
 
       try {
-        const activity = activities.find((a) => a.id === activityId);
-        if (!activity) {
-          throw new Error('Activity not found');
-        }
-
-        const firestoreData = toFirestoreActivityUpdate(updates);
+        const firestoreData = toFirestoreActivityUpdate(normalizedUpdates);
         await docRef.update(firestoreData);
+        console.debug('[useActivities] Firestore update completed', {
+          activityId,
+          updates: normalizedUpdates,
+        });
       } catch (err) {
+        console.error('[updateActivity] Error updating activity:', err);
+        pendingActivityUpdatesRef.current.delete(activityId);
         // Rollback: re-fetch or restore from snapshot
         // The snapshot listener will update it correctly
         throw err;
       }
     },
-    [userId, activities]
+    [userId]
   );
 
   // Optimistic delete activity (soft delete)
@@ -283,9 +389,27 @@ export function useActivities(): UseActivitiesResult {
       setActivities((prev) => prev.filter((a) => a.id !== activityId));
 
       try {
-        // Soft delete by setting deletedAt
-        const firestoreData = toFirestoreActivityDelete();
-        await docRef.update(firestoreData);
+        // Soft delete activity + any Standards that reference it so the Standards Library stays consistent.
+        // Use a batch so we don't end up with a deleted activity but orphaned standards.
+        const standardsQuery = query(
+          collection(doc(firebaseFirestore, 'users', userId), 'standards'),
+          where('activityId', '==', activityId)
+        );
+        const standardsSnapshot = await standardsQuery.get();
+
+        const batch = firebaseFirestore.batch();
+        batch.update(docRef, toFirestoreActivityDelete());
+
+        standardsSnapshot.forEach((standardDoc: any) => {
+          const data = standardDoc.data?.() as any;
+          // Skip already-deleted standards (idempotent).
+          if (data?.deletedAt != null) {
+            return;
+          }
+          batch.update(standardDoc.ref, toFirestoreStandardDelete());
+        });
+
+        await batch.commit();
       } catch (err) {
         // Rollback: restore activity
         if (activityToDelete) {

@@ -68,7 +68,7 @@ export function SettingsScreen() {
             onPress={() => navigation.navigate('Categories')}
           >
             <View style={styles.optionLabelContainer}>
-              <MaterialIcons name="category" size={22} color={theme.text.primary} style={styles.optionIcon} />
+              <MaterialIcons name="local-offer" size={22} color={theme.text.primary} style={styles.optionIcon} />
               <Text style={[styles.optionLabel, { color: theme.text.primary }]}>Categories</Text>
             </View>
             <MaterialIcons name="chevron-right" size={24} color={theme.text.secondary} />

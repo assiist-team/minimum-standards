@@ -30,6 +30,7 @@ export declare const activitySchema: z.ZodObject<{
     name: z.ZodString;
     unit: z.ZodEffects<z.ZodString, string, string>;
     notes: z.ZodDefault<z.ZodNullable<z.ZodString>>;
+    categoryId: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     createdAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     updatedAtMs: z.ZodEffects<z.ZodNumber, number, number>;
     deletedAtMs: z.ZodNullable<z.ZodEffects<z.ZodNumber, number, number>>;
@@ -38,6 +39,7 @@ export declare const activitySchema: z.ZodObject<{
     id: string;
     name: string;
     notes: string | null;
+    categoryId?: string | null | undefined;
     createdAtMs: number;
     updatedAtMs: number;
     deletedAtMs: number | null;
@@ -49,6 +51,7 @@ export declare const activitySchema: z.ZodObject<{
     updatedAtMs: number;
     deletedAtMs: number | null;
     notes?: string | null | undefined;
+    categoryId?: string | null | undefined;
 }>;
 export declare const categorySchema: z.ZodObject<{
     id: z.ZodString;

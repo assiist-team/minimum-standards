@@ -12,6 +12,7 @@ import {
   ScrollView,
   Animated,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
@@ -23,6 +24,7 @@ export interface ActivityModalProps {
   onClose: () => void;
   onSave: (activity: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>) => Promise<Activity>;
   onSelect?: (activity: Activity) => void; // For builder context - auto-select after create
+  onDelete?: (activityId: string) => Promise<void>;
 }
 
 interface FormErrors {
@@ -37,6 +39,7 @@ export function ActivityModal({
   onClose,
   onSave,
   onSelect,
+  onDelete,
 }: ActivityModalProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -47,9 +50,11 @@ export function ActivityModal({
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const isEditMode = !!activity;
+  const isBusy = saving || deleting;
 
   // Initialize form when activity changes
   useEffect(() => {
@@ -157,7 +162,7 @@ export function ActivityModal({
   };
 
   const handleClose = () => {
-    if (saving) {
+    if (isBusy) {
       return; // Prevent closing while saving
     }
     setName('');
@@ -166,6 +171,38 @@ export function ActivityModal({
     setErrors({});
     setSaveError(null);
     onClose();
+  };
+
+  const handleDelete = () => {
+    if (!activity || !onDelete || isBusy) {
+      return;
+    }
+
+    Alert.alert(
+      'Delete Activity',
+      `Delete "${activity.name}"?\n\nThis will also remove any standards for this activity from your Standards Library.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeleting(true);
+              setSaveError(null);
+              await onDelete(activity.id);
+              onClose();
+            } catch (error) {
+              setSaveError(
+                error instanceof Error ? error.message : 'Failed to delete activity'
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -327,7 +364,7 @@ export function ActivityModal({
                   },
                 ]}
                 onPress={handleSave}
-                disabled={saving}
+                disabled={isBusy}
               >
                 {saving ? (
                   <ActivityIndicator color={theme.button.primary.text} />
@@ -337,6 +374,35 @@ export function ActivityModal({
                   </Text>
                 )}
               </TouchableOpacity>
+
+              {isEditMode && onDelete && (
+                <TouchableOpacity
+                  style={[
+                    styles.deleteButton,
+                    {
+                      borderColor: theme.input.borderError,
+                      opacity: isBusy ? 0.6 : 1,
+                    },
+                  ]}
+                  onPress={handleDelete}
+                  disabled={isBusy}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete activity"
+                >
+                  {deleting ? (
+                    <ActivityIndicator color={theme.input.borderError} />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.deleteButtonText,
+                        { color: theme.input.borderError },
+                      ]}
+                    >
+                      Delete Activity
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
           </Animated.View>
         </KeyboardAvoidingView>
@@ -422,5 +488,17 @@ const styles = StyleSheet.create({
   footer: {
     padding: 16,
     borderTopWidth: 1,
+  },
+  deleteButton: {
+    marginTop: 10,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    backgroundColor: 'transparent',
+  },
+  deleteButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

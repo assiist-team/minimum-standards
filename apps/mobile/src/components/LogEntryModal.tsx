@@ -215,14 +215,8 @@ export function LogEntryModal({
     return Number.isFinite(v) && v > 0 ? v : null;
   }, [selectedStandard]);
 
-  const quickAddValues =
-    selectedStandard && Array.isArray(selectedStandard.quickAddValues) && selectedStandard.quickAddValues.length > 0
-      ? selectedStandard.quickAddValues
-      : undefined;
-
-  // For session-based standards, don't show quick-add buttons when the session button is present
-  // AND completely disable quick-add values to prevent +1 buttons from appearing
-  const effectiveQuickAddValues = undefined;
+  // Only show the session-based quick add button (no +1 quick add values).
+  const quickAddValuesToShow: number[] | undefined = undefined;
 
   const handleQuickAddPress = (quickValue: number) => {
     if (saving) {
@@ -378,7 +372,7 @@ export function LogEntryModal({
       return null;
     }
 
-    const hasQuickButtons = (effectiveQuickAddValues && effectiveQuickAddValues.length > 0) || sessionQuickFillValue !== null;
+    const hasQuickButtons = sessionQuickFillValue !== null;
 
     return (
       <>
@@ -432,18 +426,6 @@ export function LogEntryModal({
                     </Text>
                   </TouchableOpacity>
                 )}
-                {effectiveQuickAddValues && effectiveQuickAddValues.length > 0 && effectiveQuickAddValues.map((quickValue) => (
-                  <TouchableOpacity
-                    key={String(quickValue)}
-                    style={[styles.compactQuickButton, { backgroundColor: theme.background.tertiary, borderColor: theme.border.primary, borderWidth: 1 }]}
-                    onPress={() => handleQuickAddPress(quickValue)}
-                    disabled={saving}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Quick add ${quickValue}`}
-                  >
-                    <Text style={[styles.compactQuickButtonText, { color: theme.button.primary.background }]}>{`+${quickValue}`}</Text>
-                  </TouchableOpacity>
-                ))}
               </View>
             )}
           </View>
@@ -563,9 +545,6 @@ export function LogEntryModal({
   };
 
   const handleFooterLayout = (event: LayoutChangeEvent) => {
-    if (keyboardHeight > 0) {
-      return;
-    }
     const { height } = event.nativeEvent.layout;
     if (Math.abs(height - footerHeight) > 1) {
       setFooterHeight(height);
@@ -583,9 +562,13 @@ export function LogEntryModal({
         style={[
           styles.footer,
           {
-            backgroundColor: theme.background.modal,
+            backgroundColor: theme.background.chrome,
             borderTopColor: theme.border.secondary,
-            paddingBottom: 12 + insets.bottom + effectiveKeyboardHeight,
+            // Keep the Save button above the keyboard without shrinking the scrollable area.
+            // This prevents the top content (e.g. unit label) from getting pushed off-screen
+            // when the value input auto-focuses.
+            bottom: effectiveKeyboardHeight,
+            paddingBottom: 12 + insets.bottom,
           },
         ]}
       >
@@ -700,6 +683,7 @@ const styles = StyleSheet.create({
     width: '100%',
     zIndex: 1,
     elevation: 1,
+    position: 'relative',
   },
   pickerContainer: {
     flex: 1,
@@ -849,7 +833,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   footer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderTopWidth: 1,
+    paddingHorizontal: 10,
     paddingTop: 12,
     paddingBottom: 12,
   },

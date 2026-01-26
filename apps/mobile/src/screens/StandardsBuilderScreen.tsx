@@ -84,7 +84,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
   } = useStandardsBuilderStore();
 
   const { createStandard, updateStandard, standards, unarchiveStandard } = useStandards();
-  const { activities, createActivity, updateActivity } = useActivities();
+  const { activities, createActivity, updateActivity, deleteActivity } = useActivities();
   const { orderedCategories } = useCategories();
   const [standardsLibraryVisible, setStandardsLibraryVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
@@ -1086,6 +1086,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
         onClose={() => setActivityModalVisible(false)}
         onSave={handleActivitySave}
         onSelect={handleActivityCreate}
+        onDelete={deleteActivity}
       />
     </KeyboardAvoidingView>
   );

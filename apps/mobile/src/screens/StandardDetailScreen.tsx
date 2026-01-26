@@ -55,7 +55,7 @@ export function StandardDetailScreen({
   );
 
   const { history, loading, error, refresh } = useStandardHistory(standardId);
-  const { activities, updateActivity } = useActivities();
+  const { activities, updateActivity, deleteActivity } = useActivities();
 
   // Create activity lookup map for efficient name resolution
   const activityNameMap = useMemo(() => {
@@ -398,6 +398,7 @@ export function StandardDetailScreen({
           setEditingActivity(null);
         }}
         onSave={handleActivitySave}
+        onDelete={deleteActivity}
       />
     </View>
   );

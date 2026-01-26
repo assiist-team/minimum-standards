@@ -57,6 +57,7 @@ exports.activitySchema = zod_1.z.object({
         }
     }),
     notes: zod_1.z.string().max(1000).nullable().default(null),
+    categoryId: zod_1.z.string().min(1).nullable().optional(), // null means Uncategorized, optional for backwards compatibility
     createdAtMs: timestampMsSchema,
     updatedAtMs: timestampMsSchema,
     deletedAtMs: timestampMsSchema.nullable()

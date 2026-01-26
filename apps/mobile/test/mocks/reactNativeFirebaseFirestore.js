@@ -39,6 +39,10 @@ function createCollectionRef() {
 
 const firestoreInstance = {
   collection: () => createCollectionRef(),
+  batch: () => ({
+    update: () => undefined,
+    commit: async () => undefined,
+  }),
 };
 
 firestoreInstance.FieldValue = {

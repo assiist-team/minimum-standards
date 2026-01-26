@@ -12,9 +12,10 @@ import {
   FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { SettingsStackParamList } from '../navigation/types';
+import type { RouteProp } from '@react-navigation/native';
+import { SETTINGS_STACK_ROOT_SCREEN_NAME, type SettingsStackParamList } from '../navigation/types';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useCategories } from '../hooks/useCategories';
 import { useStandards } from '../hooks/useStandards';
@@ -28,6 +29,7 @@ export function CategorySettingsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
+  const route = useRoute<RouteProp<SettingsStackParamList, 'Categories'>>();
   const {
     orderedCategories,
     loading: categoriesLoading,
@@ -52,23 +54,6 @@ export function CategorySettingsScreen() {
   const [bulkMode, setBulkMode] = useState(false);
   const [migrationRunning, setMigrationRunning] = useState(false);
 
-  // Group activities by category
-  const activitiesByCategory = useMemo(() => {
-    const grouped = new Map<string, Activity[]>();
-    activities.forEach((activity) => {
-      const categoryId = activity.categoryId ?? UNCATEGORIZED_CATEGORY_ID;
-      if (!grouped.has(categoryId)) {
-        grouped.set(categoryId, []);
-      }
-      grouped.get(categoryId)!.push(activity);
-    });
-    // Sort activities within each category by name
-    grouped.forEach((activitiesList) => {
-      activitiesList.sort((a, b) => a.name.localeCompare(b.name));
-    });
-    return grouped;
-  }, [activities]);
-
   // Calculate counts per category
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -77,6 +62,12 @@ export function CategorySettingsScreen() {
       counts.set(categoryId, (counts.get(categoryId) ?? 0) + 1);
     });
     return counts;
+  }, [activities]);
+
+  // Force re-render when activities change to ensure UI updates
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    setTick(t => t + 1);
   }, [activities]);
 
   // Get activities not in the selected category (for adding)
@@ -205,8 +196,20 @@ export function CategorySettingsScreen() {
   }, []);
 
   const handleBack = useCallback(() => {
+    if (route.params?.backTo === 'Dashboard') {
+      // We were launched from Active Standards via a tab jump into Settings → Categories.
+      // "goBack" would only pop within the Settings stack, so we:
+      // 1) reset Settings back to its root so the Settings tab is still usable
+      // 2) switch tabs back to Dashboard.
+      navigation.reset({
+        index: 0,
+        routes: [{ name: SETTINGS_STACK_ROOT_SCREEN_NAME }],
+      });
+      navigation.getParent()?.navigate('Dashboard' as never);
+      return;
+    }
     navigation.goBack();
-  }, [navigation]);
+  }, [navigation, route.params?.backTo]);
 
   const handleCreateCategory = useCallback(async () => {
     const trimmedName = newCategoryName.trim();
@@ -403,12 +406,12 @@ export function CategorySettingsScreen() {
       const activity = activities.find((a) => a.id === activityId);
       if (!activity) return;
 
-      try {
-        await updateActivity(activityId, {
-          categoryId: selectedCategoryForAdd === UNCATEGORIZED_CATEGORY_ID ? null : selectedCategoryForAdd,
-        });
-        resolveMigrationConflict(activityId);
-      } catch (error) {
+    try {
+      await updateActivity(activityId, {
+        categoryId: selectedCategoryForAdd === UNCATEGORIZED_CATEGORY_ID ? null : selectedCategoryForAdd,
+      });
+      resolveMigrationConflict(activityId);
+    } catch (error) {
         Alert.alert('Error', error instanceof Error ? error.message : 'Failed to add activity to category');
       }
     },
@@ -435,7 +438,6 @@ export function CategorySettingsScreen() {
           );
           setActivityCategoryMigrationConflictActivityIds(next);
         }
-        Alert.alert('Success', `Added ${activitiesToUpdate.length} activit${activitiesToUpdate.length === 1 ? 'y' : 'ies'} to category`);
         handleCloseAddActivitiesModal();
       } catch (error) {
         Alert.alert('Error', error instanceof Error ? error.message : 'Failed to add activities to category');
@@ -668,7 +670,13 @@ export function CategorySettingsScreen() {
                     {expandedCategories.has(category.id) && (
                       <View style={styles.activitiesList}>
                         {(() => {
-                          const categoryActivities = activitiesByCategory.get(category.id) ?? [];
+                          const categoryActivities = activities
+                            .filter(a => {
+                              const activityCategoryId = a.categoryId ?? UNCATEGORIZED_CATEGORY_ID;
+                              return activityCategoryId === category.id;
+                            })
+                            .sort((a, b) => a.name.localeCompare(b.name));
+                          
                           return (
                             <>
                               {categoryActivities.length === 0 ? (
