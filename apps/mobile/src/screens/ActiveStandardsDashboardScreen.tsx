@@ -586,13 +586,13 @@ export function ActiveStandardsDashboardScreen({
               accessibilityRole="button"
               accessibilityLabel="Sort"
             >
-              <Text style={[styles.menuSectionTitle, { color: theme.button.primary.background }]}>Sort</Text>
+              <Text style={[styles.menuSectionTitle, { color: theme.text.primary }]}>Sort</Text>
               <View style={styles.menuSectionRight}>
-                <Text style={[styles.menuSectionValue, { color: theme.button.primary.background }]}>{sortLabel}</Text>
+                <Text style={[styles.menuSectionValue, { color: theme.text.secondary }]}>{sortLabel}</Text>
                 <MaterialIcons
                   name={sortMenuExpanded ? 'expand-more' : 'chevron-right'}
                   size={22}
-                  color={theme.button.primary.background}
+                  color={theme.text.secondary}
                 />
               </View>
             </TouchableOpacity>
@@ -617,9 +617,9 @@ export function ActiveStandardsDashboardScreen({
                   accessibilityRole="button"
                   accessibilityLabel="Sort by completion percentage"
                 >
-                  <Text style={[styles.menuItemText, { color: theme.button.primary.background }]}>Completion</Text>
+                  <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Completion</Text>
                   {sortOption === 'completion' && (
-                    <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                    <MaterialIcons name="check" size={20} color={theme.text.primary} />
                   )}
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -631,9 +631,9 @@ export function ActiveStandardsDashboardScreen({
                   accessibilityRole="button"
                   accessibilityLabel="Sort alphabetically"
                 >
-                  <Text style={[styles.menuItemText, { color: theme.button.primary.background }]}>Alpha</Text>
+                  <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Alpha</Text>
                   {sortOption === 'alpha' && (
-                    <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                    <MaterialIcons name="check" size={20} color={theme.text.primary} />
                   )}
                 </TouchableOpacity>
               </View>
@@ -650,7 +650,7 @@ export function ActiveStandardsDashboardScreen({
               accessibilityRole="button"
               accessibilityLabel="Manage Categories"
             >
-              <Text style={[styles.menuItemText, { color: theme.button.primary.background }]}>Manage Categories</Text>
+              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Manage Categories</Text>
             </TouchableOpacity>
           </View>
         </TouchableOpacity>

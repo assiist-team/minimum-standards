@@ -502,7 +502,7 @@ export function StandardProgressCard({
                     accessibilityLabel={`Log progress for ${activityName}`}
                   >
                     <Text
-                      style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                      style={[styles.menuItemText, { color: theme.text.primary }]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
@@ -523,7 +523,7 @@ export function StandardProgressCard({
                   accessibilityLabel={`Period logs for ${activityName}`}
                 >
                   <Text
-                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    style={[styles.menuItemText, { color: theme.text.primary }]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -541,7 +541,7 @@ export function StandardProgressCard({
                     accessibilityLabel={`${categorizeLabel ?? 'Categorize'}`}
                   >
                     <Text
-                      style={[styles.menuSectionTitle, { color: theme.button.primary.background }]}
+                      style={[styles.menuSectionTitle, { color: theme.text.primary }]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
@@ -551,7 +551,7 @@ export function StandardProgressCard({
                       <MaterialIcons
                         name={categorizeExpanded ? 'expand-more' : 'chevron-right'}
                         size={22}
-                        color={theme.button.primary.background}
+                        color={theme.text.secondary}
                       />
                     </View>
                   </Pressable>
@@ -580,14 +580,14 @@ export function StandardProgressCard({
                           accessibilityLabel={`Assign ${activityName} to ${category.name}`}
                         >
                           <Text
-                            style={[styles.menuItemText, { color: theme.button.primary.background, flexShrink: 1 }]}
+                            style={[styles.menuItemText, { color: theme.text.primary, flexShrink: 1 }]}
                             numberOfLines={1}
                             ellipsizeMode="tail"
                           >
                             {category.name}
                           </Text>
                           {selectedCategoryId === category.id && (
-                            <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                            <MaterialIcons name="check" size={20} color={theme.text.primary} />
                           )}
                         </Pressable>
                       ))}
@@ -603,14 +603,14 @@ export function StandardProgressCard({
                         accessibilityLabel={`Assign ${activityName} to Uncategorized`}
                       >
                         <Text
-                          style={[styles.menuItemText, { color: theme.button.primary.background, flexShrink: 1 }]}
+                          style={[styles.menuItemText, { color: theme.text.primary, flexShrink: 1 }]}
                           numberOfLines={1}
                           ellipsizeMode="tail"
                         >
                           Uncategorized
                         </Text>
                         {selectedCategoryId === UNCATEGORIZED_CATEGORY_ID && (
-                          <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
+                          <MaterialIcons name="check" size={20} color={theme.text.primary} />
                         )}
                       </Pressable>
                     </View>
@@ -629,7 +629,7 @@ export function StandardProgressCard({
                     accessibilityLabel={`${categorizeLabel ?? 'Categorize'} ${activityName}`}
                   >
                     <Text
-                      style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                      style={[styles.menuItemText, { color: theme.text.primary }]}
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
@@ -650,7 +650,7 @@ export function StandardProgressCard({
                   accessibilityLabel={`Edit ${activityName}`}
                 >
                   <Text
-                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    style={[styles.menuItemText, { color: theme.text.primary }]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -666,7 +666,7 @@ export function StandardProgressCard({
                   accessibilityLabel={`Deactivate ${activityName}`}
                 >
                   <Text
-                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    style={[styles.menuItemText, { color: theme.text.primary }]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
@@ -682,7 +682,7 @@ export function StandardProgressCard({
                   accessibilityLabel={`Delete ${activityName}`}
                 >
                   <Text
-                    style={[styles.menuItemText, { color: theme.button.primary.background }]}
+                    style={[styles.menuItemText, { color: theme.text.primary }]}
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
