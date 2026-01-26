@@ -44,9 +44,49 @@ export interface StandardProgressCardProps {
   onDelete?: () => void;
   onDeactivate?: () => void;
   onViewLogs?: () => void;
+  periodStartMs?: number;
+  periodEndMs?: number;
+  nowMs?: number;
 }
 
 const CARD_SPACING = 16;
+
+// Helper function to format time elapsed/remaining
+function formatTimeProgress(elapsedMs: number, remainingMs: number, durationMs: number): {
+  elapsedLabel: string;
+  remainingLabel: string;
+} {
+  const MS_PER_HOUR = 60 * 60 * 1000;
+  const MS_PER_DAY = 24 * MS_PER_HOUR;
+  const FORTY_EIGHT_HOURS_MS = 48 * MS_PER_HOUR;
+
+  // Choose unit based on total duration (stable across the period)
+  const useHours = durationMs < FORTY_EIGHT_HOURS_MS;
+
+  if (useHours) {
+    const elapsedH = Math.floor(elapsedMs / MS_PER_HOUR);
+    const remainingH = Math.ceil(remainingMs / MS_PER_HOUR);
+    return {
+      elapsedLabel: `${elapsedH}h elapsed`,
+      remainingLabel: `${remainingH}h remaining`,
+    };
+  } else {
+    const elapsedDays = elapsedMs / MS_PER_DAY;
+    const remainingDays = remainingMs / MS_PER_DAY;
+    
+    const formatDays = (days: number): string => {
+      if (days < 10) {
+        return days.toFixed(1);
+      }
+      return Math.round(days).toString();
+    };
+
+    return {
+      elapsedLabel: `${formatDays(elapsedDays)}d elapsed`,
+      remainingLabel: `${formatDays(remainingDays)}d remaining`,
+    };
+  }
+}
 
 export function StandardProgressCard({
   standard,
@@ -76,6 +116,9 @@ export function StandardProgressCard({
   onDelete,
   onDeactivate,
   onViewLogs,
+  periodStartMs,
+  periodEndMs,
+  nowMs,
 }: StandardProgressCardProps) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -115,6 +158,27 @@ export function StandardProgressCard({
   if (usesSessions) {
     const sessionLabelPluralForSummary = `${sessionConfig.sessionLabel}s`;
     sessionsSummary = `${currentSessions} / ${sessionConfig.sessionsPerCadence} ${sessionLabelPluralForSummary}`;
+  }
+
+  // Compute time progress if period boundaries are provided
+  const currentNowMs = nowMs ?? Date.now();
+  const shouldShowTimeBar = Boolean(
+    periodStartMs !== undefined &&
+    periodEndMs !== undefined &&
+    periodEndMs > periodStartMs &&
+    currentNowMs >= periodStartMs &&
+    currentNowMs < periodEndMs
+  );
+
+  let timePercent = 0;
+  let timeLabels: { elapsedLabel: string; remainingLabel: string } | null = null;
+
+  if (shouldShowTimeBar) {
+    const durationMs = periodEndMs - periodStartMs;
+    const elapsedMs = Math.max(0, Math.min(currentNowMs - periodStartMs, durationMs));
+    const remainingMs = durationMs - elapsedMs;
+    timePercent = Math.max(0, Math.min((elapsedMs / durationMs) * 100, 100));
+    timeLabels = formatTimeProgress(elapsedMs, remainingMs, durationMs);
   }
 
   const statusColors = getStatusColors(theme, status);
@@ -339,6 +403,30 @@ export function StandardProgressCard({
             { backgroundColor: theme.background.card, borderTopColor: theme.border.secondary },
           ]}
         >
+          {/* Time progress bar */}
+          {shouldShowTimeBar && timeLabels && (
+            <>
+              <View style={styles.progressSummaries}>
+                <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
+                  {timeLabels.elapsedLabel}
+                </Text>
+                <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
+                  {timeLabels.remainingLabel}
+                </Text>
+              </View>
+              <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${timePercent}%`, backgroundColor: theme.text.tertiary },
+                  ]}
+                  accessibilityRole="progressbar"
+                  accessibilityValue={{ now: timePercent, min: 0, max: 100 }}
+                />
+              </View>
+            </>
+          )}
+
           <View style={[styles.progressBar, { backgroundColor: theme.border.secondary }]}>
             <View
               style={[styles.progressFill, { width: `${progressPercent}%`, backgroundColor: progressBarColor }]}

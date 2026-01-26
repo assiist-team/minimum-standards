@@ -59,9 +59,11 @@ export function useActiveStandardsDashboard() {
   const [logsError, setLogsError] = useState<Error | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
   const [windowReferenceMs, setWindowReferenceMs] = useState(() => Date.now());
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const userId = firebaseAuth.currentUser?.uid;
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nowTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!userId || orderedActiveStandards.length === 0) {
@@ -184,12 +186,35 @@ export function useActiveStandardsDashboard() {
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
-        setWindowReferenceMs(Date.now());
+        const currentNow = Date.now();
+        setWindowReferenceMs(currentNow);
+        setNowMs(currentNow);
       }
     });
 
     return () => {
       subscription.remove();
+    };
+  }, []);
+
+  // Update nowMs every 60 seconds
+  useEffect(() => {
+    // Clear any existing interval
+    if (nowTickRef.current) {
+      clearInterval(nowTickRef.current);
+      nowTickRef.current = null;
+    }
+
+    // Set up interval to update nowMs every 60 seconds
+    nowTickRef.current = setInterval(() => {
+      setNowMs(Date.now());
+    }, 60000);
+
+    return () => {
+      if (nowTickRef.current) {
+        clearInterval(nowTickRef.current);
+        nowTickRef.current = null;
+      }
     };
   }, []);
 
@@ -240,5 +265,6 @@ export function useActiveStandardsDashboard() {
     refreshProgress,
     refreshStandards,
     createLogEntry,
+    nowMs,
   };
 }

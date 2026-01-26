@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Platform,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Standard, Activity } from '@minimum-standards/shared-model';
@@ -41,6 +43,7 @@ export function StandardDetailScreen({
   const [logModalVisible, setLogModalVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const {
     standards,
@@ -86,6 +89,24 @@ export function StandardDetailScreen({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [standard?.id, standard?.activityId]);
+
+  // Update nowMs every 60 seconds and on app resume
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowMs(Date.now());
+    }, 60000);
+
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        setNowMs(Date.now());
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, []);
 
   // Compute current period window to determine which periods are current
   const currentPeriodWindow = useMemo(() => {
@@ -304,6 +325,9 @@ export function StandardDetailScreen({
             unit={standard.unit}
             showLogButton={true}
             onLogPress={handleLogPress}
+            periodStartMs={currentPeriodProgress.periodStartMs}
+            periodEndMs={currentPeriodProgress.periodEndMs}
+            nowMs={nowMs}
           />
         )}
 

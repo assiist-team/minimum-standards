@@ -73,6 +73,7 @@ export function ActiveStandardsDashboardScreen({
     updateLogEntry,
     refreshStandards,
     archiveStandard,
+    nowMs,
   } = useActiveStandardsDashboard();
 
   const { activities, updateActivity } = useActivities();
@@ -373,6 +374,7 @@ export function ActiveStandardsDashboardScreen({
           onEdit={() => handleEdit(item.standard.id)}
           onDeactivate={() => handleDeactivate(item.standard.id)}
           activityNameMap={activityNameMap}
+          nowMs={nowMs}
         />
       );
     },
@@ -387,6 +389,7 @@ export function ActiveStandardsDashboardScreen({
       handleEdit,
       handleLogPress,
       activityNameMap,
+      nowMs,
     ]
   );
 
@@ -681,6 +684,7 @@ function StandardCard({
   onEdit,
   onDeactivate,
   activityNameMap,
+  nowMs,
 }: {
   entry: DashboardStandard;
   onLogPress: () => void;
@@ -694,6 +698,7 @@ function StandardCard({
   onEdit?: () => void;
   onDeactivate?: () => void;
   activityNameMap: Map<string, string>;
+  nowMs: number;
 }) {
   const { standard, progress } = entry;
   
@@ -716,6 +721,8 @@ function StandardCard({
   
   const status = progress?.status ?? 'In Progress';
   const progressPercent = progress?.progressPercent ?? 0;
+  const periodStartMs = progress?.periodStartMs;
+  const periodEndMs = progress?.periodEndMs;
 
   return (
     <StandardProgressCard
@@ -744,6 +751,9 @@ function StandardCard({
       onAssignCategoryId={onAssignCategoryId}
       onEdit={onEdit}
       onDeactivate={onDeactivate}
+      periodStartMs={periodStartMs}
+      periodEndMs={periodEndMs}
+      nowMs={nowMs}
     />
   );
 }

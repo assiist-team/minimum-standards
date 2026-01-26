@@ -24,6 +24,8 @@ export type DashboardProgress = {
   status: PeriodStatus;
   currentSessions: number;
   targetSessions: number;
+  periodStartMs: number;
+  periodEndMs: number;
 };
 
 const numberFormatter = new Intl.NumberFormat('en-US', {
@@ -89,6 +91,8 @@ export function buildDashboardProgressMap(params: {
       status,
       currentSessions,
       targetSessions,
+      periodStartMs: window.startMs,
+      periodEndMs: window.endMs,
     };
   });
 
