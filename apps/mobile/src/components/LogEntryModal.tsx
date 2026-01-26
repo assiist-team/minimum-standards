@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -60,6 +60,7 @@ export function LogEntryModal({
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [affirmationMessage, setAffirmationMessage] = useState<string | null>(null);
   const [showNote, setShowNote] = useState(false);
   const [showWhen, setShowWhen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -80,6 +81,10 @@ export function LogEntryModal({
   const { activeStandards, loading: standardsLoading } = useStandards();
 
   const isEditMode = !!logEntry;
+  const affirmationMessages = useMemo(
+    () => ['Nice work.', 'Logged.', 'Done.', 'Solid.', '+1 logged.', 'Keep it up.'],
+    []
+  );
 
   // Determine if we should show the picker (when no standard is currently selected)
   const showPicker = selectedStandard === null;
@@ -93,6 +98,14 @@ export function LogEntryModal({
     const resolved = resolveActivityName?.(selectedStandard.activityId);
     return resolved ?? selectedStandard.activityId;
   }, [resolveActivityName, selectedStandard, showPicker]);
+
+  const getAffirmationMessage = useCallback(() => {
+    if (affirmationMessages.length === 0) {
+      return 'Logged.';
+    }
+    const index = Math.floor(Math.random() * affirmationMessages.length);
+    return affirmationMessages[index];
+  }, [affirmationMessages]);
 
   const effectiveKeyboardHeight = Math.max(0, keyboardHeight - insets.bottom);
 
@@ -332,7 +345,16 @@ export function LogEntryModal({
         note.trim() || null,
         logEntry?.id // Pass logEntryId in edit mode
       );
-      
+
+      const successMessage = getAffirmationMessage();
+      if (Platform.OS === 'android') {
+        ToastAndroid.show(successMessage, ToastAndroid.SHORT);
+      } else {
+        setAffirmationMessage(successMessage);
+        await new Promise(resolve => setTimeout(resolve, 900));
+        setAffirmationMessage(null);
+      }
+
       // Reset form and close
       setValue('');
       setNote('');
@@ -361,6 +383,7 @@ export function LogEntryModal({
     setShowWhen(false);
     setSelectedDate(new Date());
     setSaveError(null);
+    setAffirmationMessage(null);
     setSelectedStandard(null);
     // Reset stopwatch
     setStopwatchRunning(false);
@@ -892,6 +915,24 @@ export function LogEntryModal({
               </ScrollView>
             )}
 
+            {!showPicker && affirmationMessage && (
+              <View
+                pointerEvents="none"
+                style={[
+                  styles.affirmationToast,
+                  {
+                    backgroundColor: theme.background.surface,
+                    borderColor: theme.border.secondary,
+                    bottom: footerHeight + effectiveKeyboardHeight + 12,
+                  },
+                ]}
+              >
+                <Text style={[styles.affirmationText, { color: theme.text.primary }]}>
+                  {affirmationMessage}
+                </Text>
+              </View>
+            )}
+
             {renderFooter()}
         </View>
       </View>
@@ -914,6 +955,18 @@ const styles = StyleSheet.create({
     zIndex: 1,
     elevation: 1,
     position: 'relative',
+  },
+  affirmationToast: {
+    position: 'absolute',
+    alignSelf: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+  },
+  affirmationText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   pickerContainer: {
     flex: 1,
