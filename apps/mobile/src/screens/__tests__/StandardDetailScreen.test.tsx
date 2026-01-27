@@ -390,7 +390,7 @@ describe('StandardDetailScreen', () => {
       // This test verifies that status colors are defined for both light and dark modes
       // Actual contrast testing would require visual regression testing or contrast calculation
       setupHooks({ history: [mockCurrentPeriodProgress] });
-      const { getByText } = render(
+      const { getAllByRole } = render(
         <StandardDetailScreen
           standardId={mockStandard.id}
           onBack={jest.fn()}
@@ -399,11 +399,9 @@ describe('StandardDetailScreen', () => {
         />
       );
 
-      // Status pill should render (colors are applied via styles)
-      const statusPill = getByText('In Progress');
-      expect(statusPill).toBeTruthy();
-      // Status text should be visible
-      expect(statusPill.parent?.props.style).toBeDefined();
+      // Progress bars should render (time + volume, depending on period boundaries)
+      const progressBars = getAllByRole('progressbar');
+      expect(progressBars.length).toBeGreaterThan(0);
     });
   });
 

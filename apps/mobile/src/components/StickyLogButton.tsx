@@ -6,8 +6,7 @@ import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import { trackStandardEvent } from '../utils/analytics';
-
-const CARD_SPACING = 16;
+import { SCREEN_PADDING } from '../theme/spacing';
 
 export interface StickyLogButtonProps {
   onCreateLogEntry: (params: {
@@ -121,7 +120,7 @@ export function StickyLogButton({
 
 const styles = StyleSheet.create({
   stickyLogButtonContainer: {
-    paddingHorizontal: CARD_SPACING,
+    paddingHorizontal: SCREEN_PADDING,
     paddingTop: 8,
     paddingBottom: 8,
     alignItems: 'center',

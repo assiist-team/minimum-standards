@@ -12,9 +12,9 @@ import type { Standard } from '@minimum-standards/shared-model';
 import { formatUnitWithCount, UNCATEGORIZED_CATEGORY_ID } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
-import { getStatusColors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { CARD_PADDING } from '../theme/spacing';
 
 export interface StandardProgressCardProps {
   standard: Standard;
@@ -32,7 +32,6 @@ export interface StandardProgressCardProps {
   unit: string;
   variant?: 'detailed' | 'compact';
   showLogButton?: boolean;
-  showStatusPill?: boolean;
   onLogPress?: () => void;
   onCardPress?: () => void;
   categorizeLabel?: string;
@@ -48,8 +47,6 @@ export interface StandardProgressCardProps {
   periodEndMs?: number;
   nowMs?: number;
 }
-
-const CARD_SPACING = 16;
 
 // Helper function to format time elapsed/remaining
 function formatTimeProgress(elapsedMs: number, remainingMs: number, durationMs: number): {
@@ -104,7 +101,6 @@ export function StandardProgressCard({
   unit,
   variant = 'detailed',
   showLogButton = false,
-  showStatusPill = true,
   onLogPress,
   onCardPress,
   categorizeLabel,
@@ -131,7 +127,7 @@ export function StandardProgressCard({
   const [detailsExpanded, setDetailsExpanded] = useState(false);
   
   // Use green when progress is complete (100%+), otherwise use brown
-  const progressBarColor = progressPercent >= 100 ? theme.status.met.barComplete : getStatusColors(theme, 'Met').bar;
+  const progressBarColor = progressPercent >= 100 ? theme.status.met.barComplete : theme.status.met.bar;
   
   // Format volume/period: "1800 minutes / week" (derive from standard data)
   const { interval, unit: cadenceUnit } = standard.cadence;
@@ -180,8 +176,6 @@ export function StandardProgressCard({
     timePercent = Math.max(0, Math.min((elapsedMs / durationMs) * 100, 100));
     timeLabels = formatTimeProgress(elapsedMs, remainingMs, durationMs);
   }
-
-  const statusColors = getStatusColors(theme, status);
 
   const handleLogPress = useCallback((e: any) => {
     e.stopPropagation();
@@ -373,13 +367,6 @@ export function StandardProgressCard({
                       Log
                     </Text>
                   </TouchableOpacity>
-                ) : showStatusPill ? (
-                  <View
-                    style={[styles.statusPill, { backgroundColor: statusColors.background }]}
-                    accessibilityRole="text"
-                  >
-                    <Text style={[styles.statusText, { color: statusColors.text }]}>{status}</Text>
-                  </View>
                 ) : null}
                 {showMenu && (
                   <View ref={menuButtonRef}>
@@ -724,7 +711,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     gap: 12,
-    padding: CARD_SPACING,
+    padding: CARD_PADDING,
   },
   cardHeaderCompact: {
     padding: 12,
@@ -876,17 +863,8 @@ const styles = StyleSheet.create({
     height: 1,
     opacity: 0.6,
   },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontWeight: '600',
-    fontSize: 12,
-  },
   progressContainer: {
-    padding: CARD_SPACING,
+    padding: CARD_PADDING,
     borderTopWidth: 1,
     gap: 12,
   },

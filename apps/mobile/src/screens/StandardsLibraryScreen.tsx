@@ -23,6 +23,7 @@ import { BUTTON_BORDER_RADIUS } from '../theme/radius';
 import { useStandards } from '../hooks/useStandards';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { StandardCard } from '../components/StandardCard';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 
 export interface StandardsLibraryScreenProps {
   onBack?: () => void; // Optional - not shown on main screen
@@ -30,9 +31,6 @@ export interface StandardsLibraryScreenProps {
   onNavigateToBuilder?: () => void; // Navigate to Standards Builder
   onEditStandard?: (standardId: string) => void; // Navigate to Standards Builder for editing
 }
-
-const CARD_SPACING = 16;
-const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 export function StandardsLibraryScreen({
   onBack,
@@ -266,7 +264,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: CARD_SPACING,
+    paddingHorizontal: SCREEN_PADDING,
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
@@ -290,7 +288,7 @@ const styles = StyleSheet.create({
     // fontSize and fontWeight come from typography.button.primary
   },
   searchContainer: {
-    padding: CARD_SPACING,
+    padding: SCREEN_PADDING,
     borderBottomWidth: 1,
   },
   searchRow: {
@@ -314,8 +312,8 @@ const styles = StyleSheet.create({
     // fontSize and fontWeight come from typography.button.primary
   },
   skeletonContainer: {
-    padding: CARD_SPACING,
-    gap: CARD_SPACING,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   skeletonCard: {
     borderRadius: 12,
@@ -351,8 +349,8 @@ const styles = StyleSheet.create({
     // fontSize and fontWeight come from typography.button.primary
   },
   listContent: {
-    padding: CARD_SPACING,
-    gap: CARD_VERTICAL_GAP,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   card: {
     borderRadius: 16,

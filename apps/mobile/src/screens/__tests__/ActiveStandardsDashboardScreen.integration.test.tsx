@@ -97,21 +97,19 @@ describe('ActiveStandardsDashboardScreen Integration Tests', () => {
 
       setupHook({ dashboardStandards: [metStandard] });
 
-      const { getByText } = render(
+      const { getByRole } = render(
         <ActiveStandardsDashboardScreen
           onBack={jest.fn()}
           onLaunchBuilder={jest.fn()}
         />
       );
 
-      const statusText = getByText('Met');
-      
-      // Verify status text color matches expected color token
-      const expectedColors = getStatusColors(lightTheme, 'Met');
-      expect(statusText.props.style).toEqual(
+      const progressBar = getByRole('progressbar');
+      // Verify progress bar uses green token when complete
+      expect(progressBar.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            color: expectedColors.text,
+            backgroundColor: lightTheme.status.met.barComplete,
           }),
         ])
       );
@@ -134,21 +132,19 @@ describe('ActiveStandardsDashboardScreen Integration Tests', () => {
 
       setupHook({ dashboardStandards: [inProgressStandard] });
 
-      const { getByText } = render(
+      const { getByRole } = render(
         <ActiveStandardsDashboardScreen
           onBack={jest.fn()}
           onLaunchBuilder={jest.fn()}
         />
       );
 
-      const statusText = getByText('In Progress');
-      
-      // Verify status text color matches expected color token
-      const expectedColors = getStatusColors(lightTheme, 'In Progress');
-      expect(statusText.props.style).toEqual(
+      const progressBar = getByRole('progressbar');
+      // Verify progress bar uses base (brown) token when not complete
+      expect(progressBar.props.style).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            color: expectedColors.text,
+            backgroundColor: lightTheme.status.met.bar,
           }),
         ])
       );

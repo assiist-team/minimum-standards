@@ -7,8 +7,7 @@ import {
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { StandardSessionConfig } from '@minimum-standards/shared-model';
-
-const CARD_SPACING = 16;
+import { SCREEN_PADDING } from '../theme/spacing';
 
 export interface StandardPeriodHeaderProps {
   periodLabel: string;
@@ -81,10 +80,10 @@ export function StandardPeriodHeader({
 const styles = StyleSheet.create({
   container: {
     borderBottomWidth: 1,
-    paddingHorizontal: CARD_SPACING,
-    paddingTop: CARD_SPACING,
-    paddingBottom: CARD_SPACING,
-    marginHorizontal: -CARD_SPACING,
+    paddingHorizontal: SCREEN_PADDING,
+    paddingTop: SCREEN_PADDING,
+    paddingBottom: SCREEN_PADDING,
+    marginHorizontal: -SCREEN_PADDING,
   },
   content: {
     gap: 16,

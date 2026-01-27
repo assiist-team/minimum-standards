@@ -27,6 +27,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import { RangeFilterDrawer, TimeRange } from '../components/RangeFilterDrawer';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 import {
   computeSyntheticCurrentRows,
   mergeActivityHistoryRows,
@@ -39,8 +40,6 @@ export interface ActivityHistoryScreenProps {
   activityId?: string;
   onBack: () => void;
 }
-
-const CARD_SPACING = 16;
 
 const TIME_RANGE_DAYS: Record<TimeRange, number | null> = {
   '7d': 7,
@@ -477,7 +476,8 @@ export function ActivityHistoryScreen({
 
       <ErrorBanner error={error} />
 
-      <View style={[styles.selectorContainer, { backgroundColor: theme.background.card, shadowColor: theme.shadow }]}>
+      <View style={[styles.selectorSection, { borderBottomColor: theme.border.secondary }]}>
+        <Text style={[styles.selectorTitle, { color: theme.text.secondary }]}>Activity</Text>
         <TouchableOpacity
           style={[styles.selectorButton, { backgroundColor: theme.input.background, borderColor: theme.input.border }]}
           onPress={() => {
@@ -489,7 +489,6 @@ export function ActivityHistoryScreen({
           accessibilityLabel="Select activity"
         >
           <View style={styles.selectorTextBlock}>
-            <Text style={[styles.selectorLabel, { color: theme.text.secondary }]}>Activity</Text>
             <Text style={[styles.selectorValue, { color: theme.text.primary }]}>
               {activityName}
             </Text>
@@ -655,7 +654,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
+    paddingHorizontal: SCREEN_PADDING,
     paddingBottom: 12,
     borderBottomWidth: 1,
   },
@@ -691,17 +690,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingTop: CARD_SPACING,
-    gap: CARD_SPACING,
+    paddingTop: SCREEN_PADDING,
+    paddingHorizontal: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
-  selectorContainer: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 16,
-    padding: 16,
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+  selectorSection: {
+    marginHorizontal: SCREEN_PADDING,
+    marginTop: SCREEN_PADDING,
+    paddingBottom: SCREEN_PADDING,
+    borderBottomWidth: 1,
+    gap: 8,
+  },
+  selectorTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   selectorButton: {
     flexDirection: 'row',
@@ -715,11 +718,6 @@ const styles = StyleSheet.create({
   selectorTextBlock: {
     gap: 2,
   },
-  selectorLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-  },
   selectorValue: {
     fontSize: 16,
     fontWeight: '600',
@@ -732,7 +730,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   selectorSheet: {
-    padding: 16,
+    padding: SCREEN_PADDING,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     maxHeight: '70%',
@@ -776,7 +774,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginHorizontal: 16,
     marginTop: 8,
     marginBottom: 4,
   },

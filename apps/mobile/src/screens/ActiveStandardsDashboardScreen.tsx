@@ -29,10 +29,8 @@ import { StandardProgressCard } from '../components/StandardProgressCard';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
-const CARD_SPACING = 16;
-const CARD_VERTICAL_GAP = CARD_SPACING / 3;
 
 type SortOption = 'completion' | 'alpha';
 
@@ -749,7 +747,6 @@ function StandardCard({
       sessionLabel={sessionLabel}
       unit={standard.unit}
       variant="compact"
-      showStatusPill={false}
       onLogPress={onLogPress}
       onCardPress={onCardPress}
       onViewLogs={onViewLogs}
@@ -775,7 +772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: CARD_SPACING,
+    paddingHorizontal: SCREEN_PADDING,
     paddingVertical: 12,
     borderBottomWidth: 1,
   },
@@ -884,8 +881,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   skeletonContainer: {
-    padding: CARD_SPACING,
-    gap: CARD_SPACING,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   skeletonCard: {
     borderRadius: 12,
@@ -925,8 +922,8 @@ const styles = StyleSheet.create({
     // fontSize and fontWeight come from typography.button.primary
   },
   listContent: {
-    padding: CARD_SPACING,
-    gap: CARD_VERTICAL_GAP,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   emptyFilteredContainer: {
     paddingTop: 24,
@@ -953,7 +950,7 @@ const styles = StyleSheet.create({
   },
   filterTabsScrollContent: {
     flexDirection: 'row',
-    paddingHorizontal: CARD_SPACING,
+    paddingHorizontal: SCREEN_PADDING,
     paddingRight: 16,
     flex: 1,
   },

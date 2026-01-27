@@ -2,11 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { useTheme } from '../theme/useTheme';
-import { getStatusColors } from '../theme/colors';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 
 export interface PeriodHistoryListProps {
   history: PeriodHistoryEntry[];
   onPeriodPress: (entry: PeriodHistoryEntry) => void;
+  contentPaddingHorizontal?: number;
 }
 
 function PeriodRow({
@@ -18,7 +19,6 @@ function PeriodRow({
   theme: ReturnType<typeof useTheme>;
   onPress: (entry: PeriodHistoryEntry) => void;
 }) {
-  const statusColors = getStatusColors(theme, item.status as 'Met' | 'In Progress' | 'Missed');
   const totalFormatted = new Intl.NumberFormat('en-US', {
     maximumFractionDigits: 1,
   }).format(item.total);
@@ -34,12 +34,6 @@ function PeriodRow({
         <Text style={[styles.periodLabel, { color: theme.text.secondary }]}>
           {item.periodLabel}
         </Text>
-        <View
-          style={[styles.statusPill, { backgroundColor: statusColors.background }]}
-          accessibilityRole="text"
-        >
-          <Text style={[styles.statusText, { color: statusColors.text }]}>{item.status}</Text>
-        </View>
       </View>
       <Text style={[styles.summaryText, { color: theme.text.primary }]}>
         {totalFormatted} / {item.targetSummary}
@@ -48,7 +42,7 @@ function PeriodRow({
         <View
           style={[
             styles.progressFill,
-            { width: `${item.progressPercent}%`, backgroundColor: item.progressPercent >= 100 ? theme.status.met.barComplete : getStatusColors(theme, 'Met').bar },
+            { width: `${item.progressPercent}%`, backgroundColor: item.progressPercent >= 100 ? theme.status.met.barComplete : theme.status.met.bar },
           ]}
           accessibilityRole="progressbar"
           accessibilityValue={{ now: item.progressPercent, min: 0, max: 100 }}
@@ -60,7 +54,11 @@ function PeriodRow({
 
 const Separator = () => <View style={styles.separator} />;
 
-export function PeriodHistoryList({ history, onPeriodPress }: PeriodHistoryListProps) {
+export function PeriodHistoryList({
+  history,
+  onPeriodPress,
+  contentPaddingHorizontal = SCREEN_PADDING,
+}: PeriodHistoryListProps) {
   const theme = useTheme();
 
   const renderItem = ({ item }: { item: PeriodHistoryEntry }) => (
@@ -74,6 +72,7 @@ export function PeriodHistoryList({ history, onPeriodPress }: PeriodHistoryListP
       keyExtractor={(item) => `${item.periodStartMs}-${item.periodEndMs}`}
       scrollEnabled={false}
       ItemSeparatorComponent={Separator}
+      contentContainerStyle={{ paddingHorizontal: contentPaddingHorizontal }}
     />
   );
 }
@@ -96,15 +95,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  statusPill: {
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  statusText: {
-    fontWeight: '600',
-    fontSize: 12,
-  },
   summaryText: {
     fontSize: 16,
     fontWeight: '600',
@@ -118,6 +108,6 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   separator: {
-    height: 12,
+    height: CARD_LIST_GAP,
   },
 });

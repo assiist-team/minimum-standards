@@ -10,9 +10,7 @@ import { ActivityLogEntry } from './ActivityLogEntry';
 import { ActivityLog } from '../hooks/useStandardPeriodActivityLogs';
 import { useTheme } from '../theme/useTheme';
 import { StandardPeriodHeader, StandardPeriodHeaderProps } from './StandardPeriodHeader';
-
-const CARD_SPACING = 16;
-const CARD_VERTICAL_GAP = CARD_SPACING / 3;
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 
 export interface ActivityLogsListProps {
   logs: ActivityLog[];
@@ -120,13 +118,13 @@ export function ActivityLogsList({
 
 const styles = StyleSheet.create({
   contentContainer: {
-    padding: CARD_SPACING,
-    gap: CARD_VERTICAL_GAP,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   emptyContentContainer: {
     flex: 1,
     justifyContent: 'center',
-    padding: CARD_SPACING,
+    padding: SCREEN_PADDING,
   },
   emptyContainer: {
     alignItems: 'center',

@@ -14,6 +14,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { typography } from '../theme/typography';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 
 export interface ArchivedStandardsScreenProps {
   onBack: () => void;
@@ -150,8 +151,8 @@ const styles = StyleSheet.create({
     width: 64,
   },
   listContent: {
-    padding: 16,
-    gap: 16,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   card: {
     borderRadius: 12,

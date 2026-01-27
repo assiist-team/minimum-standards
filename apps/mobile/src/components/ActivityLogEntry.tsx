@@ -11,9 +11,7 @@ import {
 import { formatUnitWithCount } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
-
-const CARD_SPACING = 16;
-const CARD_VERTICAL_GAP = CARD_SPACING / 3;
+import { SCREEN_PADDING } from '../theme/spacing';
 
 export interface ActivityLogEntryProps {
   value: number;
@@ -155,7 +153,7 @@ export function ActivityLogEntry({
           const menuWidth = 200;
           const buttonRightEdge = menuButtonLayout.x + menuButtonLayout.width;
           let menuLeft = buttonRightEdge - menuWidth;
-          menuLeft = Math.max(16, Math.min(menuLeft, screenWidth - menuWidth - 16));
+          menuLeft = Math.max(SCREEN_PADDING, Math.min(menuLeft, screenWidth - menuWidth - SCREEN_PADDING));
           
           return (
             <View

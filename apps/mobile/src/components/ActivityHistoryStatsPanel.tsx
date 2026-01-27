@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import { CARD_PADDING } from '../theme/spacing';
 
 export interface ActivityHistoryStatsPanelProps {
   totalValue: string;
@@ -233,12 +234,11 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     borderWidth: 1,
-    marginHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 0,
     overflow: 'hidden',
   },
   gridContent: {
-    padding: 16,
+    padding: CARD_PADDING,
     flexDirection: 'row',
     flexWrap: 'wrap',
   },

@@ -23,6 +23,7 @@ import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardDetailScreenProps {
@@ -485,8 +486,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    padding: 16,
-    gap: 16,
+    padding: SCREEN_PADDING,
+    gap: CARD_LIST_GAP,
   },
   historySection: {
     gap: 12,
@@ -497,7 +498,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   historyList: {
-    gap: 16,
+    gap: CARD_LIST_GAP,
   },
   emptyHistoryState: {
     padding: 24,

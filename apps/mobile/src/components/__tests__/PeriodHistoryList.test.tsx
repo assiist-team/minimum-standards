@@ -43,15 +43,15 @@ describe('PeriodHistoryList', () => {
     expect(getByText('Week of Dec 8')).toBeTruthy();
   });
 
-  test('period row displays period label, total, target, status, progress indicator', () => {
+  test('period row displays period label, total, and progress indicator', () => {
     const onPeriodPress = jest.fn();
-    const { getByText } = render(
+    const { getByRole, getByText } = render(
       <PeriodHistoryList history={[mockHistoryEntry1]} onPeriodPress={onPeriodPress} />
     );
 
     expect(getByText('Week of Dec 8')).toBeTruthy();
     expect(getByText(/100.*100 calls/i)).toBeTruthy();
-    expect(getByText('Met')).toBeTruthy();
+    expect(getByRole('progressbar')).toBeTruthy();
   });
 
   test('tapping period row opens logs modal', () => {
