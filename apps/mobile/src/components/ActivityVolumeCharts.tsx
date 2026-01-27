@@ -307,6 +307,7 @@ const CURRENT_VALUE_LABEL_FALLBACK_WIDTH = 120;
 const CURRENT_VALUE_LABEL_MIN_WIDTH = 80;
 const MAX_VISIBLE_TICKS = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const CUMULATIVE_INDICATOR_LINE_GAP = 10;
 
 type CumulativePoint = { label: string; value: number; date: string; timestamp: number };
 type TimeScale = 'daily' | 'weekly' | 'monthly';
@@ -870,6 +871,7 @@ function CumulativeVolumeChart({
   }, [data]);
 
   const [chartWidth, setChartWidth] = useState(0);
+  const [indicatorRowHeight, setIndicatorRowHeight] = useState(0);
 
   const { scaledData, timeScale } = useMemo(() => {
     const scale = determineTimeScale(chartData);
@@ -890,7 +892,9 @@ function CumulativeVolumeChart({
       ? new Date(effectiveData[effectiveData.length - 1].timestamp).getFullYear() 
       : null
   );
-  const [currentValueLabelWidth, setCurrentValueLabelWidth] = useState(CURRENT_VALUE_LABEL_FALLBACK_WIDTH);
+  // Used only for the cumulative indicator text break (do not enforce a min width, otherwise
+  // the horizontal line will be broken far away from the actual text).
+  const [indicatorLabelWidth, setIndicatorLabelWidth] = useState(0);
 
   const handleChartLayout = useCallback(
     (event: any) => {
@@ -902,18 +906,12 @@ function CumulativeVolumeChart({
     [chartWidth]
   );
 
-  const handleCurrentValueLabelLayout = useCallback(
-    (event: any) => {
-      const measuredWidth = Math.max(
-        CURRENT_VALUE_LABEL_MIN_WIDTH,
-        Math.min(event.nativeEvent.layout.width, CURRENT_VALUE_LABEL_MAX_WIDTH)
-      );
-      if (Math.abs(measuredWidth - currentValueLabelWidth) > 1) {
-        setCurrentValueLabelWidth(measuredWidth);
-      }
-    },
-    [currentValueLabelWidth]
-  );
+  const handleIndicatorLabelLayout = useCallback((event: any) => {
+    const measuredWidth = Math.min(event.nativeEvent.layout.width, CURRENT_VALUE_LABEL_MAX_WIDTH);
+    if (Math.abs(measuredWidth - indicatorLabelWidth) > 1) {
+      setIndicatorLabelWidth(measuredWidth);
+    }
+  }, [indicatorLabelWidth]);
 
   const wantsCompressedView = true;
   const canCompress = wantsCompressedView && chartWidth > 0 && effectiveData.length > 1;
@@ -1031,6 +1029,21 @@ function CumulativeVolumeChart({
   const gradientStartColor = theme.status.met.bar;
   const gradientId = useId();
 
+  const latestPointPosition = pointPositions[latestIndex];
+  const latestItem = effectiveData[latestIndex];
+  const latestIndicatorBottom =
+    latestPointPosition?.valueHeight !== undefined
+      ? Math.min(Math.max(latestPointPosition.valueHeight, 0), CHART_CONTENT_HEIGHT)
+      : 0;
+  const latestIndicatorLabel = latestItem?.timestamp ? `${formatTotal(latestItem.value)} ${unit}` : '';
+  const indicatorSegmentWidth = Math.max(
+    (chartContentWidth - indicatorLabelWidth - CUMULATIVE_INDICATOR_LINE_GAP * 2) / 2,
+    0
+  );
+  // Anchor the indicator line to the exact latest-point y.
+  // We intentionally allow the pill to overflow upward near the top rather than pushing the line down.
+  const indicatorRowBottom = Math.max(latestIndicatorBottom - indicatorRowHeight / 2, 0);
+
   return (
     <View onLayout={handleChartLayout}>
       <ScrollView 
@@ -1076,13 +1089,70 @@ function CumulativeVolumeChart({
               </Defs>
               {areaPath ? <Path d={areaPath} fill={`url(#${gradientId})`} /> : null}
               {linePath ? (
-                <Path d={linePath} stroke={gradientStartColor} strokeWidth={2} strokeLinecap="round" fill="none" />
+                <Path
+                  d={linePath}
+                  stroke={gradientStartColor}
+                  strokeWidth={2}
+                  strokeLinecap="butt"
+                  strokeLinejoin="bevel"
+                  fill="none"
+                />
               ) : null}
             </Svg>
           )}
           
           <View style={[styles.lineChartAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
           <View style={[styles.lineChartYAxis, { backgroundColor: theme.border.secondary }]} pointerEvents="none" />
+
+          {/* 
+            Cumulative indicator: a thin horizontal line at the latest point's height with a centered label.
+            This avoids covering the line/area with a floating bubble inside the plot region.
+          */}
+          {latestItem?.timestamp > 0 && pointPositions.length > 1 && (
+            <View
+              pointerEvents="none"
+              style={[
+                styles.cumulativeIndicatorOverlay,
+                {
+                  width: chartContentWidth,
+                  height: CHART_CONTENT_HEIGHT,
+                  bottom: LINE_CHART_LABEL_HEIGHT,
+                },
+              ]}
+            >
+              <View
+                onLayout={(event) => {
+                  const h = event.nativeEvent.layout.height;
+                  if (Math.abs(h - indicatorRowHeight) > 1) setIndicatorRowHeight(h);
+                }}
+                style={[styles.cumulativeIndicatorRow, { bottom: indicatorRowBottom }]}
+              >
+                <View
+                  style={[
+                    styles.cumulativeIndicatorLine,
+                    { width: indicatorSegmentWidth, backgroundColor: theme.border.secondary },
+                  ]}
+                />
+                <Text
+                  onLayout={handleIndicatorLabelLayout}
+                  style={[
+                    styles.cumulativeIndicatorLabelText,
+                    { color: theme.status.met.bar, marginHorizontal: CUMULATIVE_INDICATOR_LINE_GAP },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {latestIndicatorLabel}
+                </Text>
+                <View
+                  style={[
+                    styles.cumulativeIndicatorLine,
+                    { width: indicatorSegmentWidth, backgroundColor: theme.border.secondary },
+                  ]}
+                />
+              </View>
+            </View>
+          )}
+
           {effectiveData.map((item, index) => {
             const pointPosition = pointPositions[index];
             const y = pointPosition?.valueHeight ?? 0;
@@ -1098,7 +1168,9 @@ function CumulativeVolumeChart({
                 marginLeft: gap,
                 marginRight: gap,
               },
-              // Pull the synthetic origin point onto the Y-axis so the line starts at the true origin
+              // Why the line may still not visually start at the true origin (0,0):
+              // - The SVG x-coordinate for the synthetic origin point includes `gap` (see `xPos` above), so it's not exactly x=0.
+              // - The `marginLeft` shift below moves the touch wrapper in layout space, but it does not change the SVG coordinate space used by `linePath`/`areaPath`.
               isOriginPoint && { marginLeft: -wrapperWidth / 2 },
             ];
             
@@ -1118,37 +1190,7 @@ function CumulativeVolumeChart({
                 activeOpacity={0.8}
               >
                 <View style={styles.lineChartPointArea}>
-                  {isLatest && (
-                    <>
-                      <View
-                        style={[
-                          styles.currentValueMarker,
-                          {
-                            bottom: indicatorY - 4,
-                            backgroundColor: theme.status.met.bar,
-                            borderColor: theme.background.surface,
-                          },
-                        ]}
-                      />
-                      <Text
-                        style={[
-                          styles.currentValueLabel,
-                          {
-                            bottom: Math.min(indicatorY + 8, CHART_CONTENT_HEIGHT - 4),
-                            backgroundColor: theme.background.surface,
-                            color: theme.text.primary,
-                            borderColor: theme.border.secondary,
-                            left: wrapperWidth / 2,
-                            transform: [{ translateX: -currentValueLabelWidth / 2 }],
-                          },
-                        ]}
-                        numberOfLines={1}
-                        onLayout={handleCurrentValueLabelLayout}
-                      >
-                        {indicatorValue}
-                      </Text>
-                    </>
-                  )}
+                  {/* Removed latest-value dot marker: the horizontal indicator line communicates the current value */}
                 </View>
                 
                 {showLabel ? (
@@ -1397,6 +1439,28 @@ const styles = StyleSheet.create({
       maxWidth: CURRENT_VALUE_LABEL_MAX_WIDTH,
       minWidth: CURRENT_VALUE_LABEL_MIN_WIDTH,
       textAlign: 'center',
+  },
+  cumulativeIndicatorOverlay: {
+    position: 'absolute',
+    left: 0,
+    zIndex: 2,
+  },
+  cumulativeIndicatorRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cumulativeIndicatorLine: {
+    height: 1,
+    opacity: 0.6,
+  },
+  cumulativeIndicatorLabelText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    maxWidth: CURRENT_VALUE_LABEL_MAX_WIDTH,
   },
   modalOverlay: {
     flex: 1,
