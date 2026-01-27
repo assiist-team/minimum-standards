@@ -855,6 +855,7 @@ export function StandardsBuilderScreen({ onBack, standardId }: StandardsBuilderS
                     }
                     value={unitOverride ?? ''}
                     onChangeText={handleUnitOverrideChange}
+                    autoCorrect={false}
                   />
                 </View>
               </View>

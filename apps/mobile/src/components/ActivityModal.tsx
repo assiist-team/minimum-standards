@@ -306,6 +306,7 @@ export function ActivityModal({
                   }}
                   placeholder="e.g., calls"
                   placeholderTextColor={theme.input.placeholder}
+                  autoCorrect={false}
                   maxLength={40}
                   editable={!saving}
                 />

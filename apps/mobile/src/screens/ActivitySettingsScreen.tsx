@@ -377,6 +377,7 @@ export function ActivitySettingsScreen() {
                 placeholderTextColor={theme.input.placeholder}
                 value={editingUnit}
                 onChangeText={setEditingUnit}
+                autoCorrect={false}
                 maxLength={40}
               />
             </View>

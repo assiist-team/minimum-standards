@@ -16,6 +16,24 @@ function getCrashlytics() {
   }
 }
 
+function sanitizeCrashlyticsAttributeValue(value: string): string {
+  const emailRedacted = value.replace(
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+    '[redacted email]'
+  );
+  return emailRedacted.length > 500 ? `${emailRedacted.slice(0, 500)}…` : emailRedacted;
+}
+
+function extractRawAuthErrorFields(error: AuthError): { rawCode?: string; rawMessage?: string } {
+  const original = (error as unknown as { originalError?: unknown }).originalError as any;
+  const rawCode = original?.code !== undefined ? String(original.code) : undefined;
+  const rawMessage = typeof original?.message === 'string' ? original.message : undefined;
+  return {
+    rawCode: rawCode ? sanitizeCrashlyticsAttributeValue(rawCode) : undefined,
+    rawMessage: rawMessage ? sanitizeCrashlyticsAttributeValue(rawMessage) : undefined,
+  };
+}
+
 /**
  * Logs auth errors to Crashlytics with user context if available.
  * Fails silently if Crashlytics is not available.
@@ -44,6 +62,14 @@ export function logAuthErrorToCrashlytics(error: AuthError, context?: string) {
     
     if (context) {
       crashlytics.setAttribute('error_context', context);
+    }
+
+    const { rawCode, rawMessage } = extractRawAuthErrorFields(error);
+    if (rawCode) {
+      crashlytics.setAttribute('raw_error_code', rawCode);
+    }
+    if (rawMessage) {
+      crashlytics.setAttribute('raw_error_message', rawMessage);
     }
 
     // Record the error (non-fatal)

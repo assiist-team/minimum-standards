@@ -37,7 +37,7 @@ describe('Normalized Error Classes', () => {
       const authError = AuthError.fromFirebaseError(firebaseError);
 
       expect(authError.code).toBe('auth/unknown-code');
-      expect(authError.message).toBe('An authentication error occurred. Please try again.');
+      expect(authError.message).toBe('Some unknown error (code: auth/unknown-code)');
     });
 
     test('handles errors without code', () => {
@@ -48,7 +48,7 @@ describe('Normalized Error Classes', () => {
       const authError = AuthError.fromFirebaseError(firebaseError);
 
       expect(authError.code).toBe('auth/unknown-error');
-      expect(authError.message).toBe('An authentication error occurred. Please try again.');
+      expect(authError.message).toBe('Some error (code: auth/unknown-error)');
     });
 
     test('returns same instance if already AuthError', () => {

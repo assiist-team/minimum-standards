@@ -57,7 +57,7 @@ export class AuthError extends NormalizedFirebaseError {
     // Firebase Auth errors have a code property
     const firebaseError = error as FirebaseErrorLike;
     const code = firebaseError.code || 'auth/unknown-error';
-    const message = getAuthErrorMessage(code);
+    const message = getAuthErrorMessage(code, firebaseError.message);
     
     return new AuthError(code, message, error);
   }
@@ -116,7 +116,18 @@ export class FirestoreError extends NormalizedFirebaseError {
 /**
  * Maps Firebase Auth error codes to user-friendly messages.
  */
-function getAuthErrorMessage(code: string): string {
+function sanitizeUserVisibleErrorMessage(message: string): string {
+  // Be conservative: avoid accidentally echoing user identifiers back to the UI.
+  // (Firebase errors sometimes include emails.)
+  const emailRedacted = message.replace(
+    /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
+    '[redacted email]'
+  );
+  // Keep UX concise; long native errors are rarely helpful.
+  return emailRedacted.length > 200 ? `${emailRedacted.slice(0, 200)}…` : emailRedacted;
+}
+
+function getAuthErrorMessage(code: string, rawMessage?: string): string {
   const messageMap: Record<string, string> = {
     'auth/user-not-found': 'No account found with this email.',
     'auth/wrong-password': 'Incorrect password.',
@@ -124,10 +135,16 @@ function getAuthErrorMessage(code: string): string {
     'auth/weak-password': 'Password is too weak.',
     'auth/invalid-email': 'Invalid email address.',
     'auth/user-disabled': 'This account has been disabled.',
-    'auth/operation-not-allowed': 'This operation is not allowed.',
+    'auth/operation-not-allowed':
+      'This sign-in method is not enabled right now. Please contact support.',
     'auth/too-many-requests': 'Too many requests. Please try again later.',
     'auth/network-request-failed': 'Network error. Check your connection and retry.',
     'auth/invalid-credential': 'Invalid credentials.',
+    'auth/account-exists-with-different-credential':
+      'An account already exists for this email using a different sign-in method. Try signing in with email/password, then link Google in settings.',
+    'auth/credential-already-in-use':
+      'This Google account is already linked to another account. Try signing in with Google instead.',
+    'auth/provider-already-linked': 'This sign-in method is already linked to your account.',
     'auth/requires-recent-login': 'Please sign in again to continue.',
     // Google Sign-In specific errors
     'SIGN_IN_CANCELLED': 'Sign in was cancelled.',
@@ -140,9 +157,31 @@ function getAuthErrorMessage(code: string): string {
     '7': 'Network error. Check your connection and retry.',
     '8': 'An internal error occurred. Please try again.',
     '12500': 'Sign in failed. Please try again.',
+
+    // iOS GoogleSignIn (GIDSignIn) error codes sometimes surface as negative integers.
+    // These are intentionally user-facing since they explain why Google sign-in can't proceed.
+    '-5': 'Sign in was cancelled.',
+    '-4': 'No previous Google sign-in found on this device. Please try signing in again.',
+    '-2': 'Sign in could not access saved credentials. Please try again.',
+    '-1': 'Google Sign-In failed. Please try again.',
   };
 
-  return messageMap[code] || 'An authentication error occurred. Please try again.';
+  const mapped = messageMap[code];
+  if (mapped) {
+    return mapped;
+  }
+
+  const safeRawMessage =
+    typeof rawMessage === 'string' && rawMessage.trim().length > 0
+      ? sanitizeUserVisibleErrorMessage(rawMessage.trim())
+      : undefined;
+
+  // Provide a supportable error string even for unknown codes.
+  // Including the code helps us debug without being overly technical.
+  if (safeRawMessage) {
+    return `${safeRawMessage} (code: ${code})`;
+  }
+  return `Authentication failed (code: ${code}). Please try again.`;
 }
 
 /**
