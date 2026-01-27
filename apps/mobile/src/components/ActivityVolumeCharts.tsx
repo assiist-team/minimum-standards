@@ -308,6 +308,14 @@ const CURRENT_VALUE_LABEL_MIN_WIDTH = 80;
 const MAX_VISIBLE_TICKS = 6;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const CUMULATIVE_INDICATOR_LINE_GAP = 10;
+const CUMULATIVE_LINE_STROKE_WIDTH = 2;
+
+// Snap SVG coordinates to the pixel grid to reduce anti-aliasing variance.
+// For even stroke widths (e.g. 2px), centering on half-pixels tends to render more consistently.
+const snapSvgCoord = (value: number, strokeWidth: number) => {
+  const offset = strokeWidth % 2 === 0 ? 0.5 : 0;
+  return Math.round(value) + offset;
+};
 
 type CumulativePoint = { label: string; value: number; date: string; timestamp: number };
 type TimeScale = 'daily' | 'weekly' | 'monthly';
@@ -976,15 +984,18 @@ function CumulativeVolumeChart({
 
     effectiveData.forEach((item, index) => {
       const valueHeight = (item.value / maxVal) * CHART_CONTENT_HEIGHT;
-      const svgY = CHART_CONTENT_HEIGHT - valueHeight;
+      const rawSvgY = CHART_CONTENT_HEIGHT - valueHeight;
       const isOriginPoint = index === 0 && item.timestamp === 0;
       const xPos = currentX + wrapperWidth / 2 + gap;
       const adjustedX = isOriginPoint ? xPos - wrapperWidth / 2 : xPos;
+      const snappedX = snapSvgCoord(adjustedX, CUMULATIVE_LINE_STROKE_WIDTH);
+      const snappedSvgY = snapSvgCoord(rawSvgY, CUMULATIVE_LINE_STROKE_WIDTH);
+      const snappedValueHeight = CHART_CONTENT_HEIGHT - snappedSvgY;
 
       points.push({
-        x: adjustedX,
-        svgY,
-        valueHeight,
+        x: snappedX,
+        svgY: snappedSvgY,
+        valueHeight: snappedValueHeight,
       });
 
       if (index < effectiveData.length - 1) {
@@ -1036,8 +1047,8 @@ function CumulativeVolumeChart({
       ? Math.min(Math.max(latestPointPosition.valueHeight, 0), CHART_CONTENT_HEIGHT)
       : 0;
   const latestIndicatorLabel = latestItem?.timestamp ? `${formatTotal(latestItem.value)} ${unit}` : '';
-  const indicatorSegmentWidth = Math.max(
-    (chartContentWidth - indicatorLabelWidth - CUMULATIVE_INDICATOR_LINE_GAP * 2) / 2,
+  const indicatorRightSegmentWidth = Math.max(
+    chartContentWidth - indicatorLabelWidth - CUMULATIVE_INDICATOR_LINE_GAP,
     0
   );
   // Anchor the indicator line to the exact latest-point y.
@@ -1092,7 +1103,7 @@ function CumulativeVolumeChart({
                 <Path
                   d={linePath}
                   stroke={gradientStartColor}
-                  strokeWidth={2}
+                  strokeWidth={CUMULATIVE_LINE_STROKE_WIDTH}
                   strokeLinecap="butt"
                   strokeLinejoin="bevel"
                   fill="none"
@@ -1127,17 +1138,11 @@ function CumulativeVolumeChart({
                 }}
                 style={[styles.cumulativeIndicatorRow, { bottom: indicatorRowBottom }]}
               >
-                <View
-                  style={[
-                    styles.cumulativeIndicatorLine,
-                    { width: indicatorSegmentWidth, backgroundColor: theme.border.secondary },
-                  ]}
-                />
                 <Text
                   onLayout={handleIndicatorLabelLayout}
                   style={[
                     styles.cumulativeIndicatorLabelText,
-                    { color: theme.status.met.bar, marginHorizontal: CUMULATIVE_INDICATOR_LINE_GAP },
+                    { color: theme.status.met.bar, marginRight: CUMULATIVE_INDICATOR_LINE_GAP },
                   ]}
                   numberOfLines={1}
                 >
@@ -1146,7 +1151,7 @@ function CumulativeVolumeChart({
                 <View
                   style={[
                     styles.cumulativeIndicatorLine,
-                    { width: indicatorSegmentWidth, backgroundColor: theme.border.secondary },
+                    { width: indicatorRightSegmentWidth, backgroundColor: theme.border.secondary },
                   ]}
                 />
               </View>
