@@ -83,8 +83,8 @@ export function StandardCard({
           localStyles.card,
           {
             backgroundColor: theme.background.card,
+            borderColor: theme.border.secondary,
             shadowColor: theme.shadow,
-            opacity: isActive ? 1 : 0.6,
           },
         ]}
         onPress={onSelect ?? (() => onSelectStandard?.(standard))}
@@ -92,7 +92,7 @@ export function StandardCard({
         accessibilityRole={onSelect ? 'button' : undefined}
         accessibilityLabel={onSelect ? `Edit ${activityName} standard` : undefined}
       >
-        <View style={localStyles.cardContent}>
+        <View style={[localStyles.cardContent, { opacity: isActive ? 1 : 0.6 }]}>
           <View style={localStyles.cardHeader}>
             <View style={localStyles.titleBlock}>
               <Text style={[localStyles.activityName, { color: theme.text.primary }]} numberOfLines={1}>
@@ -167,6 +167,7 @@ export function StandardCard({
 const localStyles = StyleSheet.create({
   card: {
     borderRadius: 16,
+    borderWidth: 1,
     padding: 0,
     shadowOpacity: 0.05,
     shadowRadius: 6,

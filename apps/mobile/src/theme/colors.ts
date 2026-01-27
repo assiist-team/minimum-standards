@@ -184,14 +184,14 @@ export const lightTheme: ColorTheme = {
   },
   border: {
     primary: '#ddd',
-    secondary: '#eee',
+    secondary: '#e0e0e0',
     focus: '#000',
   },
   tabBar: {
     background: '#F9F9F9',
     activeTint: '#987e55',
     inactiveTint: '#999',
-    border: '#E5E5EA',
+    border: '#e0e0e0',
   },
   button: {
     primary: {
@@ -223,7 +223,7 @@ export const lightTheme: ColorTheme = {
     placeholder: '#999',
   },
   shadow: '#000',
-  divider: '#eee',
+  divider: '#e0e0e0',
   activityIndicator: '#000',
   link: '#000',
   archive: {
@@ -278,8 +278,8 @@ export const darkTheme: ColorTheme = {
     inverse: '#111',
   },
   border: {
-    primary: '#38383A',
-    secondary: '#38383A',
+    primary: '#4A4A4C',
+    secondary: '#4A4A4C',
     focus: '#fff',
   },
   tabBar: {
@@ -287,7 +287,7 @@ export const darkTheme: ColorTheme = {
     background: '#1E1E1E',
     activeTint: '#987e55',
     inactiveTint: '#888',
-    border: '#38383A',
+    border: '#4A4A4C',
   },
   button: {
     primary: {
@@ -313,13 +313,13 @@ export const darkTheme: ColorTheme = {
   },
   input: {
     background: '#2E2E2E',
-    border: '#38383A',
+    border: '#4A4A4C',
     borderError: '#EF5350',
     text: '#E0E0E0',
     placeholder: '#888',
   },
   shadow: '#000',
-  divider: '#38383A',
+  divider: '#4A4A4C',
   activityIndicator: '#fff',
   link: '#fff',
   archive: {

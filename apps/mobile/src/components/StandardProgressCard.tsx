@@ -246,6 +246,7 @@ export function StandardProgressCard({
           styles.card,
           { 
             backgroundColor: theme.background.card, 
+            borderColor: theme.border.secondary,
             shadowColor: theme.shadow,
             opacity: pressed && onCardPress ? 0.9 : 1
           }
@@ -708,6 +709,7 @@ export function StandardProgressCard({
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
+    borderWidth: 1,
     padding: 0,
     shadowOpacity: 0.05,
     shadowRadius: 6,
