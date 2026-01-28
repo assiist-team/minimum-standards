@@ -20,7 +20,7 @@ import { signUpSchema, SignUpFormData } from '../schemas/authSchemas';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
+import { typography } from '@nine4/ui-kit';
 import { firebaseAuth } from '../firebase/firebaseApp';
 import { normalizeGoogleSignInResult } from '../utils/googleSignInResult';
 

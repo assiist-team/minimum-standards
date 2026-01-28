@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, Dimensions } from 'rea
 import { Standard, formatUnitWithCount } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { getCardBorderStyle, getCardBaseStyle } from '@nine4/ui-kit';
 
 export function StandardCard({
   standard,
@@ -81,9 +82,10 @@ export function StandardCard({
       <TouchableOpacity
         style={[
           localStyles.card,
+          getCardBaseStyle({ radius: 16 }),
+          getCardBorderStyle(theme),
           {
             backgroundColor: theme.background.card,
-            borderColor: theme.border.secondary,
             shadowColor: theme.shadow,
           },
         ]}
@@ -166,13 +168,10 @@ export function StandardCard({
 
 const localStyles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
     padding: 0,
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
-    overflow: 'hidden',
   },
   cardContent: { gap: 0 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, padding: 16 },

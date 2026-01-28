@@ -35,8 +35,7 @@ import { findMatchingStandard } from '../utils/standardsFilter';
 import { trackStandardEvent } from '../utils/analytics';
 import { Standard } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { typography, BUTTON_BORDER_RADIUS } from '@nine4/ui-kit';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const WEEKDAY_OPTIONS: Array<{ label: string; value: Weekday; full: string }> = [

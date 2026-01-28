@@ -18,12 +18,11 @@ import { useStandardsLibrary } from '../hooks/useStandardsLibrary';
 import { useActivities } from '../hooks/useActivities';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { typography, BUTTON_BORDER_RADIUS } from '@nine4/ui-kit';
 import { useStandards } from '../hooks/useStandards';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { StandardCard } from '../components/StandardCard';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
 
 export interface StandardsLibraryScreenProps {
   onBack?: () => void; // Optional - not shown on main screen
@@ -207,7 +206,7 @@ export function StandardsLibraryScreen({
   ]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+    <View style={[styles.screen, getScreenContainerStyle(theme)]}>
       <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards Library</Text>
@@ -258,7 +257,7 @@ export function StandardsLibraryScreen({
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
     flexDirection: 'row',

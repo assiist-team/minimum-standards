@@ -26,7 +26,7 @@ type RouteProps = RouteProp<RootStackParamList, 'StandardPeriodActivityLogs'>;
 export function StandardPeriodActivityLogsScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
-  const { standardId, periodStartMs, periodEndMs } = route.params;
+  const { standardId, periodStartMs, periodEndMs, periodStandardSnapshot } = route.params;
 
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -53,13 +53,15 @@ export function StandardPeriodActivityLogsScreen() {
   const periodInfo = useMemo(() => {
     if (periodStartMs && periodEndMs) {
       // Historical period - calculate label
-      if (standard) {
+      const snapshotCadence = periodStandardSnapshot?.cadence ?? standard?.cadence;
+      const snapshotPreference = periodStandardSnapshot?.periodStartPreference ?? standard?.periodStartPreference;
+      if (snapshotCadence) {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
         const window = calculatePeriodWindow(
           periodStartMs,
-          standard.cadence,
+          snapshotCadence,
           timezone,
-          { periodStartPreference: standard.periodStartPreference }
+          { periodStartPreference: snapshotPreference }
         );
         return {
           startMs: periodStartMs,
@@ -84,7 +86,7 @@ export function StandardPeriodActivityLogsScreen() {
       };
     }
     return null;
-  }, [periodStartMs, periodEndMs, standard]);
+  }, [periodStartMs, periodEndMs, periodStandardSnapshot, standard]);
 
   // Fetch activity logs
   const {
@@ -169,7 +171,10 @@ export function StandardPeriodActivityLogsScreen() {
 
   // Calculate progress for the header
   const totalValue = logs.reduce((sum, log) => sum + log.value, 0);
-  const progressPercent = standard.minimum > 0 ? Math.min((totalValue / standard.minimum) * 100, 100) : 0;
+  const targetValue = periodStandardSnapshot?.minimum ?? standard.minimum;
+  const progressPercent = targetValue > 0 ? Math.min((totalValue / targetValue) * 100, 100) : 0;
+  const headerUnit = periodStandardSnapshot?.unit ?? standard.unit;
+  const headerSessionConfig = periodStandardSnapshot?.sessionConfig ?? standard.sessionConfig;
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
@@ -208,15 +213,15 @@ export function StandardPeriodActivityLogsScreen() {
         onLoadMore={loadMore}
         onEditLog={handleEditLog}
         onDeleteLog={handleDeleteLog}
-        unit={standard.unit}
+        unit={headerUnit}
         periodHeaderProps={{
           periodLabel: periodInfo.label,
           currentTotal: totalValue,
-          targetValue: standard.minimum,
-          unit: standard.unit,
+          targetValue,
+          unit: headerUnit,
           progressPercent,
           activityName: activity.name,
-          sessionConfig: standard.sessionConfig,
+          sessionConfig: headerSessionConfig,
         }}
       />
 

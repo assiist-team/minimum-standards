@@ -10,7 +10,7 @@ import { ActivityLogEntry } from './ActivityLogEntry';
 import { ActivityLog } from '../hooks/useStandardPeriodActivityLogs';
 import { useTheme } from '../theme/useTheme';
 import { StandardPeriodHeader, StandardPeriodHeaderProps } from './StandardPeriodHeader';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '@nine4/ui-kit';
 
 export interface ActivityLogsListProps {
   logs: ActivityLog[];

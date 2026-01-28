@@ -14,7 +14,7 @@ import { useActiveStandardsDashboard } from '../../hooks/useActiveStandardsDashb
 import type { DashboardStandard } from '../../hooks/useActiveStandardsDashboard';
 import { trackStandardEvent } from '../../utils/analytics';
 import type { Standard } from '@minimum-standards/shared-model';
-import { lightTheme, getStatusColors } from '../../theme/colors';
+import { lightTheme, getStatusColors } from '@nine4/ui-kit';
 
 jest.mock('../../hooks/useActiveStandardsDashboard', () => ({
   useActiveStandardsDashboard: jest.fn(),

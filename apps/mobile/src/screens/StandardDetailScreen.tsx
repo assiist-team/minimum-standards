@@ -22,8 +22,7 @@ import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { BUTTON_BORDER_RADIUS, CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export interface StandardDetailScreenProps {
@@ -286,7 +285,7 @@ export function StandardDetailScreen({
   const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+    <View style={[styles.screen, getScreenContainerStyle(theme)]}>
       <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack} accessibilityRole="button">
           <Text style={[styles.backButton, { color: theme.primary.main }]}>← Back</Text>
@@ -431,7 +430,7 @@ export function StandardDetailScreen({
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
     flexDirection: 'row',

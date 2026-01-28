@@ -233,6 +233,7 @@ export function useStandards(): UseStandardsResult {
         throw new Error('User not authenticated');
       }
 
+      const previousStandard = standards.find((item) => item.id === input.standardId) ?? null;
       const standardRef = doc(
         collection(doc(firebaseFirestore, 'users', userId), 'standards'),
         input.standardId
@@ -273,9 +274,29 @@ export function useStandards(): UseStandardsResult {
         snapshot.id,
         snapshot.data() as FirestoreStandardData
       );
+
+      if (previousStandard) {
+        const preferenceChanged =
+          JSON.stringify(previousStandard.periodStartPreference ?? null) !==
+          JSON.stringify(updated.periodStartPreference ?? null);
+        const shouldRecompute =
+          previousStandard.minimum !== updated.minimum ||
+          previousStandard.unit !== updated.unit ||
+          previousStandard.cadence.interval !== updated.cadence.interval ||
+          previousStandard.cadence.unit !== updated.cadence.unit ||
+          previousStandard.sessionConfig.sessionsPerCadence !==
+            updated.sessionConfig.sessionsPerCadence ||
+          previousStandard.sessionConfig.volumePerSession !==
+            updated.sessionConfig.volumePerSession ||
+          preferenceChanged;
+
+        if (shouldRecompute) {
+          triggerActivityHistoryRecompute(updated, Date.now());
+        }
+      }
       return updated;
     },
-    [userId]
+    [userId, standards, triggerActivityHistoryRecompute]
   );
 
   const updateArchiveState = useCallback(

@@ -14,6 +14,7 @@ import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
 import { StickyLogButton } from '../components/StickyLogButton';
 import { useActivityHistoryEngine } from '../hooks/useActivityHistoryEngine';
+import { getTabBarStyle } from '@nine4/ui-kit';
 
 const Tab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -69,11 +70,6 @@ function TabBarWithStickyLogButton(props: BottomTabBarProps) {
 export function BottomTabNavigator() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const baseTabBarHeight = Platform.OS === 'ios' ? 88 : 64;
-  const baseBottomPadding = Platform.OS === 'ios' ? 20 : 12;
-  const bottomPadding =
-    Platform.OS === 'ios' ? Math.max(insets.bottom, baseBottomPadding) : baseBottomPadding;
-  const androidMinHeight = baseTabBarHeight + bottomPadding;
 
   useEffect(() => {
     if (__DEV__) {
@@ -85,6 +81,8 @@ export function BottomTabNavigator() {
   // This ensures it runs for the whole session and avoids duplicate timers
   useActivityHistoryEngine();
 
+  const tabBarStyle = getTabBarStyle(theme, insets);
+
   return (
     <Tab.Navigator
       initialRouteName="Dashboard"
@@ -93,21 +91,7 @@ export function BottomTabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: theme.tabBar.activeTint,
         tabBarInactiveTintColor: theme.tabBar.inactiveTint,
-        tabBarStyle: {
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowColor: 'transparent',
-          shadowOpacity: 0,
-          shadowRadius: 0,
-          shadowOffset: { width: 0, height: 0 },
-          paddingTop: 8,
-          paddingLeft: Math.max(insets.left, 16),
-          paddingRight: Math.max(insets.right, 16),
-          paddingBottom: bottomPadding,
-          height: Platform.OS === 'ios' ? baseTabBarHeight : undefined,
-          minHeight: Platform.OS === 'ios' ? undefined : androidMinHeight,
-        },
+        tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',

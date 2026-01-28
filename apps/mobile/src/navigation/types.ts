@@ -1,4 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
+import type { ActivityHistoryStandardSnapshot } from '@minimum-standards/shared-model';
 
 export const SETTINGS_TAB_ROUTE_NAME = 'SettingsTab' as const;
 export const SETTINGS_STACK_ROOT_SCREEN_NAME = 'SettingsRoot' as const;
@@ -52,6 +53,7 @@ export type RootStackParamList = {
     standardId: string;
     periodStartMs?: number;
     periodEndMs?: number;
+    periodStandardSnapshot?: ActivityHistoryStandardSnapshot;
   };
 };
 

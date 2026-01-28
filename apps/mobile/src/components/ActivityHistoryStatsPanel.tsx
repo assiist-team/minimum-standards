@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
-import { CARD_PADDING } from '../theme/spacing';
+import { CARD_PADDING } from '@nine4/ui-kit';
 
 export interface ActivityHistoryStatsPanelProps {
   totalValue: string;

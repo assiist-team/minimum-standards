@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import type { PeriodHistoryEntry } from '../utils/standardHistory';
 import { useTheme } from '../theme/useTheme';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { CARD_LIST_GAP, SCREEN_PADDING } from '@nine4/ui-kit';
 
 export interface PeriodHistoryListProps {
   history: PeriodHistoryEntry[];

@@ -53,7 +53,7 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>This app needs local network access to download the development bundle from your computer.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>This app uses your location to support activity logging.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

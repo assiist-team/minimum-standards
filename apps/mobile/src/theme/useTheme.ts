@@ -1,5 +1,5 @@
 import { useColorScheme } from 'react-native';
-import { lightTheme, darkTheme, type ColorTheme } from './colors';
+import { lightTheme, darkTheme, type ColorTheme } from '@nine4/ui-kit';
 import { useUIPreferencesStore } from '../stores/uiPreferencesStore';
 
 /**

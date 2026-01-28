@@ -22,6 +22,7 @@ import { useStandards } from '../hooks/useStandards';
 import { useActivities } from '../hooks/useActivities';
 import { useTheme } from '../theme/useTheme';
 import { UNCATEGORIZED_CATEGORY_ID, Activity } from '@minimum-standards/shared-model';
+import { getScreenContainerStyle } from '@nine4/ui-kit';
 import { useUIPreferencesStore } from '../stores/uiPreferencesStore';
 
 export function CategorySettingsScreen() {
@@ -482,7 +483,7 @@ export function CategorySettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
+    <View style={[styles.container, getScreenContainerStyle(theme)]}>
       <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={handleBack} accessibilityRole="button">
           <MaterialIcons name="arrow-back" size={24} color={theme.text.primary} />
@@ -897,7 +898,7 @@ export function CategorySettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
     flexDirection: 'row',

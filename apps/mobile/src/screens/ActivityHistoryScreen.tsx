@@ -9,6 +9,8 @@ import {
   FlatList,
   Modal,
   Pressable,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,7 +29,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import { RangeFilterDrawer, TimeRange } from '../components/RangeFilterDrawer';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
 import {
   computeSyntheticCurrentRows,
   mergeActivityHistoryRows,
@@ -65,7 +67,7 @@ export function ActivityHistoryScreen({
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(activityId ?? null);
   const [isActivitySelectorVisible, setIsActivitySelectorVisible] = useState(false);
 
-  const nowMs = useMemo(() => Date.now(), [timeRange]);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const { standards } = useStandards();
   const { activities, loading: activitiesLoading, error: activitiesError } = useActivities();
@@ -80,6 +82,23 @@ export function ActivityHistoryScreen({
       setSelectedActivityId(activityId);
     }
   }, [activityId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowMs(Date.now());
+    }, 60000);
+
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        setNowMs(Date.now());
+      }
+    });
+
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (sortedActivities.length === 0) {
@@ -400,6 +419,7 @@ export function ActivityHistoryScreen({
       standardId: row.standardId,
       periodStartMs: row.periodStartMs,
       periodEndMs: row.periodEndMs,
+      periodStandardSnapshot: row.standardSnapshot,
     });
   };
 
@@ -443,7 +463,7 @@ export function ActivityHistoryScreen({
   const hasActivities = sortedActivities.length > 0;
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+    <View style={[styles.screen, getScreenContainerStyle(theme)]}>
       <View
         style={[
           styles.header,
@@ -648,7 +668,7 @@ export function ActivityHistoryScreen({
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
     flexDirection: 'row',

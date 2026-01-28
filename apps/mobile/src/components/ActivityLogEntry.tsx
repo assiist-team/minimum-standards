@@ -11,7 +11,7 @@ import {
 import { formatUnitWithCount } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
-import { SCREEN_PADDING } from '../theme/spacing';
+import { SCREEN_PADDING, getCardBorderStyle, getCardBaseStyle } from '@nine4/ui-kit';
 
 export interface ActivityLogEntryProps {
   value: number;
@@ -97,7 +97,12 @@ export function ActivityLogEntry({
 
   return (
     <>
-    <View style={[styles.container, { backgroundColor: theme.background.card, borderColor: theme.border.secondary }]}>
+    <View style={[
+      styles.container,
+      getCardBaseStyle({ radius: 12 }),
+      getCardBorderStyle(theme),
+      { backgroundColor: theme.background.card }
+    ]}>
       <TouchableOpacity
         style={styles.content}
         onPress={onEdit}
@@ -200,10 +205,7 @@ export function ActivityLogEntry({
 
 const styles = StyleSheet.create({
   container: {
-    borderWidth: 1,
-    borderRadius: 12,
     marginVertical: 0,
-    overflow: 'hidden',
   },
   content: {
     padding: 14,

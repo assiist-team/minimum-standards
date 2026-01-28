@@ -18,7 +18,7 @@ import { passwordResetSchema, PasswordResetFormData } from '../schemas/authSchem
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
+import { typography } from '@nine4/ui-kit';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 

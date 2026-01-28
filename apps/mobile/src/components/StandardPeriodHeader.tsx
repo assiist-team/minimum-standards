@@ -5,9 +5,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
+import { typography } from '@nine4/ui-kit';
 import { StandardSessionConfig } from '@minimum-standards/shared-model';
-import { SCREEN_PADDING } from '../theme/spacing';
+import { SCREEN_PADDING } from '@nine4/ui-kit';
 
 export interface StandardPeriodHeaderProps {
   periodLabel: string;

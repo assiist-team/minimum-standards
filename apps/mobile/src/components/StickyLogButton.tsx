@@ -3,10 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import type { Standard } from '@minimum-standards/shared-model';
 import { LogEntryModal } from './LogEntryModal';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { typography, BUTTON_BORDER_RADIUS } from '@nine4/ui-kit';
 import { trackStandardEvent } from '../utils/analytics';
-import { SCREEN_PADDING } from '../theme/spacing';
+import { SCREEN_PADDING } from '@nine4/ui-kit';
 
 export interface StickyLogButtonProps {
   onCreateLogEntry: (params: {

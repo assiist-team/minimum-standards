@@ -12,9 +12,9 @@ import { useStandards } from '../hooks/useStandards';
 import { trackStandardEvent } from '../utils/analytics';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
+import { typography } from '@nine4/ui-kit';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
 
 export interface ArchivedStandardsScreenProps {
   onBack: () => void;
@@ -97,7 +97,7 @@ export function ArchivedStandardsScreen({
   );
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+    <View style={[styles.screen, getScreenContainerStyle(theme)]}>
       <View style={[styles.header, { borderBottomColor: theme.border.secondary, backgroundColor: theme.background.chrome, paddingTop: Math.max(insets.top, 12) }]}>
         <TouchableOpacity onPress={onBack}>
           <Text style={[styles.backButton, { color: theme.link }]}>← Back</Text>
@@ -129,7 +129,7 @@ export function ArchivedStandardsScreen({
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
     flexDirection: 'row',

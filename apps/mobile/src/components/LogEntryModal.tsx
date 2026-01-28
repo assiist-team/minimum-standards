@@ -23,7 +23,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
+import { BUTTON_BORDER_RADIUS } from '@nine4/ui-kit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardCard } from './StandardCard';
 import { normalizeUnitToPlural } from '@minimum-standards/shared-model';

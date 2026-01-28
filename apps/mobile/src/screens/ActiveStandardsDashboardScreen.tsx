@@ -27,9 +27,7 @@ import { LogEntryModal } from '../components/LogEntryModal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { StandardProgressCard } from '../components/StandardProgressCard';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
-import { CARD_LIST_GAP, SCREEN_PADDING } from '../theme/spacing';
+import { typography, BUTTON_BORDER_RADIUS, CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 type SortOption = 'completion' | 'alpha';
@@ -493,7 +491,7 @@ export function ActiveStandardsDashboardScreen({
   ]);
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.background.screen }]}>
+    <View style={[styles.screen, getScreenContainerStyle(theme)]}>
       <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
         {backButtonLabel ? (
           <TouchableOpacity onPress={onBack} accessibilityRole="button">
@@ -766,7 +764,7 @@ function StandardCard({
 
 const styles = StyleSheet.create({
   screen: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
     flexDirection: 'row',

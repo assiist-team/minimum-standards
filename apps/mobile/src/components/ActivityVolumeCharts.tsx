@@ -17,7 +17,7 @@ import { DailyVolumeData, DailyProgressData } from '../utils/activityCharts';
 import { useUIPreferencesStore, ChartType } from '../stores/uiPreferencesStore';
 import { trackStandardEvent } from '../utils/analytics';
 import { formatTotal } from '../utils/activityHistory';
-import { CARD_PADDING } from '../theme/spacing';
+import { CARD_PADDING } from '@nine4/ui-kit';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);

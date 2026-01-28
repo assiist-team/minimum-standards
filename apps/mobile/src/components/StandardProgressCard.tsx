@@ -12,9 +12,7 @@ import type { Standard } from '@minimum-standards/shared-model';
 import { formatUnitWithCount, UNCATEGORIZED_CATEGORY_ID } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
-import { BUTTON_BORDER_RADIUS } from '../theme/radius';
-import { CARD_PADDING } from '../theme/spacing';
+import { typography, BUTTON_BORDER_RADIUS, CARD_PADDING, getCardBorderStyle, getCardBaseStyle } from '@nine4/ui-kit';
 
 export interface StandardProgressCardProps {
   standard: Standard;
@@ -238,9 +236,10 @@ export function StandardProgressCard({
       <Pressable
         style={({ pressed }) => [
           styles.card,
+          getCardBaseStyle({ radius: 16 }),
+          getCardBorderStyle(theme),
           { 
             backgroundColor: theme.background.card, 
-            borderColor: theme.border.secondary,
             shadowColor: theme.shadow,
             opacity: pressed && onCardPress ? 0.9 : 1
           }
@@ -695,13 +694,10 @@ export function StandardProgressCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
-    borderWidth: 1,
     padding: 0,
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
-    overflow: 'hidden',
   },
   cardContent: {
     gap: 0,

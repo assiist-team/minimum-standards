@@ -9,7 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { AuthError } from '../utils/errors';
 import { logAuthErrorToCrashlytics } from '../utils/crashlytics';
 import { useTheme } from '../theme/useTheme';
-import { typography } from '../theme/typography';
+import { getCardBorderStyle, getCardBaseStyle, getSectionTitleStyle, getScreenContainerStyle, getScreenHeaderStyle } from '@nine4/ui-kit';
 import { useUIPreferencesStore, ThemePreference } from '../stores/uiPreferencesStore';
 
 export function SettingsScreen() {
@@ -43,8 +43,8 @@ export function SettingsScreen() {
   ];
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
-      <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
+    <View style={[styles.container, getScreenContainerStyle(theme)]}>
+      <View style={[styles.header, getScreenHeaderStyle(theme, insets)]}>
         <View style={styles.headerSpacer} />
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Settings</Text>
         <TouchableOpacity
@@ -61,8 +61,13 @@ export function SettingsScreen() {
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Organization</Text>
-        <View style={[styles.card, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
+        <Text style={[styles.sectionTitle, getSectionTitleStyle(theme)]}>Organization</Text>
+        <View style={[
+          styles.card,
+          getCardBaseStyle({ radius: 12 }),
+          getCardBorderStyle(theme),
+          { backgroundColor: theme.background.surface }
+        ]}>
           <TouchableOpacity
             style={[styles.optionRow, { borderBottomColor: theme.border.secondary }]}
             onPress={() => navigation.navigate('Categories')}
@@ -85,8 +90,13 @@ export function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.text.secondary, marginTop: 24 }]}>Appearance</Text>
-        <View style={[styles.card, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
+        <Text style={[styles.sectionTitle, getSectionTitleStyle(theme), { marginTop: 24 }]}>Appearance</Text>
+        <View style={[
+          styles.card,
+          getCardBaseStyle({ radius: 12 }),
+          getCardBorderStyle(theme),
+          { backgroundColor: theme.background.surface }
+        ]}>
           {themeOptions.map((option, index) => (
             <TouchableOpacity
               key={option.value}
@@ -119,14 +129,11 @@ export function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    // Style comes from getScreenContainerStyle helper
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
+    // Base style comes from getScreenHeaderStyle helper
+    justifyContent: 'space-between',
   },
   headerTitle: {
     flex: 1,
@@ -150,17 +157,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginLeft: 4,
-    letterSpacing: 0.5,
+    // Style comes from getSectionTitleStyle helper
   },
   card: {
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
     marginBottom: 24,
   },
   optionRow: {
