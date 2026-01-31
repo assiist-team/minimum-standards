@@ -950,7 +950,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: SCREEN_PADDING,
     paddingRight: 16,
-    flex: 1,
   },
   filterTab: {
     paddingHorizontal: 12,
