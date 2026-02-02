@@ -6,7 +6,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  Share,
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,14 +17,16 @@ import { useTheme } from '../theme/useTheme';
 import { getScreenContainerStyle } from '@nine4/ui-kit';
 import { useSnapshots } from '../hooks/useSnapshots';
 import { buildSnapshotShareUrl } from '../utils/snapshotLinks';
+import { shareSnapshotLink } from '../utils/shareSnapshotLink';
 import type { SettingsStackParamList } from '../navigation/types';
-import type { ShareLinkRecord } from '../types/snapshots';
+import type { ShareLinkRecord, SnapshotStandard } from '../types/snapshots';
 
 export function SnapshotDetailScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
   const route = useRoute<RouteProp<SettingsStackParamList, 'SnapshotDetail'>>();
+  const headerButtonWidth = 44;
   const {
     snapshots,
     toggleSnapshotEnabled,
@@ -37,6 +38,7 @@ export function SnapshotDetailScreen() {
   const [shareLink, setShareLink] = useState<ShareLinkRecord | null>(null);
   const [sharing, setSharing] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
   const snapshot = useMemo(
     () => snapshots.find((item) => item.id === route.params.snapshotId) ?? null,
     [snapshots, route.params.snapshotId]
@@ -66,9 +68,7 @@ export function SnapshotDetailScreen() {
       const link = await getOrCreateShareLink(snapshot.id);
       setShareLink(link);
       const url = buildSnapshotShareUrl(link.shareCode);
-      await Share.share({
-        message: `Try my snapshot on Minimum Standards: ${url}`,
-      });
+      await shareSnapshotLink({ url, snapshotTitle: snapshot.title });
     } catch (error) {
       Alert.alert(
         'Share failed',
@@ -131,6 +131,38 @@ export function SnapshotDetailScreen() {
     }
   };
 
+  const closeHeaderMenu = () => {
+    setHeaderMenuVisible(false);
+  };
+
+  const activityNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const activities = snapshot?.payload.activities ?? [];
+    activities.forEach((activity) => {
+      map.set(activity.id, activity.name);
+    });
+    return map;
+  }, [snapshot]);
+  const categoryNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const categories = snapshot?.payload.categories ?? [];
+    categories.forEach((category) => {
+      map.set(category.id, category.name);
+    });
+    return map;
+  }, [snapshot]);
+  const formatStandardSummary = (standard: SnapshotStandard) => {
+    const { interval, unit: cadenceUnit } = standard.cadence;
+    const cadenceLabel = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
+    const base = `${standard.minimum} ${standard.unit} per ${cadenceLabel}`;
+    const sessions = standard.sessionConfig?.sessionsPerCadence;
+    if (!sessions) {
+      return base;
+    }
+    const sessionLabel = standard.sessionConfig?.sessionLabel ?? 'sessions';
+    return `${base} · ${sessions} ${sessionLabel}`;
+  };
+
   if (!snapshot) {
     return (
       <View style={[styles.container, { backgroundColor: theme.background.screen }]}>
@@ -144,11 +176,15 @@ export function SnapshotDetailScreen() {
             },
           ]}
         >
-          <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button">
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerIconButton}
+            accessibilityRole="button"
+          >
             <MaterialIcons name="arrow-back" size={24} color={theme.text.primary} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Snapshot</Text>
-          <View style={styles.headerSpacer} />
+          <View style={[styles.headerRightActions, { width: headerButtonWidth * 2 }]} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.button.primary.background} />
@@ -157,13 +193,6 @@ export function SnapshotDetailScreen() {
     );
   }
 
-  const standardCount = snapshot.payload.standards.length;
-  const activityCount = snapshot.payload.activities.length;
-  const categoryCount = snapshot.payload.categories.length;
-  const shareUrl =
-    shareLink && shareLink.disabledAtMs == null
-      ? buildSnapshotShareUrl(shareLink.shareCode)
-      : null;
   const shareDisabled = sharing || !snapshot.isEnabled;
 
   return (
@@ -178,132 +207,192 @@ export function SnapshotDetailScreen() {
           },
         ]}
       >
-        <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button">
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.headerIconButton}
+          accessibilityRole="button"
+        >
           <MaterialIcons name="arrow-back" size={24} color={theme.text.primary} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>{snapshot.title}</Text>
-        <View style={styles.headerSpacer} />
+        <View style={[styles.headerRightActions, { width: headerButtonWidth * 2 }]}>
+          <TouchableOpacity
+            onPress={() => {
+              closeHeaderMenu();
+              handleShare();
+            }}
+            style={styles.headerActionButton}
+            accessibilityRole="button"
+            accessibilityLabel="Share snapshot"
+            disabled={shareDisabled}
+          >
+            <MaterialIcons
+              name="share"
+              size={22}
+              color={shareDisabled ? theme.text.secondary : theme.button.primary.background}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setHeaderMenuVisible(true)}
+            style={styles.headerActionButton}
+            accessibilityRole="button"
+            accessibilityLabel="More options"
+          >
+            <MaterialIcons name="more-vert" size={24} color={theme.button.icon.icon} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-        <View style={[styles.section, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Summary</Text>
-          <Text style={[styles.summaryText, { color: theme.text.primary }]}>
-            {standardCount} standards · {activityCount} activities · {categoryCount} categories
-          </Text>
-          <View style={styles.toggleRow}>
-            <Text style={[styles.toggleLabel, { color: theme.text.primary }]}>Shareable</Text>
-            <TouchableOpacity
-              onPress={() => toggleSnapshotEnabled(snapshot.id, !snapshot.isEnabled)}
-              style={styles.toggleContainer}
-              accessibilityRole="switch"
-              accessibilityState={{ checked: snapshot.isEnabled }}
-            >
-              <View
-                style={[
-                  styles.toggle,
-                  {
-                    backgroundColor: snapshot.isEnabled
-                      ? theme.button.primary.background
-                      : theme.input.border,
-                  },
-                ]}
-              >
-                <View
-                  style={[
-                    styles.toggleThumb,
-                    {
-                      backgroundColor: theme.background.primary,
-                      transform: [{ translateX: snapshot.isEnabled ? 20 : 0 }],
-                    },
-                  ]}
-                />
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Edit</Text>
-          <TouchableOpacity
-            style={[styles.secondaryButton, { borderColor: theme.border.secondary }]}
-            onPress={() => navigation.navigate('SnapshotEdit', { snapshotId: snapshot.id })}
+      {headerMenuVisible && (
+        <TouchableOpacity
+          style={[
+            styles.menuOverlay,
+            { paddingTop: Math.max(insets.top, 12) + 44 },
+          ]}
+          activeOpacity={1}
+          onPress={closeHeaderMenu}
+          accessibilityRole="button"
+          accessibilityLabel="Close menu"
+        >
+          <View
+            style={[
+              styles.menuContainer,
+              { backgroundColor: theme.background.modal, borderColor: theme.border.secondary },
+            ]}
           >
-            <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>Edit snapshot</Text>
-          </TouchableOpacity>
-          <Text style={[styles.helperText, { color: theme.text.secondary }]}>
-            Edits update the existing share link automatically.
-          </Text>
-        </View>
-
-        <View style={[styles.section, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Share link</Text>
-          {shareUrl ? (
-            <Text style={[styles.shareLink, { color: theme.text.primary }]}>{shareUrl}</Text>
-          ) : (
-            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
-              {shareLink?.disabledAtMs
-                ? 'Link disabled. Tap Share to create a new one.'
-                : 'No link yet. Tap Share to create one.'}
-            </Text>
-          )}
-          {!snapshot.isEnabled && (
-            <Text style={[styles.helperText, { color: theme.text.secondary }]}>
-              Turn on sharing to use this link.
-            </Text>
-          )}
-
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[
-                styles.primaryButton,
-                { backgroundColor: theme.button.primary.background },
-                shareDisabled && styles.primaryButtonDisabled,
-              ]}
-              onPress={handleShare}
-              disabled={shareDisabled}
-            >
-              {sharing ? (
-                <ActivityIndicator size="small" color={theme.button.primary.text} />
-              ) : (
-                <Text style={[styles.primaryButtonText, { color: theme.button.primary.text }]}>
-                  Share
-                </Text>
-              )}
-            </TouchableOpacity>
             {shareLink && (
               <TouchableOpacity
-                style={[styles.secondaryButton, { borderColor: theme.border.secondary }]}
-                onPress={handleRegenerate}
+                onPress={() => {
+                  closeHeaderMenu();
+                  handleRegenerate();
+                }}
+                style={[styles.menuActionItem, shareDisabled && styles.menuItemDisabled]}
+                accessibilityRole="button"
+                accessibilityLabel="Regenerate Link"
                 disabled={shareDisabled}
               >
-                <Text style={[styles.secondaryButtonText, { color: theme.text.primary }]}>
-                  Regenerate link
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    { color: shareDisabled ? theme.text.secondary : theme.text.primary },
+                  ]}
+                >
+                  Regenerate Link
                 </Text>
               </TouchableOpacity>
             )}
+            <TouchableOpacity
+              onPress={() => {
+                closeHeaderMenu();
+                toggleSnapshotEnabled(snapshot.id, !snapshot.isEnabled);
+              }}
+              style={styles.menuActionItem}
+              accessibilityRole="button"
+              accessibilityLabel={snapshot.isEnabled ? 'Turn Off Sharing' : 'Turn On Sharing'}
+            >
+              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>
+                {snapshot.isEnabled ? 'Turn Off Sharing' : 'Turn On Sharing'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+
+            <TouchableOpacity
+              onPress={() => {
+                closeHeaderMenu();
+                navigation.navigate('SnapshotEdit', { snapshotId: snapshot.id });
+              }}
+              style={styles.menuActionItem}
+              accessibilityRole="button"
+              accessibilityLabel="Edit Snapshot"
+            >
+              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Edit Snapshot</Text>
+            </TouchableOpacity>
+
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+
+            <TouchableOpacity
+              onPress={() => {
+                closeHeaderMenu();
+                confirmDelete();
+              }}
+              style={styles.menuActionItem}
+              accessibilityRole="button"
+              accessibilityLabel="Delete Snapshot"
+              disabled={deleting}
+            >
+              <Text
+                style={[
+                  styles.menuItemText,
+                  { color: deleting ? theme.text.secondary : theme.button.destructive.text },
+                ]}
+              >
+                Delete Snapshot
+              </Text>
+            </TouchableOpacity>
           </View>
+        </TouchableOpacity>
+      )}
+
+      <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+        <View style={[styles.section, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Standards</Text>
+          {snapshot.payload.standards.length === 0 ? (
+            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>No standards.</Text>
+          ) : (
+            snapshot.payload.standards.map((standard, index) => {
+              const activityName = activityNameMap.get(standard.activityId) ?? 'Activity';
+              return (
+                <View
+                  key={standard.id}
+                  style={[
+                    styles.listRow,
+                    {
+                      borderBottomColor: theme.border.secondary,
+                      borderBottomWidth:
+                        index !== snapshot.payload.standards.length - 1 ? 1 : 0,
+                    },
+                  ]}
+                >
+                  <View style={styles.listInfo}>
+                    <Text style={[styles.listTitle, { color: theme.text.primary }]}>
+                      {activityName}
+                    </Text>
+                    <Text style={[styles.listSubtitle, { color: theme.text.secondary }]}>
+                      {formatStandardSummary(standard)}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
         </View>
 
         <View style={[styles.section, { backgroundColor: theme.background.surface, borderColor: theme.border.secondary }]}>
-          <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Delete</Text>
-          <TouchableOpacity
-            style={[
-              styles.dangerButton,
-              { backgroundColor: theme.button.destructive.background },
-              deleting && styles.primaryButtonDisabled,
-            ]}
-            onPress={confirmDelete}
-            disabled={deleting}
-          >
-            {deleting ? (
-              <ActivityIndicator size="small" color={theme.button.primary.text} />
-            ) : (
-              <Text style={[styles.dangerButtonText, { color: theme.button.destructive.text }]}>
-                Delete snapshot
-              </Text>
-            )}
-          </TouchableOpacity>
+          <Text style={[styles.sectionTitle, { color: theme.text.secondary }]}>Categories</Text>
+          {snapshot.payload.categories.length === 0 ? (
+            <Text style={[styles.emptyText, { color: theme.text.secondary }]}>No categories.</Text>
+          ) : (
+            snapshot.payload.categories.map((category, index) => (
+              <View
+                key={category.id}
+                style={[
+                  styles.listRow,
+                  {
+                    borderBottomColor: theme.border.secondary,
+                    borderBottomWidth:
+                      index !== snapshot.payload.categories.length - 1 ? 1 : 0,
+                  },
+                ]}
+              >
+                <View style={styles.listInfo}>
+                  <Text style={[styles.listTitle, { color: theme.text.primary }]}>
+                    {category.name}
+                  </Text>
+                </View>
+              </View>
+            ))
+          )}
         </View>
       </ScrollView>
     </View>
@@ -328,8 +417,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  headerSpacer: {
-    width: 24,
+  headerIconButton: {
+    width: 88,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingVertical: 4,
+  },
+  headerActionButton: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -355,88 +458,67 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 12,
   },
-  summaryText: {
-    fontSize: 16,
-    fontWeight: '600',
+  listRow: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
   },
-  toggleRow: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  listInfo: {
+    flex: 1,
+    gap: 4,
   },
-  toggleLabel: {
+  listTitle: {
     fontSize: 15,
     fontWeight: '600',
   },
-  toggleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  listSubtitle: {
+    fontSize: 13,
   },
-  toggle: {
-    width: 50,
-    height: 30,
-    borderRadius: 15,
-    padding: 2,
-    justifyContent: 'center',
-  },
-  toggleThumb: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  shareLink: {
-    fontSize: 14,
-    marginBottom: 12,
+  listNotes: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   emptyText: {
     fontSize: 14,
     fontStyle: 'italic',
-    marginBottom: 12,
   },
-  actionRow: {
-    flexDirection: 'row',
-    gap: 12,
+  menuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingRight: 16,
+    zIndex: 1000,
+    elevation: 1000,
   },
-  primaryButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  primaryButtonDisabled: {
-    opacity: 0.6,
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    flex: 1,
-    paddingVertical: 12,
+  menuContainer: {
     borderRadius: 8,
     borderWidth: 1,
+    minWidth: 220,
+    maxWidth: 280,
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
+  },
+  menuActionItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  helperText: {
-    marginTop: 10,
-    fontSize: 12,
-  },
-  dangerButton: {
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
   },
-  dangerButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+  menuItemText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  menuItemDisabled: {
+    opacity: 0.6,
+  },
+  menuDivider: {
+    height: 1,
+    opacity: 0.6,
   },
 });

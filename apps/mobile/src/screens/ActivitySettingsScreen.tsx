@@ -264,7 +264,10 @@ export function ActivitySettingsScreen() {
                   key={activity.id}
                   style={[
                     styles.activityRow,
-                    index !== filteredActivities.length - 1 && { borderBottomColor: theme.border.secondary },
+                    {
+                      borderBottomColor: theme.border.secondary,
+                      borderBottomWidth: index !== filteredActivities.length - 1 ? 1 : 0,
+                    },
                   ]}
                 >
                   <View style={styles.activityInfo}>

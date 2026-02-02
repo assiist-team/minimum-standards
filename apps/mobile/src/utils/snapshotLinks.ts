@@ -1,5 +1,5 @@
 const SHARE_CODE_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-const DEFAULT_SHARE_BASE_URL = 'https://minimumstandards.app/s/';
+const DEFAULT_SHARE_BASE_URL = 'minimumstandards://snapshot/';
 
 export function generateShareCode(length = 8): string {
   let result = '';

@@ -30,6 +30,7 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.1055581806274-1n5keauch2qufmqirdcnvrdl8221q6m6</string>
+				<string>minimumstandards</string>
 			</array>
 		</dict>
 	</array>

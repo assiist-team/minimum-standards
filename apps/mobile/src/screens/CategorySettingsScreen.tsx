@@ -582,7 +582,10 @@ export function CategorySettingsScreen() {
                 key={category.id}
                 style={[
                   styles.categoryRow,
-                  index !== orderedCategories.length - 1 && { borderBottomColor: theme.border.secondary },
+                  {
+                    borderBottomColor: theme.border.secondary,
+                    borderBottomWidth: index !== orderedCategories.length - 1 ? 1 : 0,
+                  },
                 ]}
               >
                 {isEditing ? (

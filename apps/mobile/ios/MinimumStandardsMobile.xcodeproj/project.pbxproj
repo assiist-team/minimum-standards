@@ -11,6 +11,7 @@
 		27865C001610F4104C521FEB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		712969FF1FFE29AA56B0D990 /* Pods_MinimumStandardsMobile.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D89DB70D46418C1435C54A1B /* Pods_MinimumStandardsMobile.framework */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		8D7B71A9C3E54E4E9F0D3B21 /* ShareLinkPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2E3A1B7C9D4C0BBE11A7D2 /* ShareLinkPreview.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		9A8B7C6D5E4F321098765432 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8B7C6D5E4F32109876543210 /* GoogleService-Info.plist */; };
 		B3B1AA1228A8C6A800123456 /* main.jsbundle in Resources */ = {isa = PBXBuildFile; fileRef = B3B1AA1128A8C6A700123456 /* main.jsbundle */; };
@@ -22,6 +23,7 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = MinimumStandardsMobile/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = MinimumStandardsMobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		2E999CA8E430C6A5B9AD9600 /* Pods-MinimumStandardsMobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MinimumStandardsMobile.debug.xcconfig"; path = "Target Support Files/Pods-MinimumStandardsMobile/Pods-MinimumStandardsMobile.debug.xcconfig"; sourceTree = "<group>"; };
+		5F2E3A1B7C9D4C0BBE11A7D2 /* ShareLinkPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ShareLinkPreview.swift; path = MinimumStandardsMobile/ShareLinkPreview.swift; sourceTree = "<group>"; };
 		71B0C72321C3C3F6D79638AE /* Pods-MinimumStandardsMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MinimumStandardsMobile.release.xcconfig"; path = "Target Support Files/Pods-MinimumStandardsMobile/Pods-MinimumStandardsMobile.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = MinimumStandardsMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = MinimumStandardsMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -49,6 +51,7 @@
 			children = (
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
+				5F2E3A1B7C9D4C0BBE11A7D2 /* ShareLinkPreview.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
@@ -313,6 +316,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				8D7B71A9C3E54E4E9F0D3B21 /* ShareLinkPreview.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

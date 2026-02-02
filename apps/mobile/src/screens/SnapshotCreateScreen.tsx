@@ -196,7 +196,10 @@ export function SnapshotCreateScreen() {
                     key={standard.id}
                     style={[
                       styles.standardRow,
-                      index !== standards.length - 1 && { borderBottomColor: theme.border.secondary },
+                      {
+                        borderBottomColor: theme.border.secondary,
+                        borderBottomWidth: index !== standards.length - 1 ? 1 : 0,
+                      },
                     ]}
                     onPress={() => toggleStandard(standard.id)}
                   >

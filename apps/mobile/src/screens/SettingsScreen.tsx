@@ -88,8 +88,17 @@ export function SettingsScreen() {
             </View>
             <MaterialIcons name="chevron-right" size={24} color={theme.text.secondary} />
           </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.sectionTitle, getSectionTitleStyle(theme), { marginTop: 24 }]}>Sharing</Text>
+        <View style={[
+          styles.card,
+          getCardBaseStyle({ radius: 12 }),
+          getCardBorderStyle(theme),
+          { backgroundColor: theme.background.surface }
+        ]}>
           <TouchableOpacity
-            style={[styles.optionRow, { borderTopColor: theme.border.secondary, borderTopWidth: 1 }]}
+            style={styles.optionRow}
             onPress={() => navigation.navigate('Snapshots')}
           >
             <View style={styles.optionLabelContainer}>
