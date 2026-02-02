@@ -412,6 +412,8 @@ export function StandardDetailScreen({
         onClose={handleLogModalClose}
         onSave={handleLogSave}
         resolveActivityName={(activityId) => activityNameMap.get(activityId)}
+        currentPeriodStartMs={currentPeriodWindow?.startMs}
+        currentPeriodEndMs={currentPeriodWindow?.endMs}
       />
 
       <ActivityModal

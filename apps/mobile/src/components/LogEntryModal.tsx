@@ -21,6 +21,7 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import type { Standard } from '@minimum-standards/shared-model';
+import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
 import { BUTTON_BORDER_RADIUS } from '@nine4/ui-kit';
@@ -43,6 +44,8 @@ export interface LogEntryModalProps {
   onSave: (standardId: string, value: number, occurredAtMs: number, note?: string | null, logEntryId?: string) => Promise<void>;
   onCreateStandard?: () => void; // Callback to create a new standard from empty state
   resolveActivityName?: (activityId: string) => string | undefined;
+  currentPeriodStartMs?: number;
+  currentPeriodEndMs?: number;
 }
 
 export function LogEntryModal({
@@ -53,6 +56,8 @@ export function LogEntryModal({
   onSave,
   onCreateStandard,
   resolveActivityName,
+  currentPeriodStartMs,
+  currentPeriodEndMs,
 }: LogEntryModalProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -64,6 +69,7 @@ export function LogEntryModal({
   const [showNote, setShowNote] = useState(false);
   const [showWhen, setShowWhen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [androidPickerMode, setAndroidPickerMode] = useState<'date' | 'time' | null>(null);
   const [selectedStandard, setSelectedStandard] = useState<Standard | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [footerHeight, setFooterHeight] = useState(0);
@@ -346,7 +352,34 @@ export function LogEntryModal({
         logEntry?.id // Pass logEntryId in edit mode
       );
 
-      const successMessage = getAffirmationMessage();
+      let successMessage = getAffirmationMessage();
+      
+      // Determine the period window to check against
+      let checkStartMs = currentPeriodStartMs;
+      let checkEndMs = currentPeriodEndMs;
+
+      // If no explicit window provided (e.g. from StickyLogButton), calculate current period for the standard
+      if (checkStartMs === undefined && targetStandard) {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
+        const window = calculatePeriodWindow(
+          Date.now(),
+          targetStandard.cadence,
+          timezone,
+          { periodStartPreference: targetStandard.periodStartPreference }
+        );
+        checkStartMs = window.startMs;
+        checkEndMs = window.endMs;
+      }
+      
+      // Check if the log is outside the view period
+      if (
+        checkStartMs !== undefined &&
+        checkEndMs !== undefined &&
+        (occurredAtMs < checkStartMs || occurredAtMs >= checkEndMs)
+      ) {
+        successMessage = 'Logged to history.';
+      }
+
       if (Platform.OS === 'android') {
         ToastAndroid.show(successMessage, ToastAndroid.SHORT);
       } else {
@@ -360,6 +393,7 @@ export function LogEntryModal({
       setNote('');
       setShowNote(false);
       setShowWhen(false);
+      setAndroidPickerMode(null);
       setSelectedDate(new Date());
       onClose();
     } catch (error) {
@@ -381,6 +415,7 @@ export function LogEntryModal({
     setNote('');
     setShowNote(false);
     setShowWhen(false);
+    setAndroidPickerMode(null);
     setSelectedDate(new Date());
     setSaveError(null);
     setAffirmationMessage(null);
@@ -399,6 +434,21 @@ export function LogEntryModal({
       month: '2-digit',
       day: '2-digit',
       year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date);
+  };
+
+  const formatDateOnly = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  };
+
+  const formatTimeOnly = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
     }).format(date);
@@ -425,7 +475,13 @@ export function LogEntryModal({
     if (saving) {
       return;
     }
-    setShowWhen((prev) => !prev);
+    setShowWhen((prev) => {
+      const next = !prev;
+      if (!next) {
+        setAndroidPickerMode(null);
+      }
+      return next;
+    });
   };
 
   const renderStandardPicker = () => {
@@ -734,34 +790,71 @@ export function LogEntryModal({
               </TouchableOpacity>
             </View>
             <View style={styles.dateTimeRow}>
-              <DateTimePicker
-                value={selectedDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                  }
-                  if (Platform.OS !== 'ios' && event.type === 'set') {
-                    setShowWhen(false);
-                  }
-                }}
-                accessibilityLabel="Select date"
-                style={styles.datePicker}
-              />
-              <DateTimePicker
-                value={selectedDate}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, date) => {
-                  if (date) {
-                    setSelectedDate(date);
-                  }
-                }}
-                accessibilityLabel="Select time"
-                style={styles.timePicker}
-              />
+              {Platform.OS === 'ios' ? (
+                <>
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="date"
+                    display="spinner"
+                    onChange={(event, date) => {
+                      if (date) {
+                        setSelectedDate(date);
+                      }
+                    }}
+                    accessibilityLabel="Select date"
+                    style={styles.datePicker}
+                  />
+                  <DateTimePicker
+                    value={selectedDate}
+                    mode="time"
+                    display="spinner"
+                    onChange={(event, date) => {
+                      if (date) {
+                        setSelectedDate(date);
+                      }
+                    }}
+                    accessibilityLabel="Select time"
+                    style={styles.timePicker}
+                  />
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    onPress={() => setAndroidPickerMode('date')}
+                    style={[styles.androidPickerButton, { backgroundColor: theme.background.primary, borderColor: theme.border.primary }]}
+                    accessibilityLabel="Select date"
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.androidPickerLabel, { color: theme.text.secondary }]}>Date</Text>
+                    <Text style={[styles.androidPickerValue, { color: theme.text.primary }]}>{formatDateOnly(selectedDate)}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setAndroidPickerMode('time')}
+                    style={[styles.androidPickerButton, { backgroundColor: theme.background.primary, borderColor: theme.border.primary }]}
+                    accessibilityLabel="Select time"
+                    accessibilityRole="button"
+                  >
+                    <Text style={[styles.androidPickerLabel, { color: theme.text.secondary }]}>Time</Text>
+                    <Text style={[styles.androidPickerValue, { color: theme.text.primary }]}>{formatTimeOnly(selectedDate)}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
+            {Platform.OS !== 'ios' && androidPickerMode && (
+              <DateTimePicker
+                value={selectedDate}
+                mode={androidPickerMode}
+                display="default"
+                accentColor={theme.primary.main}
+                onChange={(event, date) => {
+                  const nextDate = event.type === 'set' && date ? date : null;
+                  setAndroidPickerMode(null);
+                  if (nextDate) {
+                    setTimeout(() => setSelectedDate(nextDate), 0);
+                  }
+                }}
+              />
+            )}
             {Platform.OS === 'ios' && (
               <TouchableOpacity
                 onPress={() => setShowWhen(false)}
@@ -1256,6 +1349,24 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  androidPickerButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  androidPickerLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  androidPickerValue: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   datePicker: {
     flex: 1,

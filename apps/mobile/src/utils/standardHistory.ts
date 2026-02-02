@@ -55,6 +55,11 @@ export function computeStandardHistory(
   const maxIterations = 1000; // Safety limit to prevent infinite loops
   let iterations = 0;
 
+  // Find the earliest log timestamp to know when to stop iterating
+  const earliestLogMs = logs.length > 0 
+    ? Math.min(...logs.map((l) => l.occurredAtMs)) 
+    : nowMs;
+
   while (iterations < maxIterations) {
     const window = calculatePeriodWindow(
       referenceTimestamp,
@@ -63,6 +68,11 @@ export function computeStandardHistory(
       { periodStartPreference: standard.periodStartPreference }
     );
     const periodKey = window.periodKey;
+
+    // Stop if we've gone past the earliest log (entire window is before the earliest log)
+    if (window.endMs <= earliestLogMs) {
+      break;
+    }
 
     // Skip if we've already processed this period
     if (processedPeriods.has(periodKey)) {
@@ -108,9 +118,6 @@ export function computeStandardHistory(
         currentSessions,
         targetSessions,
       });
-    } else if (history.length > 0) {
-      // If no logs found and we've already found at least one period with logs, stop
-      break;
     }
 
     // Move to previous period by going back one period duration

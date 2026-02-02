@@ -236,6 +236,8 @@ export function StandardPeriodActivityLogsScreen() {
           const activity = activities.find(a => a.id === activityId);
           return activity?.name;
         }}
+        currentPeriodStartMs={periodInfo?.startMs}
+        currentPeriodEndMs={periodInfo?.endMs}
       />
     </View>
   );

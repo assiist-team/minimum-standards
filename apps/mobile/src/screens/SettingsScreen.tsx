@@ -88,6 +88,16 @@ export function SettingsScreen() {
             </View>
             <MaterialIcons name="chevron-right" size={24} color={theme.text.secondary} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.optionRow, { borderTopColor: theme.border.secondary, borderTopWidth: 1 }]}
+            onPress={() => navigation.navigate('Snapshots')}
+          >
+            <View style={styles.optionLabelContainer}>
+              <MaterialIcons name="share" size={22} color={theme.text.primary} style={styles.optionIcon} />
+              <Text style={[styles.optionLabel, { color: theme.text.primary }]}>Snapshots</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color={theme.text.secondary} />
+          </TouchableOpacity>
         </View>
 
         <Text style={[styles.sectionTitle, getSectionTitleStyle(theme), { marginTop: 24 }]}>Appearance</Text>

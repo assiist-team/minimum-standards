@@ -7,6 +7,7 @@ import { MainStack } from './MainStack';
 import { StandardPeriodActivityLogsScreen } from '../screens/StandardPeriodActivityLogsScreen';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { useAuthStore } from '../stores/authStore';
+import { useSnapshotImportFlow } from '../hooks/useSnapshotImportFlow';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
@@ -14,6 +15,7 @@ console.log('[AppNavigator] Module evaluation started');
 
 export function AppNavigator() {
   const { user, isInitialized } = useAuthStore();
+  useSnapshotImportFlow();
   console.log('[AppNavigator] Render start', {
     isInitialized,
     hasUser: !!user,

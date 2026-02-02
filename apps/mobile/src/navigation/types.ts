@@ -31,6 +31,10 @@ export type SettingsStackParamList = {
   SettingsRoot: undefined;
   Categories: { backTo?: 'Dashboard' } | undefined;
   Activities: { backTo?: 'Dashboard' } | undefined;
+  Snapshots: undefined;
+  SnapshotCreate: undefined;
+  SnapshotDetail: { snapshotId: string };
+  SnapshotEdit: { snapshotId: string };
 };
 
 // Bottom tab navigator param list

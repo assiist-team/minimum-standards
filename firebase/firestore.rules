@@ -273,14 +273,19 @@ service cloud.firestore {
       );
     }
 
-    // Block writes to Standards that remain archived, while allowing archive + unarchive transitions.
+    // Allow edits while archived, but prevent archivedAt changes except unarchive.
     function canWriteStandard() {
       let wasArchived = resource.data.archivedAt != null;
       let willBeArchived = request.resource.data.archivedAt != null;
 
-      // Writes are always allowed while the standard is active (wasArchived == false).
-      // Once archived, the only permitted write is to clear archivedAt (unarchive).
-      return !wasArchived || !willBeArchived;
+      // Active standards: always writable.
+      if (!wasArchived) {
+        return true;
+      }
+
+      // Archived standards: allow edits only if archivedAt stays the same,
+      // or allow unarchive by clearing archivedAt.
+      return !willBeArchived || request.resource.data.archivedAt == resource.data.archivedAt;
     }
 
     function validActivityLog() {
@@ -488,6 +493,140 @@ service cloud.firestore {
       && data.source in ['boundary', 'resume', 'log-edit'];
     }
 
+    function validSnapshotPayload(payload) {
+      return payload is map
+        && payload.keys().hasOnly(['categories', 'activities', 'standards'])
+        && payload.categories is list
+        && payload.activities is list
+        && payload.standards is list;
+    }
+
+    function validSnapshotCreate() {
+      return hasOnlyKeys([
+        'ownerUserId',
+        'title',
+        'description',
+        'version',
+        'isEnabled',
+        'payload',
+        'createdAt',
+        'updatedAt',
+        'deletedAt'
+      ])
+      && request.resource.data.ownerUserId is string
+      && request.resource.data.ownerUserId.size() >= 1
+      && request.resource.data.title is string
+      && request.resource.data.title.size() >= 1
+      && request.resource.data.title.size() <= 120
+      && isOptionalStringField('description')
+      && request.resource.data.version is int
+      && request.resource.data.version >= 1
+      && request.resource.data.isEnabled is bool
+      && validSnapshotPayload(request.resource.data.payload)
+      && isTimestamp(request.resource.data.createdAt)
+      && isTimestamp(request.resource.data.updatedAt)
+      && isOptionalTimestampField('deletedAt');
+    }
+
+    function validSnapshotUpdate() {
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      return affected.hasOnly([
+        'isEnabled',
+        'title',
+        'payload',
+        'version',
+        'updatedAt',
+        'deletedAt'
+      ])
+      && (
+        !affected.hasAny(['isEnabled']) || request.resource.data.isEnabled is bool
+      )
+      && (
+        !affected.hasAny(['title']) || (
+          request.resource.data.title is string
+          && request.resource.data.title.size() >= 1
+          && request.resource.data.title.size() <= 120
+        )
+      )
+      && (
+        !affected.hasAny(['payload']) || validSnapshotPayload(request.resource.data.payload)
+      )
+      && (
+        !affected.hasAny(['payload']) || affected.hasAny(['version'])
+      )
+      && (
+        !affected.hasAny(['version']) || (
+          request.resource.data.version is int
+          && request.resource.data.version == resource.data.version + 1
+        )
+      )
+      && (
+        !affected.hasAny(['updatedAt']) || request.resource.data.updatedAt == request.time
+      )
+      && (
+        !affected.hasAny(['deletedAt']) || isOptionalTimestampField('deletedAt')
+      )
+      && request.resource.data.ownerUserId == resource.data.ownerUserId;
+    }
+
+    function validShareLinkCreate() {
+      return hasOnlyKeys([
+        'shareCode',
+        'snapshotId',
+        'ownerUserId',
+        'createdAt',
+        'updatedAt',
+        'disabledAt'
+      ])
+      && request.resource.data.shareCode is string
+      && request.resource.data.shareCode.size() >= 4
+      && request.resource.data.shareCode.size() <= 20
+      && request.resource.data.snapshotId is string
+      && request.resource.data.snapshotId.size() >= 1
+      && request.resource.data.ownerUserId is string
+      && request.resource.data.ownerUserId.size() >= 1
+      && isTimestamp(request.resource.data.createdAt)
+      && isTimestamp(request.resource.data.updatedAt)
+      && isOptionalTimestampField('disabledAt');
+    }
+
+    function validShareLinkUpdate() {
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      return affected.hasOnly([
+        'shareCode',
+        'updatedAt',
+        'disabledAt'
+      ])
+      && (
+        !affected.hasAny(['shareCode']) || (
+          request.resource.data.shareCode is string
+          && request.resource.data.shareCode.size() >= 4
+          && request.resource.data.shareCode.size() <= 20
+        )
+      )
+      && (
+        !affected.hasAny(['updatedAt']) || request.resource.data.updatedAt == request.time
+      )
+      && (
+        !affected.hasAny(['disabledAt']) || isOptionalTimestampField('disabledAt')
+      )
+      && request.resource.data.snapshotId == resource.data.snapshotId
+      && request.resource.data.ownerUserId == resource.data.ownerUserId;
+    }
+
+    function validSnapshotInstallCreate() {
+      return hasOnlyKeys([
+        'snapshotId',
+        'ownerUserId',
+        'installedAt'
+      ])
+      && request.resource.data.snapshotId is string
+      && request.resource.data.snapshotId.size() >= 1
+      && request.resource.data.ownerUserId is string
+      && request.resource.data.ownerUserId.size() >= 1
+      && isTimestamp(request.resource.data.installedAt);
+    }
+
     match /users/{uid} {
       allow read: if isOwner(uid);
       // Prevent client from directly writing the user root doc in MVP.
@@ -538,6 +677,40 @@ service cloud.firestore {
         allow update: if isOwner(uid) && preferenceId == 'dashboardPins' && validDashboardPinsUpdate();
         allow delete: if false; // Prevent deletion, use empty array instead
       }
+
+      match /snapshotInstalls/{installId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && validSnapshotInstallCreate()
+          && request.resource.data.installedAt == request.time;
+        allow update, delete: if false;
+      }
+    }
+
+    match /snapshots/{snapshotId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUserId == request.auth.uid
+        && validSnapshotCreate()
+        && isCreateWithServerTimestamps();
+      allow update: if isSignedIn()
+        && resource.data.ownerUserId == request.auth.uid
+        && validSnapshotUpdate()
+        && isUpdateWithServerTimestampAndStableCreatedAt();
+      allow delete: if false;
+    }
+
+    match /shareLinks/{shareLinkId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUserId == request.auth.uid
+        && validShareLinkCreate()
+        && isCreateWithServerTimestamps();
+      allow update: if isSignedIn()
+        && resource.data.ownerUserId == request.auth.uid
+        && validShareLinkUpdate()
+        && isUpdateWithServerTimestampAndStableCreatedAt();
+      allow delete: if false;
     }
   }
 }

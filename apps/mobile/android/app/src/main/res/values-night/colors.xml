@@ -1,3 +1,6 @@
 <resources>
     <color name="navigation_bar">#1E1E1E</color>
+    <color name="primary">#987e55</color>
+    <color name="primary_dark">#987e55</color>
+    <color name="accent">#987e55</color>
 </resources>
