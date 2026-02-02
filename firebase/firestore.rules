@@ -277,15 +277,11 @@ service cloud.firestore {
     function canWriteStandard() {
       let wasArchived = resource.data.archivedAt != null;
       let willBeArchived = request.resource.data.archivedAt != null;
-
-      // Active standards: always writable.
-      if (!wasArchived) {
-        return true;
-      }
-
-      // Archived standards: allow edits only if archivedAt stays the same,
-      // or allow unarchive by clearing archivedAt.
-      return !willBeArchived || request.resource.data.archivedAt == resource.data.archivedAt;
+      // Active standards: always writable. Archived: only if archivedAt stays the same
+      // or unarchive by clearing archivedAt.
+      return !wasArchived
+        || !willBeArchived
+        || request.resource.data.archivedAt == resource.data.archivedAt;
     }
 
     function validActivityLog() {
