@@ -137,7 +137,7 @@
 - [x] T020 Display selected activity's unit and category inline below selection (e.g., "Unit: minutes" / "Category: Fitness" or "Category: None")
 - [x] T021 Allow category assignment/change on selected activity via category picker
 - [x] T022 Add inline methodology tip: *"Pick the activity that, if you did enough of it, would make success almost guaranteed."* and "Learn More" expandable
-- [ ] T022a Add reset() and loadFromStandard(standard) methods to standardsBuilderStore.ts to support Create flow initialization and Edit mode pre-population
+- [x] T022a Add reset() and loadFromStandard(standard) methods to standardsBuilderStore.ts to support Create flow initialization and Edit mode pre-population
 
 ### Implementation Notes
 - The existing `StandardsBuilderScreen` is a single-screen form with modals — the new flow replaces it with 3 separate screens
