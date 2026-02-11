@@ -97,13 +97,13 @@
 **Estimated Size**: ~500 lines
 
 ### Included Subtasks
-- [ ] T011 Add `showTimeBar` (default: true) and `showInactiveStandards` (default: false) to `uiPreferencesStore.ts` with AsyncStorage persistence
-- [ ] T012 Refactor `ActiveStandardsDashboardScreen` into unified `StandardsScreen` — consolidate active standards display as the primary view
-- [ ] T013 Add kebab/header menu to Standards screen with "Show Time Bar" and "Show Inactive Standards" toggle items (use BottomSheetMenu from WP01)
-- [ ] T014 Fetch and render archived/inactive standards below active standards when "Show Inactive Standards" is toggled on
-- [ ] T015 [P] Apply dimmed/muted visual styling to inactive standard cards (reduced opacity, muted colors, "Inactive" badge)
-- [ ] T016 Add bottom sheet action menu for inactive standards with "Reactivate", "Delete", and "View Logs" options
-- [ ] T017 [P] Implement time bar visibility toggle on `StandardProgressCard` — conditionally hide progress bar based on `showTimeBar` preference
+- [x] T011 Add `showTimeBar` (default: true) and `showInactiveStandards` (default: false) to `uiPreferencesStore.ts` with AsyncStorage persistence
+- [x] T012 Refactor `ActiveStandardsDashboardScreen` into unified `StandardsScreen` — consolidate active standards display as the primary view
+- [x] T013 Add kebab/header menu to Standards screen with "Show Time Bar" and "Show Inactive Standards" toggle items (use BottomSheetMenu from WP01)
+- [x] T014 Fetch and render archived/inactive standards below active standards when "Show Inactive Standards" is toggled on
+- [x] T015 [P] Apply dimmed/muted visual styling to inactive standard cards (reduced opacity, muted colors, "Inactive" badge)
+- [x] T016 Add bottom sheet action menu for inactive standards with "Reactivate", "Delete", and "View Logs" options
+- [x] T017 [P] Implement time bar visibility toggle on `StandardProgressCard` — conditionally hide progress bar based on `showTimeBar` preference
 
 ### Implementation Notes
 - `useStandardsLibrary` hook already provides `activeStandards` and `archivedStandards` — reuse this
