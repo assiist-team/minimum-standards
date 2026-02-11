@@ -209,7 +209,7 @@
 - [x] T034 [P] Replace category management dialogs in `CategorySettingsScreen.tsx` with `BottomSheetMenu` and `BottomSheetConfirmation`
 - [x] T035 Replace all remaining `Alert.alert()` confirmation dialogs (delete, archive, etc.) with `BottomSheetConfirmation`
 - [x] T036 Audit all menu item labels for Title Case compliance — fix any that don't conform
-- [ ] T037a [P] Refactor RangeFilterDrawer.tsx to wrap the new BottomSheet base component from WP01
+- [x] T037a [P] Refactor RangeFilterDrawer.tsx to wrap the new BottomSheet base component from WP01
 
 ### Implementation Notes
 - Current Alert.alert() usage locations (from codebase analysis):
