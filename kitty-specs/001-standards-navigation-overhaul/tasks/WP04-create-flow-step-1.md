@@ -1,26 +1,29 @@
 ---
-work_package_id: "WP04"
+work_package_id: WP04
+title: Create Standard Flow — Step 1
+lane: "doing"
+dependencies: [WP02]
+base_branch: 001-standards-navigation-overhaul-WP02
+base_commit: 712676f785ff3a69f8c1671f8a8c65308541e153
+created_at: '2026-02-11T23:23:46.624759+00:00'
 subtasks:
-  - "T018"
-  - "T019"
-  - "T020"
-  - "T021"
-  - "T022"
-title: "Create Standard Flow — Step 1"
-phase: "Phase 1 - Core Features"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP02"]
+- T018
+- T019
+- T020
+- T021
+- T022
+phase: Phase 1 - Core Features
+assignee: ''
+agent: ''
+shell_pid: "37872"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-11T22:17:53Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-11T22:17:53Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP04 – Create Standard Flow — Step 1
