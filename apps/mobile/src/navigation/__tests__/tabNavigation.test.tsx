@@ -21,9 +21,6 @@ jest.mock('@react-navigation/bottom-tabs', () => ({
       Navigator: ({ children, initialRouteName }: any) => {
         // Render the initial route's component
         const childrenArray = React.Children.toArray(children);
-        const initialScreen = childrenArray.find(
-          (child: any) => child?.props?.name === initialRouteName
-        );
         return (
           <>
             {childrenArray.map((child: any) => {
@@ -46,7 +43,7 @@ jest.mock('@react-navigation/bottom-tabs', () => ({
       },
       Screen: ({ component: Component, name, options }: any) => {
         const React = require('react');
-        if (name === 'Dashboard') {
+        if (name === 'Standards') {
           return <Component key={name} />;
         }
         return null;
@@ -59,13 +56,6 @@ import { BottomTabNavigator } from '../BottomTabNavigator';
 import { NavigationContainer } from '@react-navigation/native';
 
 // Mock stack navigators
-jest.mock('../DashboardStack', () => ({
-  DashboardStack: () => {
-    const React = require('react');
-    return React.createElement('View', { testID: 'dashboard-screen' }, 'Dashboard');
-  },
-}));
-
 jest.mock('../StandardsStack', () => ({
   StandardsStack: () => {
     const React = require('react');
@@ -76,7 +66,7 @@ jest.mock('../StandardsStack', () => ({
 jest.mock('../ActivitiesStack', () => ({
   ActivitiesStack: () => {
     const React = require('react');
-    return React.createElement('View', { testID: 'activities-screen' }, 'Activities');
+    return React.createElement('View', { testID: 'scorecard-screen' }, 'Scorecard');
   },
 }));
 
@@ -90,42 +80,29 @@ jest.mock('../SettingsStack', () => ({
 jest.mock('react-native-vector-icons/MaterialIcons', () => 'Icon');
 
 describe('Tab Navigation', () => {
-  test('BottomTabNavigator renders four tabs (Dashboard, Standards, Scorecard, Settings)', () => {
+  test('BottomTabNavigator renders four tabs (Standards, Scorecard, Settings, +)', () => {
     const { getByText } = render(
       <NavigationContainer>
         <BottomTabNavigator />
       </NavigationContainer>
     );
 
-    expect(getByText('Dashboard')).toBeTruthy();
     expect(getByText('Standards')).toBeTruthy();
     expect(getByText('Scorecard')).toBeTruthy();
     expect(getByText('Settings')).toBeTruthy();
   });
 
-  test('Dashboard tab shows ActiveStandardsDashboardScreen', () => {
+  test('Standards tab is the initial tab', () => {
     const { getByTestId } = render(
       <NavigationContainer>
         <BottomTabNavigator />
       </NavigationContainer>
     );
 
-    expect(getByTestId('dashboard-screen')).toBeTruthy();
+    expect(getByTestId('standards-screen')).toBeTruthy();
   });
 
-  test('Standards tab shows StandardsLibraryScreen', () => {
-    const { getByTestId, getByText } = render(
-      <NavigationContainer>
-        <BottomTabNavigator />
-      </NavigationContainer>
-    );
-
-    // Dashboard is initial, so we need to navigate to Standards tab
-    // For now, just verify Standards tab exists
-    expect(getByText('Standards')).toBeTruthy();
-  });
-
-  test('Activities tab shows Scorecard screen', () => {
+  test('Scorecard tab label is displayed', () => {
     const { getByText } = render(
       <NavigationContainer>
         <BottomTabNavigator />
@@ -135,7 +112,7 @@ describe('Tab Navigation', () => {
     expect(getByText('Scorecard')).toBeTruthy();
   });
 
-  test('Settings tab shows SettingsScreen', () => {
+  test('Settings tab label is displayed', () => {
     const { getByText } = render(
       <NavigationContainer>
         <BottomTabNavigator />
