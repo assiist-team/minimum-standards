@@ -1,7 +1,7 @@
 ---
 work_package_id: WP03
 title: Unified Standards Screen
-lane: "for_review"
+lane: "doing"
 dependencies: [WP01, WP02]
 base_branch: 001-standards-navigation-overhaul-WP03-merge-base
 base_commit: 39d167268b083e3d84cdefd437f2f8292909ccc8
@@ -17,7 +17,7 @@ subtasks:
 phase: Phase 1 - Core Features
 assignee: ''
 agent: "claude-opus"
-shell_pid: "36768"
+shell_pid: "60824"
 review_status: ''
 reviewed_by: ''
 history:
@@ -263,3 +263,4 @@ history:
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:23:27Z – claude-opus – shell_pid=36768 – lane=doing – Assigned agent via workflow command
 - 2026-02-11T23:31:17Z – claude-opus – shell_pid=36768 – lane=for_review – Ready for review: Unified Standards screen with kebab menu toggles (Show Time Bar, Show Inactive Standards), inactive standards section with dimmed styling and action menu (Reactivate/Delete/View Logs), time bar toggle on progress cards
+- 2026-02-11T23:34:36Z – claude-opus – shell_pid=60824 – lane=doing – Started review via workflow command
