@@ -16,6 +16,10 @@ interface UIPreferencesState {
   setCollapsedByCategoryId: (collapsed: Record<string, boolean>) => void;
   focusedCategoryId: string | null;
   setFocusedCategoryId: (categoryId: string | null) => void;
+  showTimeBar: boolean;
+  setShowTimeBar: (show: boolean) => void;
+  showInactiveStandards: boolean;
+  setShowInactiveStandards: (show: boolean) => void;
   activityCategoryMigrationCompletedAtMs: number | null;
   setActivityCategoryMigrationCompletedAtMs: (timestamp: number | null) => void;
   activityCategoryMigrationConflictActivityIds: string[];
@@ -35,6 +39,10 @@ export const useUIPreferencesStore = create<UIPreferencesState>()(
       setCollapsedByCategoryId: (collapsed) => set({ collapsedByCategoryId: collapsed }),
       focusedCategoryId: null,
       setFocusedCategoryId: (categoryId) => set({ focusedCategoryId: categoryId }),
+      showTimeBar: true,
+      setShowTimeBar: (show) => set({ showTimeBar: show }),
+      showInactiveStandards: false,
+      setShowInactiveStandards: (show) => set({ showInactiveStandards: show }),
       activityCategoryMigrationCompletedAtMs: null,
       setActivityCategoryMigrationCompletedAtMs: (timestamp) => set({ activityCategoryMigrationCompletedAtMs: timestamp }),
       activityCategoryMigrationConflictActivityIds: [],

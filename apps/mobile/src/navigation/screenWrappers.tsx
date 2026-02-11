@@ -8,7 +8,7 @@ import {
 } from './types';
 import { ActivityHistoryScreen } from '../screens/ActivityHistoryScreen';
 import { StandardsBuilderScreen } from '../screens/StandardsBuilderScreen';
-import { ActiveStandardsDashboardScreen } from '../screens/ActiveStandardsDashboardScreen';
+import { StandardsScreen } from '../screens/ActiveStandardsDashboardScreen';
 import { StandardDetailScreen } from '../screens/StandardDetailScreen';
 import { useStandards } from '../hooks/useStandards';
 
@@ -41,10 +41,10 @@ export function StandardsBuilderScreenWrapper() {
   );
 }
 
-export function ActiveStandardsDashboardScreenWrapper() {
+export function StandardsScreenWrapper() {
   const navigation = useNavigation<StandardsNavigationProp>();
   return (
-    <ActiveStandardsDashboardScreen
+    <StandardsScreen
       onBack={() => {}}
       onLaunchBuilder={() => {
         navigation.navigate('StandardsBuilder', {});
