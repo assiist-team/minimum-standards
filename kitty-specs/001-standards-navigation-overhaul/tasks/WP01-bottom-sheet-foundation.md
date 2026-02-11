@@ -1,24 +1,27 @@
 ---
-work_package_id: "WP01"
-subtasks:
-  - "T001"
-  - "T002"
-  - "T003"
-title: "Bottom Sheet Foundation"
-phase: "Phase 0 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP01
+title: Bottom Sheet Foundation
+lane: "doing"
 dependencies: []
+base_branch: main
+base_commit: e0118f5627f371ed90dfdd5050900258988c33ee
+created_at: '2026-02-11T23:01:26.425039+00:00'
+subtasks:
+- T001
+- T002
+- T003
+phase: Phase 0 - Foundation
+assignee: ''
+agent: ''
+shell_pid: "89363"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-11T22:17:53Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-11T22:17:53Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP01 – Bottom Sheet Foundation
