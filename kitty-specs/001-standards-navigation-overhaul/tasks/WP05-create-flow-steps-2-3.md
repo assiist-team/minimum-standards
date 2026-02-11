@@ -1,7 +1,7 @@
 ---
 work_package_id: WP05
 title: Create Standard Flow — Steps 2 & 3
-lane: "for_review"
+lane: "doing"
 dependencies: [WP04]
 base_branch: 001-standards-navigation-overhaul-WP04
 base_commit: 358ed179cd153e3ca5a83f56dfc72d34adfcedb8
@@ -18,7 +18,7 @@ subtasks:
 phase: Phase 2 - Create Flow
 assignee: ''
 agent: "claude-opus"
-shell_pid: "73982"
+shell_pid: "96213"
 review_status: ''
 reviewed_by: ''
 history:
@@ -342,3 +342,4 @@ history:
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:40:34Z – claude-opus – shell_pid=73982 – lane=doing – Assigned agent via workflow command
 - 2026-02-11T23:49:56Z – claude-opus – shell_pid=73982 – lane=for_review – Ready for review: Implemented SetVolumeStep (T023-T025) and SetPeriodStep (T026-T030), replaced placeholders in CreateStandardFlow navigator
+- 2026-02-11T23:51:03Z – claude-opus – shell_pid=96213 – lane=doing – Started review via workflow command
