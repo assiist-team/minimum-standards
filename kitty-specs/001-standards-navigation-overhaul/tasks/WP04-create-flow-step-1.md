@@ -14,7 +14,7 @@ subtasks:
 - T022
 phase: Phase 1 - Core Features
 assignee: ''
-agent: ''
+agent: "claude-opus"
 shell_pid: "37872"
 review_status: ''
 reviewed_by: ''
@@ -266,3 +266,4 @@ history:
 ## Activity Log
 
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
+- 2026-02-11T23:23:46Z – claude-opus – shell_pid=37872 – lane=doing – Assigned agent via workflow command
