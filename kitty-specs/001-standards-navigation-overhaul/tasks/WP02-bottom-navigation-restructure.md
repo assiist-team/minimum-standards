@@ -1,28 +1,31 @@
 ---
-work_package_id: "WP02"
-subtasks:
-  - "T004"
-  - "T005"
-  - "T006"
-  - "T007"
-  - "T008"
-  - "T009"
-  - "T010"
-title: "Bottom Navigation Restructure"
-phase: "Phase 0 - Foundation"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP02
+title: Bottom Navigation Restructure
+lane: "doing"
 dependencies: []
+base_branch: main
+base_commit: 7215f69959f0bebaf19e41bccb31613748c7cc77
+created_at: '2026-02-11T23:01:55.425772+00:00'
+subtasks:
+- T004
+- T005
+- T006
+- T007
+- T008
+- T009
+- T010
+phase: Phase 0 - Foundation
+assignee: ''
+agent: ''
+shell_pid: "91038"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-11T22:17:53Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-11T22:17:53Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP02 – Bottom Navigation Restructure
