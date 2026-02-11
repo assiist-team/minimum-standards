@@ -14,7 +14,7 @@ subtasks:
 - T041
 phase: Phase 3 - Polish P2
 assignee: ''
-agent: ''
+agent: "claude-opus"
 shell_pid: "5892"
 review_status: ''
 reviewed_by: ''
@@ -256,3 +256,4 @@ history:
 ## Activity Log
 
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
+- 2026-02-11T23:54:52Z – claude-opus – shell_pid=5892 – lane=doing – Assigned agent via workflow command
