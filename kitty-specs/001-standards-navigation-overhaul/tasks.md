@@ -203,12 +203,12 @@
 **Estimated Size**: ~400 lines
 
 ### Included Subtasks
-- [ ] T031 Audit all `Alert.alert()` calls and custom overlay/modal menus across the codebase — create inventory list
-- [ ] T032 [P] Replace standard card action menus (3-dot menus) with `BottomSheetMenu` in `StandardCard.tsx` and `StandardProgressCard.tsx`
-- [ ] T033 [P] Replace sort menu overlays on Standards screen with `BottomSheetMenu`
-- [ ] T034 [P] Replace category management dialogs in `CategorySettingsScreen.tsx` with `BottomSheetMenu` and `BottomSheetConfirmation`
-- [ ] T035 Replace all remaining `Alert.alert()` confirmation dialogs (delete, archive, etc.) with `BottomSheetConfirmation`
-- [ ] T036 Audit all menu item labels for Title Case compliance — fix any that don't conform
+- [x] T031 Audit all `Alert.alert()` calls and custom overlay/modal menus across the codebase — create inventory list
+- [x] T032 [P] Replace standard card action menus (3-dot menus) with `BottomSheetMenu` in `StandardCard.tsx` and `StandardProgressCard.tsx`
+- [x] T033 [P] Replace sort menu overlays on Standards screen with `BottomSheetMenu`
+- [x] T034 [P] Replace category management dialogs in `CategorySettingsScreen.tsx` with `BottomSheetMenu` and `BottomSheetConfirmation`
+- [x] T035 Replace all remaining `Alert.alert()` confirmation dialogs (delete, archive, etc.) with `BottomSheetConfirmation`
+- [x] T036 Audit all menu item labels for Title Case compliance — fix any that don't conform
 - [ ] T037a [P] Refactor RangeFilterDrawer.tsx to wrap the new BottomSheet base component from WP01
 
 ### Implementation Notes
