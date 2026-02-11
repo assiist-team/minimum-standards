@@ -1,12 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CreateStandardFlowParamList, MainStackParamList } from './types';
+import { CreateStandardFlowParamList } from './types';
 import { SelectActivityStep } from '../screens/create-standard/SelectActivityStep';
+import { SetVolumeStep } from '../screens/create-standard/SetVolumeStep';
+import { SetPeriodStep } from '../screens/create-standard/SetPeriodStep';
 import { useTheme } from '../theme/useTheme';
 import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
 
@@ -110,48 +110,6 @@ const headerStyles = StyleSheet.create({
   },
 });
 
-// --- Placeholder screens for Steps 2 & 3 (WP05 will implement these) ---
-
-function SetVolumeStepPlaceholder() {
-  const theme = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<CreateStandardFlowParamList>>();
-  const mainNavigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
-  return (
-    <View style={{ flex: 1, backgroundColor: theme.background.chrome }}>
-      <StepHeader
-        step={1}
-        totalSteps={3}
-        title="Set Volume"
-        onBack={() => navigation.goBack()}
-        onClose={() => mainNavigation.goBack()}
-      />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: theme.text.secondary }}>Step 2 — Coming in WP05</Text>
-      </View>
-    </View>
-  );
-}
-
-function SetPeriodStepPlaceholder() {
-  const theme = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<CreateStandardFlowParamList>>();
-  const mainNavigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>();
-  return (
-    <View style={{ flex: 1, backgroundColor: theme.background.chrome }}>
-      <StepHeader
-        step={2}
-        totalSteps={3}
-        title="Set Period"
-        onBack={() => navigation.goBack()}
-        onClose={() => mainNavigation.goBack()}
-      />
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: theme.text.secondary }}>Step 3 — Coming in WP05</Text>
-      </View>
-    </View>
-  );
-}
-
 // --- CreateStandardFlow Navigator ---
 
 export function CreateStandardFlow() {
@@ -171,8 +129,8 @@ export function CreateStandardFlow() {
       }}
     >
       <Stack.Screen name="SelectActivity" component={SelectActivityStep} />
-      <Stack.Screen name="SetVolume" component={SetVolumeStepPlaceholder} />
-      <Stack.Screen name="SetPeriod" component={SetPeriodStepPlaceholder} />
+      <Stack.Screen name="SetVolume" component={SetVolumeStep} />
+      <Stack.Screen name="SetPeriod" component={SetPeriodStep} />
     </Stack.Navigator>
   );
 }
