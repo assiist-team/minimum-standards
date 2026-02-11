@@ -1,12 +1,15 @@
 ---
 work_package_id: WP08
 title: Polish & Edge Cases
-lane: planned
+lane: "doing"
 dependencies:
 - WP01
 - WP02
 - WP03
 - WP04
+base_branch: 001-standards-navigation-overhaul-WP08-merge-base
+base_commit: 32e9b65e241904edf077f699b5b75239c5ece1d1
+created_at: '2026-02-11T23:57:43.443287+00:00'
 subtasks:
 - T042
 - T043
@@ -16,7 +19,7 @@ subtasks:
 phase: Phase 4 - Cleanup
 assignee: ''
 agent: ''
-shell_pid: ''
+shell_pid: "11863"
 review_status: ''
 reviewed_by: ''
 history:
