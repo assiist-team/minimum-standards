@@ -20,19 +20,22 @@ import { useActiveStandardsDashboard } from '../hooks/useActiveStandardsDashboar
 import type { DashboardStandard } from '../hooks/useActiveStandardsDashboard';
 import { useActivities } from '../hooks/useActivities';
 import { useCategories } from '../hooks/useCategories';
+import { useStandards } from '../hooks/useStandards';
 import type { Activity } from '@minimum-standards/shared-model';
 import { useUIPreferencesStore } from '../stores/uiPreferencesStore';
 import { trackStandardEvent } from '../utils/analytics';
 import { LogEntryModal } from '../components/LogEntryModal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { StandardProgressCard } from '../components/StandardProgressCard';
+import { BottomSheetMenu } from '../components/BottomSheetMenu';
+import { BottomSheetConfirmation } from '../components/BottomSheetConfirmation';
 import { useTheme } from '../theme/useTheme';
 import { typography, BUTTON_BORDER_RADIUS, CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 type SortOption = 'completion' | 'alpha';
 
-export interface ActiveStandardsDashboardScreenProps {
+export interface StandardsScreenProps {
   onBack?: () => void;
   onLaunchBuilder: () => void;
   onOpenLogModal?: (standard: Standard) => void;
@@ -41,14 +44,14 @@ export interface ActiveStandardsDashboardScreenProps {
   backButtonLabel?: string;
 }
 
-export function ActiveStandardsDashboardScreen({
+export function StandardsScreen({
   onBack,
   onLaunchBuilder,
   onOpenLogModal,
   onNavigateToDetail,
   onEditStandard,
   backButtonLabel,
-}: ActiveStandardsDashboardScreenProps) {
+}: StandardsScreenProps) {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -74,6 +77,12 @@ export function ActiveStandardsDashboardScreen({
 
   const { activities, updateActivity } = useActivities();
   const { orderedCategories } = useCategories();
+  const { archivedStandards, unarchiveStandard, deleteStandard } = useStandards();
+
+  // State for inactive standard action menu
+  const [inactiveMenuStandard, setInactiveMenuStandard] = useState<Standard | null>(null);
+  const [inactiveMenuVisible, setInactiveMenuVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   
   // Create activity lookup map for category resolution
   const activityMap = useMemo(() => {
@@ -83,7 +92,7 @@ export function ActiveStandardsDashboardScreen({
     });
     return map;
   }, [activities]);
-  const { focusedCategoryId, setFocusedCategoryId } = useUIPreferencesStore();
+  const { focusedCategoryId, setFocusedCategoryId, showTimeBar, setShowTimeBar, showInactiveStandards, setShowInactiveStandards } = useUIPreferencesStore();
 
   // Create activity lookup map for efficient name resolution
   const activityNameMap = useMemo(() => {
@@ -206,6 +215,35 @@ export function ActiveStandardsDashboardScreen({
     navigation.navigate('StandardPeriodActivityLogs', {
       standardId,
       // No period boundaries - will calculate current period
+    });
+  }, [navigation]);
+
+  const handleInactiveMenuOpen = useCallback((standard: Standard) => {
+    setInactiveMenuStandard(standard);
+    setInactiveMenuVisible(true);
+  }, []);
+
+  const handleReactivate = useCallback(async (standardId: string) => {
+    try {
+      await unarchiveStandard(standardId);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to reactivate standard');
+      console.error('Failed to reactivate standard:', err);
+    }
+  }, [unarchiveStandard]);
+
+  const handleDeleteStandard = useCallback(async (standardId: string) => {
+    try {
+      await deleteStandard(standardId);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to delete standard');
+      console.error('Failed to delete standard:', err);
+    }
+  }, [deleteStandard]);
+
+  const handleViewInactiveLogs = useCallback((standardId: string) => {
+    navigation.navigate('StandardPeriodActivityLogs', {
+      standardId,
     });
   }, [navigation]);
 
@@ -380,6 +418,7 @@ export function ActiveStandardsDashboardScreen({
           onDeactivate={() => handleDeactivate(item.standard.id)}
           activityNameMap={activityNameMap}
           nowMs={nowMs}
+          showTimeBar={showTimeBar}
         />
       );
     },
@@ -395,6 +434,7 @@ export function ActiveStandardsDashboardScreen({
       handleLogPress,
       activityNameMap,
       nowMs,
+      showTimeBar,
     ]
   );
 
@@ -477,15 +517,71 @@ export function ActiveStandardsDashboardScreen({
             </TouchableOpacity>
           </View>
         }
+        ListFooterComponent={
+          showInactiveStandards && archivedStandards.length > 0 ? (
+            <View style={styles.inactiveSection}>
+              <Text style={[styles.inactiveSectionHeader, { color: theme.text.secondary }]}>
+                Inactive Standards
+              </Text>
+              {archivedStandards.map((standard) => {
+                const activityName = activityNameMap.get(standard.activityId) ?? standard.activityId;
+                const { interval, unit: cadenceUnit } = standard.cadence;
+                const cadenceStr = interval === 1 ? cadenceUnit : `${interval} ${cadenceUnit}s`;
+                const volumeText = `${standard.minimum} ${standard.unit} / ${cadenceStr}`;
+
+                return (
+                  <View key={standard.id} style={styles.inactiveCardWrapper}>
+                    <View style={[
+                      styles.inactiveCard,
+                      {
+                        backgroundColor: theme.background.card,
+                        borderColor: theme.border.secondary,
+                      },
+                    ]}>
+                      <View style={styles.inactiveCardContent}>
+                        <View style={styles.inactiveCardInfo}>
+                          <Text
+                            style={[styles.inactiveCardName, { color: theme.text.primary }]}
+                            numberOfLines={1}
+                          >
+                            {activityName}
+                          </Text>
+                          <Text
+                            style={[styles.inactiveCardDetail, { color: theme.text.secondary }]}
+                            numberOfLines={1}
+                          >
+                            {volumeText}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={() => handleInactiveMenuOpen(standard)}
+                          style={styles.inactiveCardMenuButton}
+                          accessibilityRole="button"
+                          accessibilityLabel={`More options for ${activityName}`}
+                        >
+                          <MaterialIcons name="more-vert" size={20} color={theme.button.icon.icon} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null
+        }
       />
     );
   }, [
+    activityNameMap,
+    archivedStandards,
     dashboardStandards,
+    handleInactiveMenuOpen,
     loading,
     onLaunchBuilder,
     refreshProgress,
     renderCard,
     setFocusedCategoryId,
+    showInactiveStandards,
     theme,
     sortedAndFilteredStandards,
   ]);
@@ -500,7 +596,7 @@ export function ActiveStandardsDashboardScreen({
         ) : (
           <View style={styles.headerSpacer} />
         )}
-        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Active Standards</Text>
+        <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards</Text>
         <TouchableOpacity
           onPress={() => setHeaderMenuVisible(true)}
           style={styles.headerMenuButton}
@@ -657,6 +753,38 @@ export function ActiveStandardsDashboardScreen({
             >
               <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Manage Categories</Text>
             </TouchableOpacity>
+
+            <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowTimeBar(!showTimeBar);
+                closeHeaderMenu();
+              }}
+              style={styles.menuItem}
+              accessibilityRole="button"
+              accessibilityLabel="Show Time Bar"
+            >
+              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Show Time Bar</Text>
+              {showTimeBar && (
+                <MaterialIcons name="check" size={20} color={theme.text.primary} />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
+                setShowInactiveStandards(!showInactiveStandards);
+                closeHeaderMenu();
+              }}
+              style={styles.menuItem}
+              accessibilityRole="button"
+              accessibilityLabel="Show Inactive Standards"
+            >
+              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Show Inactive Standards</Text>
+              {showInactiveStandards && (
+                <MaterialIcons name="check" size={20} color={theme.text.primary} />
+              )}
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       )}
@@ -671,6 +799,56 @@ export function ActiveStandardsDashboardScreen({
         onClose={handleLogModalClose}
         onSave={handleLogSave}
         resolveActivityName={(activityId) => activityNameMap.get(activityId)}
+      />
+
+      <BottomSheetMenu
+        visible={inactiveMenuVisible}
+        onRequestClose={() => setInactiveMenuVisible(false)}
+        title={inactiveMenuStandard ? (activityNameMap.get(inactiveMenuStandard.activityId) ?? inactiveMenuStandard.activityId) : ''}
+        items={inactiveMenuStandard ? [
+          {
+            key: 'reactivate',
+            label: 'Reactivate',
+            icon: 'replay',
+            onPress: () => handleReactivate(inactiveMenuStandard.id),
+          },
+          {
+            key: 'delete',
+            label: 'Delete',
+            icon: 'delete',
+            destructive: true,
+            onPress: () => {
+              setInactiveMenuVisible(false);
+              setDeleteConfirmVisible(true);
+            },
+          },
+          {
+            key: 'view-logs',
+            label: 'View Logs',
+            icon: 'history',
+            onPress: () => handleViewInactiveLogs(inactiveMenuStandard.id),
+          },
+        ] : []}
+      />
+
+      <BottomSheetConfirmation
+        visible={deleteConfirmVisible}
+        onRequestClose={() => setDeleteConfirmVisible(false)}
+        title="Delete Standard"
+        message="Are you sure you want to delete this standard? This cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => {
+          if (inactiveMenuStandard) {
+            handleDeleteStandard(inactiveMenuStandard.id);
+          }
+          setDeleteConfirmVisible(false);
+          setInactiveMenuStandard(null);
+        }}
+        onCancel={() => {
+          setDeleteConfirmVisible(false);
+        }}
       />
     </View>
   );
@@ -690,6 +868,7 @@ function StandardCard({
   onDeactivate,
   activityNameMap,
   nowMs,
+  showTimeBar,
 }: {
   entry: DashboardStandard;
   onLogPress: () => void;
@@ -704,6 +883,7 @@ function StandardCard({
   onDeactivate?: () => void;
   activityNameMap: Map<string, string>;
   nowMs: number;
+  showTimeBar?: boolean;
 }) {
   const { standard, progress } = entry;
   
@@ -758,6 +938,7 @@ function StandardCard({
       periodStartMs={periodStartMs}
       periodEndMs={periodEndMs}
       nowMs={nowMs}
+      showTimeBar={showTimeBar}
     />
   );
 }
@@ -962,5 +1143,45 @@ const styles = StyleSheet.create({
   filterTabText: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  inactiveSection: {
+    marginTop: CARD_LIST_GAP,
+  },
+  inactiveSectionHeader: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: CARD_LIST_GAP,
+  },
+  inactiveCardWrapper: {
+    opacity: 0.6,
+    marginBottom: CARD_LIST_GAP,
+  },
+  inactiveCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+  },
+  inactiveCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  inactiveCardInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  inactiveCardName: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  inactiveCardDetail: {
+    fontSize: 14,
+  },
+  inactiveCardMenuButton: {
+    padding: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 32,
+    minHeight: 32,
   },
 });
