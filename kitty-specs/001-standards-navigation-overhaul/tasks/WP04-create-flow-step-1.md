@@ -1,7 +1,7 @@
 ---
 work_package_id: WP04
 title: Create Standard Flow — Step 1
-lane: "doing"
+lane: "for_review"
 dependencies: [WP02]
 base_branch: 001-standards-navigation-overhaul-WP02
 base_commit: 712676f785ff3a69f8c1671f8a8c65308541e153
@@ -267,3 +267,4 @@ history:
 
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:23:46Z – claude-opus – shell_pid=37872 – lane=doing – Assigned agent via workflow command
+- 2026-02-11T23:35:20Z – claude-opus – shell_pid=37872 – lane=for_review – Ready for review: Create Standard Flow navigator with Step 1 (Select Activity) fully implemented including search, activity list, inline creation, unit/category display, category assignment picker, methodology tip with Learn More, and loadFromStandard for Edit mode
