@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -8,9 +8,6 @@ import {
   StyleSheet,
   RefreshControl,
   Alert,
-  Modal,
-  Dimensions,
-  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Standard } from '@minimum-standards/shared-model';
@@ -23,6 +20,7 @@ import { useStandards } from '../hooks/useStandards';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { StandardCard } from '../components/StandardCard';
 import { CARD_LIST_GAP, SCREEN_PADDING, getScreenContainerStyle } from '@nine4/ui-kit';
+import { BottomSheetConfirmation } from '../components/BottomSheetConfirmation';
 
 export interface StandardsLibraryScreenProps {
   onBack?: () => void; // Optional - not shown on main screen
@@ -53,6 +51,10 @@ export function StandardsLibraryScreen({
 
   const { activities } = useActivities();
   const { createLogEntry, updateLogEntry } = useStandards();
+
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteStandardId, setDeleteStandardId] = useState<string | null>(null);
+  const [deleteStandardName, setDeleteStandardName] = useState('');
 
   // Create activity lookup map
   const activityMap = useMemo(() => {
@@ -93,26 +95,22 @@ export function StandardsLibraryScreen({
   }, [onEditStandard]);
 
   const handleDelete = useCallback((standardId: string, activityName: string) => {
-    Alert.alert(
-      'Delete Standard',
-      `Are you sure you want to delete "${activityName}"? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteStandard(standardId);
-            } catch (err) {
-              Alert.alert('Error', 'Failed to delete standard');
-              console.error('Failed to delete standard:', err);
-            }
-          },
-        },
-      ]
-    );
-  }, [deleteStandard]);
+    setDeleteStandardId(standardId);
+    setDeleteStandardName(activityName);
+    setDeleteConfirmVisible(true);
+  }, []);
+
+  const confirmDeleteStandard = useCallback(async () => {
+    if (!deleteStandardId) return;
+    try {
+      await deleteStandard(deleteStandardId);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to delete standard');
+      console.error('Failed to delete standard:', err);
+    }
+    setDeleteConfirmVisible(false);
+    setDeleteStandardId(null);
+  }, [deleteStandardId, deleteStandard]);
 
   const handleSelect = useCallback((standard: Standard) => {
     if (onEditStandard) {
@@ -249,6 +247,18 @@ export function StandardsLibraryScreen({
 
       {content}
 
+      <BottomSheetConfirmation
+        visible={deleteConfirmVisible}
+        onRequestClose={() => {
+          setDeleteConfirmVisible(false);
+          setDeleteStandardId(null);
+        }}
+        title="Delete Standard"
+        message={`Are you sure you want to delete "${deleteStandardName}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDeleteStandard}
+      />
     </View>
   );
 }

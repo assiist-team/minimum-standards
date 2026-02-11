@@ -24,6 +24,8 @@ import { useTheme } from '../theme/useTheme';
 import { UNCATEGORIZED_CATEGORY_ID, Activity } from '@minimum-standards/shared-model';
 import { getScreenContainerStyle } from '@nine4/ui-kit';
 import { useUIPreferencesStore } from '../stores/uiPreferencesStore';
+import { BottomSheetConfirmation } from '../components/BottomSheetConfirmation';
+import { BottomSheetMenu } from '../components/BottomSheetMenu';
 
 export function CategorySettingsScreen() {
   const MAX_CATEGORY_NAME_LENGTH = 120;
@@ -54,6 +56,16 @@ export function CategorySettingsScreen() {
   const [selectedActivitiesForBulk, setSelectedActivitiesForBulk] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
   const [migrationRunning, setMigrationRunning] = useState(false);
+
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null);
+  const [deleteCategoryName, setDeleteCategoryName] = useState('');
+  const [deleteCategoryCount, setDeleteCategoryCount] = useState(0);
+
+  const [assignMenuVisible, setAssignMenuVisible] = useState(false);
+  const [assignActivityId, setAssignActivityId] = useState<string | null>(null);
+  const [assignActivityName, setAssignActivityName] = useState('');
+  const [assignExcludeCategoryId, setAssignExcludeCategoryId] = useState<string | null>(null);
 
   // Calculate counts per category
   const categoryCounts = useMemo(() => {
@@ -277,60 +289,35 @@ export function CategorySettingsScreen() {
   const handleDeleteCategory = useCallback(
     async (categoryId: string, categoryName: string) => {
       const count = categoryCounts.get(categoryId) ?? 0;
+      setDeleteCategoryId(categoryId);
+      setDeleteCategoryName(categoryName);
+      setDeleteCategoryCount(count);
+      setDeleteConfirmVisible(true);
+    },
+    [categoryCounts]
+  );
 
-      if (count === 0) {
-        // Safe to delete immediately
-        Alert.alert(
-          'Delete Category',
-          `Are you sure you want to delete "${categoryName}"?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deleteCategory(categoryId);
-                } catch (error) {
-                  Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete category');
-                }
-              },
-            },
-          ]
+  const handleConfirmDelete = useCallback(async () => {
+    if (!deleteCategoryId) return;
+    const count = deleteCategoryCount;
+    try {
+      if (count > 0) {
+        const affectedActivities = activities.filter(
+          (a) => (a.categoryId ?? UNCATEGORIZED_CATEGORY_ID) === deleteCategoryId
         );
-      } else {
-        // Need reassignment
-        Alert.alert(
-          'Delete Category',
-          `"${categoryName}" has ${count} activit${count === 1 ? 'y' : 'ies'}. Move them to Uncategorized?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Move to Uncategorized',
-              onPress: async () => {
-                try {
-                  // Batch update activities to Uncategorized
-                  const affectedActivities = activities.filter(
-                    (a) => (a.categoryId ?? UNCATEGORIZED_CATEGORY_ID) === categoryId
-                  );
-                  // Update activities one by one
-                  await Promise.all(
-                    affectedActivities.map((activity) =>
-                      updateActivity(activity.id, { categoryId: null })
-                    )
-                  );
-                  await deleteCategory(categoryId);
-                } catch (error) {
-                  Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete category');
-                }
-              },
-            },
-          ]
+        await Promise.all(
+          affectedActivities.map((activity) =>
+            updateActivity(activity.id, { categoryId: null })
+          )
         );
       }
-    },
-    [categoryCounts, activities, deleteCategory, updateActivity]
-  );
+      await deleteCategory(deleteCategoryId);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete category');
+    }
+    setDeleteConfirmVisible(false);
+    setDeleteCategoryId(null);
+  }, [deleteCategoryId, deleteCategoryCount, activities, deleteCategory, updateActivity]);
 
   const handleMoveUp = useCallback(
     async (categoryId: string) => {
@@ -510,23 +497,10 @@ export function CategorySettingsScreen() {
                 <TouchableOpacity
                   style={styles.activityActionButton}
                   onPress={() => {
-                    Alert.alert(
-                      'Assign Category',
-                      `Assign "${activity.name}" to a category:`,
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        ...orderedCategories
-                          .filter((c) => c.id !== UNCATEGORIZED_CATEGORY_ID)
-                          .map((c) => ({
-                            text: c.name,
-                            onPress: () => handleMoveActivityToCategory(activity.id, c.id),
-                          })),
-                        {
-                          text: 'Uncategorized',
-                          onPress: () => handleMoveActivityToCategory(activity.id, UNCATEGORIZED_CATEGORY_ID),
-                        },
-                      ]
-                    );
+                    setAssignActivityId(activity.id);
+                    setAssignActivityName(activity.name);
+                    setAssignExcludeCategoryId(null);
+                    setAssignMenuVisible(true);
                   }}
                 >
                   <MaterialIcons name="drive-file-move" size={20} color={theme.button.primary.background} />
@@ -719,23 +693,10 @@ export function CategorySettingsScreen() {
                                       <TouchableOpacity
                                         style={styles.activityActionButton}
                                         onPress={() => {
-                                          Alert.alert(
-                                            'Move Activity',
-                                            'Select a category to move this activity to:',
-                                            [
-                                              { text: 'Cancel', style: 'cancel' },
-                                              ...orderedCategories
-                                                .filter((c) => c.id !== category.id)
-                                                .map((c) => ({
-                                                  text: c.name,
-                                                  onPress: () => handleMoveActivityToCategory(activity.id, c.id),
-                                                })),
-                                              {
-                                                text: 'Uncategorized',
-                                                onPress: () => handleMoveActivityToCategory(activity.id, UNCATEGORIZED_CATEGORY_ID),
-                                              },
-                                            ]
-                                          );
+                                          setAssignActivityId(activity.id);
+                                          setAssignActivityName(activity.name);
+                                          setAssignExcludeCategoryId(category.id);
+                                          setAssignMenuVisible(true);
                                         }}
                                       >
                                         <MaterialIcons name="drive-file-move" size={20} color={theme.text.secondary} />
@@ -895,6 +856,54 @@ export function CategorySettingsScreen() {
           )}
         </View>
       </Modal>
+
+      <BottomSheetConfirmation
+        visible={deleteConfirmVisible}
+        onRequestClose={() => {
+          setDeleteConfirmVisible(false);
+          setDeleteCategoryId(null);
+        }}
+        title="Delete Category"
+        message={
+          deleteCategoryCount > 0
+            ? `"${deleteCategoryName}" has ${deleteCategoryCount} activit${deleteCategoryCount === 1 ? 'y' : 'ies'}. Move them to Uncategorized?`
+            : `Are you sure you want to delete "${deleteCategoryName}"?`
+        }
+        confirmLabel={deleteCategoryCount > 0 ? 'Move to Uncategorized' : 'Delete'}
+        destructive
+        onConfirm={handleConfirmDelete}
+      />
+
+      <BottomSheetMenu
+        visible={assignMenuVisible}
+        onRequestClose={() => {
+          setAssignMenuVisible(false);
+          setAssignActivityId(null);
+        }}
+        title={assignActivityName ? `Assign "${assignActivityName}"` : 'Assign Category'}
+        items={[
+          ...orderedCategories
+            .filter((c) => c.id !== UNCATEGORIZED_CATEGORY_ID && c.id !== assignExcludeCategoryId)
+            .map((c) => ({
+              key: c.id,
+              label: c.name,
+              onPress: () => {
+                if (assignActivityId) {
+                  handleMoveActivityToCategory(assignActivityId, c.id);
+                }
+              },
+            })),
+          {
+            key: UNCATEGORIZED_CATEGORY_ID,
+            label: 'Uncategorized',
+            onPress: () => {
+              if (assignActivityId) {
+                handleMoveActivityToCategory(assignActivityId, UNCATEGORIZED_CATEGORY_ID);
+              }
+            },
+          },
+        ]}
+      />
     </View>
   );
 }
