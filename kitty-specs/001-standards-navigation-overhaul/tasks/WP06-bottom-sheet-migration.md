@@ -1,7 +1,7 @@
 ---
 work_package_id: WP06
 title: Bottom Sheet Menu Migration
-lane: "for_review"
+lane: "doing"
 dependencies: [WP01, WP03]
 base_branch: 001-standards-navigation-overhaul-WP06-merge-base
 base_commit: ae533d45b738150b79a6ef55314c960799c5ef38
@@ -16,7 +16,7 @@ subtasks:
 phase: Phase 3 - Polish P2
 assignee: ''
 agent: "claude-opus"
-shell_pid: "71324"
+shell_pid: "3247"
 review_status: ''
 reviewed_by: ''
 history:
@@ -227,3 +227,4 @@ history:
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:39:34Z – claude-opus – shell_pid=71324 – lane=doing – Assigned agent via workflow command
 - 2026-02-11T23:52:52Z – claude-opus – shell_pid=71324 – lane=for_review – Ready for review: All interactive Alert.alert() dialogs and custom Modal overlay menus replaced with BottomSheetMenu/BottomSheetConfirmation. RangeFilterDrawer refactored to use BottomSheet base. 6 files changed, net -504 lines.
+- 2026-02-11T23:53:51Z – claude-opus – shell_pid=3247 – lane=doing – Started review via workflow command
