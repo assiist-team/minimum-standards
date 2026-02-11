@@ -1,26 +1,29 @@
 ---
-work_package_id: "WP07"
+work_package_id: WP07
+title: Active Standard Card Actions
+lane: "doing"
+dependencies: [WP01, WP03, WP04]
+base_branch: 001-standards-navigation-overhaul-WP07-merge-base
+base_commit: 06b2b73f16c31c485371bfcd6d1bfd02267f8e14
+created_at: '2026-02-11T23:54:52.399629+00:00'
 subtasks:
-  - "T037"
-  - "T038"
-  - "T039"
-  - "T040"
-  - "T041"
-title: "Active Standard Card Actions"
-phase: "Phase 3 - Polish P2"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP03", "WP04"]
+- T037
+- T038
+- T039
+- T040
+- T041
+phase: Phase 3 - Polish P2
+assignee: ''
+agent: ''
+shell_pid: "5892"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-11T22:17:53Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-11T22:17:53Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP07 – Active Standard Card Actions
