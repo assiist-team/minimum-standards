@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import {
   Activity,
+  Standard,
   PeriodStartPreference,
   StandardCadence,
   formatStandardSummary,
@@ -38,6 +39,9 @@ export interface StandardsBuilderState {
 
   // Reset store
   reset: () => void;
+
+  // Load from existing standard (for Edit mode)
+  loadFromStandard: (standard: Standard, activity: Activity) => void;
 
   // Get the effective unit (Activity's unit or override)
   getEffectiveUnit: () => string | null;
@@ -262,6 +266,25 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
 
     reset: () => {
       set(initialState);
+    },
+
+    loadFromStandard: (standard: Standard, activity: Activity) => {
+      const hasSessionBreakdown =
+        standard.sessionConfig.sessionsPerCadence > 1;
+      const unitDiffers =
+        standard.unit.toLowerCase() !== activity.unit.toLowerCase();
+
+      set({
+        selectedActivity: activity,
+        cadence: standard.cadence,
+        goalTotal: standard.minimum,
+        unitOverride: unitDiffers ? standard.unit : null,
+        breakdownEnabled: hasSessionBreakdown,
+        sessionLabel: standard.sessionConfig.sessionLabel,
+        sessionsPerCadence: standard.sessionConfig.sessionsPerCadence,
+        volumePerSession: standard.sessionConfig.volumePerSession,
+        periodStartPreference: standard.periodStartPreference ?? null,
+      });
     },
   };
 });
