@@ -60,13 +60,13 @@
 **Estimated Size**: ~450 lines
 
 ### Included Subtasks
-- [ ] T004 Update `BottomTabNavigator.tsx` to render 4 tabs: Standards, Scorecard, Settings, + (Create) — remove Dashboard/Library tabs
-- [ ] T005 Change Standards tab icon to `pending-actions` MaterialIcons icon
-- [ ] T006 Change Scorecard tab to use the `analytics` MaterialIcons icon
-- [ ] T007 Wire "+" button to open Create Standard flow (navigate to StandardsBuilder or new CreateStandard screen)
-- [ ] T008 Remove `StickyLogButton` component rendering from `BottomTabNavigator.tsx`
-- [ ] T009 Remove `StandardsLibraryScreen` from `StandardsStack.tsx` and clean up `StandardsStack` navigator
-- [ ] T010 [P] Update navigation type definitions in `types.ts` — update `BottomTabParamList`, remove unused stack params
+- [x] T004 Update `BottomTabNavigator.tsx` to render 4 tabs: Standards, Scorecard, Settings, + (Create) — remove Dashboard/Library tabs
+- [x] T005 Change Standards tab icon to `pending-actions` MaterialIcons icon
+- [x] T006 Change Scorecard tab to use the `analytics` MaterialIcons icon
+- [x] T007 Wire "+" button to open Create Standard flow (navigate to StandardsBuilder or new CreateStandard screen)
+- [x] T008 Remove `StickyLogButton` component rendering from `BottomTabNavigator.tsx`
+- [x] T009 Remove `StandardsLibraryScreen` from `StandardsStack.tsx` and clean up `StandardsStack` navigator
+- [x] T010 [P] Update navigation type definitions in `types.ts` — update `BottomTabParamList`, remove unused stack params
 
 ### Implementation Notes
 - Current nav: Dashboard (star) → Standards/Library (pending-actions) → Activities/Scorecard (task-alt) → Settings
