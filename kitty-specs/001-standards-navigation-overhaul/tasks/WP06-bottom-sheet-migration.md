@@ -1,27 +1,30 @@
 ---
-work_package_id: "WP06"
+work_package_id: WP06
+title: Bottom Sheet Menu Migration
+lane: "doing"
+dependencies: [WP01, WP03]
+base_branch: 001-standards-navigation-overhaul-WP06-merge-base
+base_commit: ae533d45b738150b79a6ef55314c960799c5ef38
+created_at: '2026-02-11T23:39:34.413251+00:00'
 subtasks:
-  - "T031"
-  - "T032"
-  - "T033"
-  - "T034"
-  - "T035"
-  - "T036"
-title: "Bottom Sheet Menu Migration"
-phase: "Phase 3 - Polish P2"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP03"]
+- T031
+- T032
+- T033
+- T034
+- T035
+- T036
+phase: Phase 3 - Polish P2
+assignee: ''
+agent: ''
+shell_pid: "71324"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-11T22:17:53Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-11T22:17:53Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP06 – Bottom Sheet Menu Migration
