@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Bottom Sheet Foundation
-lane: "for_review"
+lane: "doing"
 dependencies: []
 base_branch: main
 base_commit: e0118f5627f371ed90dfdd5050900258988c33ee
@@ -13,7 +13,7 @@ subtasks:
 phase: Phase 0 - Foundation
 assignee: ''
 agent: "claude-opus"
-shell_pid: "89363"
+shell_pid: "15800"
 review_status: ''
 reviewed_by: ''
 history:
@@ -199,3 +199,4 @@ history:
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:01:26Z – claude-opus – shell_pid=89363 – lane=doing – Assigned agent via workflow command
 - 2026-02-11T23:06:08Z – claude-opus – shell_pid=89363 – lane=for_review – Ready for review: BottomSheet, BottomSheetMenu, and BottomSheetConfirmation components implemented following ledger_mobile reference pattern with local theme integration
+- 2026-02-11T23:13:40Z – claude-opus – shell_pid=15800 – lane=doing – Started review via workflow command
