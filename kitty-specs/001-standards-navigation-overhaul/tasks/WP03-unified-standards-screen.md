@@ -1,28 +1,31 @@
 ---
-work_package_id: "WP03"
+work_package_id: WP03
+title: Unified Standards Screen
+lane: "doing"
+dependencies: [WP01, WP02]
+base_branch: 001-standards-navigation-overhaul-WP03-merge-base
+base_commit: 39d167268b083e3d84cdefd437f2f8292909ccc8
+created_at: '2026-02-11T23:23:26.879649+00:00'
 subtasks:
-  - "T011"
-  - "T012"
-  - "T013"
-  - "T014"
-  - "T015"
-  - "T016"
-  - "T017"
-title: "Unified Standards Screen"
-phase: "Phase 1 - Core Features"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01", "WP02"]
+- T011
+- T012
+- T013
+- T014
+- T015
+- T016
+- T017
+phase: Phase 1 - Core Features
+assignee: ''
+agent: ''
+shell_pid: "36768"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-11T22:17:53Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-11T22:17:53Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP03 – Unified Standards Screen
