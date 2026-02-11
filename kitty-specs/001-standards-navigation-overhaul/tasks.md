@@ -166,14 +166,14 @@
 **Estimated Size**: ~500 lines
 
 ### Included Subtasks
-- [ ] T023 Build Step 2 screen (`SetVolumeStep.tsx`) with volume input and inherited read-only unit display
-- [ ] T024 Add "Break Volume into Sessions" toggle with session count and volume-per-session fields
-- [ ] T025 Add inline tip (*"Start where you can consistently win, not at your ideal level."*) and "Learn More" for Step 2
-- [ ] T026 Build Step 3 screen (`SetPeriodStep.tsx`) with period selector (Daily, Weekly, Monthly, Custom)
-- [ ] T027 Day-of-week selectors (Mo–Su) hidden by default, revealed via toggle; auto-reset when switching from Weekly to other periods
-- [ ] T028 [P] Normalize border radius on Step 3 elements to match design system (`BUTTON_BORDER_RADIUS` from `@nine4/ui-kit`)
-- [ ] T029 Add inline tip (*"Focus on total volume per period — flexibility beats rigid daily targets."*) and "Learn More" for Step 3
-- [ ] T030 Wire final submission: call `createStandard()` from `useStandards`, navigate back to Standards screen
+- [x] T023 Build Step 2 screen (`SetVolumeStep.tsx`) with volume input and inherited read-only unit display
+- [x] T024 Add "Break Volume into Sessions" toggle with session count and volume-per-session fields
+- [x] T025 Add inline tip (*"Start where you can consistently win, not at your ideal level."*) and "Learn More" for Step 2
+- [x] T026 Build Step 3 screen (`SetPeriodStep.tsx`) with period selector (Daily, Weekly, Monthly, Custom)
+- [x] T027 Day-of-week selectors (Mo–Su) hidden by default, revealed via toggle; auto-reset when switching from Weekly to other periods
+- [x] T028 [P] Normalize border radius on Step 3 elements to match design system (`BUTTON_BORDER_RADIUS` from `@nine4/ui-kit`)
+- [x] T029 Add inline tip (*"Focus on total volume per period — flexibility beats rigid daily targets."*) and "Learn More" for Step 3
+- [x] T030 Wire final submission: call `createStandard()` from `useStandards`, navigate back to Standards screen
 
 ### Implementation Notes
 - Volume logic already exists in `standardsBuilderStore` — `goalTotal`, `breakdownEnabled`, `sessionsPerCadence`, `volumePerSession`, `getEffectiveUnit()`
