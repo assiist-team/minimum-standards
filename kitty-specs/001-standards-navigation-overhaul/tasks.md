@@ -62,7 +62,7 @@
 ### Included Subtasks
 - [ ] T004 Update `BottomTabNavigator.tsx` to render 4 tabs: Standards, Scorecard, Settings, + (Create) — remove Dashboard/Library tabs
 - [ ] T005 Change Standards tab icon to `pending-actions` MaterialIcons icon
-- [ ] T006 Change Scorecard tab to use a new distinct icon (e.g., `assessment` or `bar-chart`)
+- [ ] T006 Change Scorecard tab to use the `analytics` MaterialIcons icon
 - [ ] T007 Wire "+" button to open Create Standard flow (navigate to StandardsBuilder or new CreateStandard screen)
 - [ ] T008 Remove `StickyLogButton` component rendering from `BottomTabNavigator.tsx`
 - [ ] T009 Remove `StandardsLibraryScreen` from `StandardsStack.tsx` and clean up `StandardsStack` navigator
@@ -137,6 +137,7 @@
 - [ ] T020 Display selected activity's unit and category inline below selection (e.g., "Unit: minutes" / "Category: Fitness" or "Category: None")
 - [ ] T021 Allow category assignment/change on selected activity via category picker
 - [ ] T022 Add inline methodology tip: *"Pick the activity that, if you did enough of it, would make success almost guaranteed."* and "Learn More" expandable
+- [ ] T022a Add reset() and loadFromStandard(standard) methods to standardsBuilderStore.ts to support Create flow initialization and Edit mode pre-population
 
 ### Implementation Notes
 - The existing `StandardsBuilderScreen` is a single-screen form with modals — the new flow replaces it with 3 separate screens
@@ -208,6 +209,7 @@
 - [ ] T034 [P] Replace category management dialogs in `CategorySettingsScreen.tsx` with `BottomSheetMenu` and `BottomSheetConfirmation`
 - [ ] T035 Replace all remaining `Alert.alert()` confirmation dialogs (delete, archive, etc.) with `BottomSheetConfirmation`
 - [ ] T036 Audit all menu item labels for Title Case compliance — fix any that don't conform
+- [ ] T037a [P] Refactor RangeFilterDrawer.tsx to wrap the new BottomSheet base component from WP01
 
 ### Implementation Notes
 - Current Alert.alert() usage locations (from codebase analysis):
@@ -221,6 +223,7 @@
 
 ### Parallel Opportunities
 - T032, T033, T034 can all proceed in parallel — different files/screens.
+- T037a (RangeFilterDrawer refactor) can also proceed in parallel.
 
 ### Dependencies
 - Depends on WP01 (BottomSheet components must exist).
@@ -277,7 +280,7 @@
 - [ ] T043 Handle navigate-away during Create Standard flow — discard form state, user starts fresh next time
 - [ ] T044 Handle day-of-week toggle reset when period changes from Weekly to Daily/Monthly/Custom
 - [ ] T045 [P] Handle activity without unit — display "Unit: (none)" on Step 2 volume screen
-- [ ] T046 [P] Clean up dead code: remove `StandardsLibraryScreen.tsx`, unused imports in `screenWrappers.tsx`, old `DashboardStack` references, `StickyLogButton.tsx` if fully unreferenced
+- [ ] T046 [P] Clean up dead code: remove `ActiveStandardsDashboardScreen.tsx`, `StandardsBuilderScreen.tsx`, unused imports in `screenWrappers.tsx`, old `DashboardStack` references, `StickyLogButton.tsx` if fully unreferenced
 
 ### Implementation Notes
 - Empty state: centered illustration or icon + text "No standards yet" + CTA button "Create Your First Standard" that triggers "+" action
@@ -347,6 +350,7 @@ WP02 ──┬───────┘       │
 | T020 | Display unit/category below selected activity | WP04 | P1 | No |
 | T021 | Category assignment/change on Step 1 | WP04 | P1 | No |
 | T022 | Inline tip and Learn More for Step 1 | WP04 | P1 | Yes |
+| T022a | Add reset() and loadFromStandard() to standardsBuilderStore | WP04 | P1 | No |
 | T023 | Build Step 2 — Set Volume | WP05 | P1 | No |
 | T024 | "Break Volume into Sessions" toggle | WP05 | P1 | No |
 | T025 | Inline tip and Learn More for Step 2 | WP05 | P1 | No |
@@ -362,6 +366,7 @@ WP02 ──┬───────┘       │
 | T035 | Replace remaining Alert.alert() confirmations | WP06 | P2 | No |
 | T036 | Audit menu labels for Title Case | WP06 | P2 | No |
 | T037 | Create active standard card action bottom sheet | WP07 | P2 | No |
+| T037a | Refactor RangeFilterDrawer to wrap BottomSheet base component | WP06 | P2 | Yes |
 | T038 | Wire Edit to pre-populated Create flow | WP07 | P2 | No |
 | T039 | Wire Deactivate with confirmation | WP07 | P2 | No |
 | T040 | Wire Delete with confirmation | WP07 | P2 | No |
@@ -370,4 +375,4 @@ WP02 ──┬───────┘       │
 | T043 | Handle navigate-away during Create flow | WP08 | P3 | No |
 | T044 | Day-of-week toggle reset on period change | WP08 | P3 | No |
 | T045 | Activity without unit handling | WP08 | P3 | Yes |
-| T046 | Clean up dead code | WP08 | P3 | Yes |
+| T046 | Clean up dead code (ActiveStandardsDashboardScreen, StandardsBuilderScreen, etc.) | WP08 | P3 | Yes |

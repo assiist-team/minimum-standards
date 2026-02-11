@@ -81,9 +81,9 @@ BottomTabNavigator (standard BottomTabBar — no StickyLogButton)
 │       └── Snapshots…
 └── + tab (icon: add-circle-outline, label: "Create")
     └── (intercepted — opens CreateStandardStack modally)
-        ├── SelectActivityScreen (Step 1)
-        ├── SetVolumeScreen (Step 2)
-        └── SetPeriodScreen (Step 3)
+        ├── SelectActivityStep (Step 1)
+        ├── SetVolumeStep (Step 2)
+        └── SetPeriodStep (Step 3)
 ```
 
 ### Key Structural Changes
@@ -108,9 +108,9 @@ BottomTabNavigator (standard BottomTabBar — no StickyLogButton)
 | `BottomSheetMenu.tsx` | `src/components/BottomSheetMenu.tsx` | Menu variant: title + list of action items with icons |
 | `BottomSheetConfirmation.tsx` | `src/components/BottomSheetConfirmation.tsx` | Two-action confirmation (Cancel + primary/destructive) |
 | `StandardsScreen.tsx` | `src/screens/StandardsScreen.tsx` | Unified active standards view with inactive toggle and kebab menu |
-| `SelectActivityScreen.tsx` | `src/screens/create-standard/SelectActivityScreen.tsx` | Step 1: Activity selection with category display |
-| `SetVolumeScreen.tsx` | `src/screens/create-standard/SetVolumeScreen.tsx` | Step 2: Volume + sessions config |
-| `SetPeriodScreen.tsx` | `src/screens/create-standard/SetPeriodScreen.tsx` | Step 3: Period + day-of-week selection |
+| `SelectActivityStep.tsx` | `src/screens/create-standard/SelectActivityStep.tsx` | Step 1: Activity selection with category display |
+| `SetVolumeStep.tsx` | `src/screens/create-standard/SetVolumeStep.tsx` | Step 2: Volume + sessions config |
+| `SetPeriodStep.tsx` | `src/screens/create-standard/SetPeriodStep.tsx` | Step 3: Period + day-of-week selection |
 | `StepProgressIndicator.tsx` | `src/components/StepProgressIndicator.tsx` | 3-step progress dots for Create flow |
 | `MethodologyTip.tsx` | `src/components/MethodologyTip.tsx` | Inline tip + "Learn More" expandable for Create steps |
 
@@ -174,15 +174,15 @@ apps/mobile/src/
 │   ├── StandardProgressCard.tsx  # MODIFIED: conditional time bar
 │   ├── RangeFilterDrawer.tsx     # MODIFIED: wrap BottomSheet
 │   ├── StickyLogButton.tsx       # REMOVED
-│   └── LogEntryModal.tsx         # MODIFIED: alert migration
+│   └── LogEntryModal.tsx         # UNCHANGED: keeps platform toast pattern
 ├── navigation/
 │   └── BottomTabNavigator.tsx    # MODIFIED: new 4-tab structure
 ├── screens/
 │   ├── StandardsScreen.tsx       # NEW: unified standards view
 │   ├── create-standard/
-│   │   ├── SelectActivityScreen.tsx  # NEW: step 1
-│   │   ├── SetVolumeScreen.tsx       # NEW: step 2
-│   │   └── SetPeriodScreen.tsx       # NEW: step 3
+│   │   ├── SelectActivityStep.tsx  # NEW: step 1
+│   │   ├── SetVolumeStep.tsx       # NEW: step 2
+│   │   └── SetPeriodStep.tsx       # NEW: step 3
 │   ├── StandardsLibraryScreen.tsx    # MODIFIED: settings stack context
 │   ├── SettingsScreen.tsx            # MODIFIED: add Standards row
 │   ├── ActiveStandardsDashboardScreen.tsx  # REMOVED (replaced by StandardsScreen)

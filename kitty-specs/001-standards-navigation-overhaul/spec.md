@@ -124,17 +124,18 @@ On the Standards screen, tapping the action menu on an active standard opens a b
 **Navigation & Screen Structure**
 
 - **FR-001**: The bottom navigation MUST display exactly four items in order: Standards, Scorecard, Settings, + (Create).
-- **FR-002**: The Standards Library screen MUST be removed from the app.
+- **FR-002**: The Standards Library screen MUST be removed from the bottom navigation and relocated to the Settings stack as a management screen.
 - **FR-003**: The floating Log button above the tab bar MUST be removed.
 - **FR-004**: The "Active" screen MUST be renamed to "Standards" and serve as the unified standards view.
 - **FR-005**: The Standards tab icon MUST use the `pending-actions` MaterialIcons icon.
-- **FR-006**: The Scorecard tab MUST display a new, distinct icon.
+- **FR-006**: The Scorecard tab MUST display the `analytics` MaterialIcons icon.
 - **FR-007**: The "+" button MUST open the Create Standard flow.
 
 **Standards Screen Controls**
 
 - **FR-008**: The Standards screen menu MUST include a "Show Time Bar" toggle that hides/shows progress bars on standard cards.
 - **FR-009**: The Standards screen menu MUST include a "Show Inactive Standards" toggle that reveals archived standards on the same screen.
+- **FR-009a**: The Standards screen menu MUST include a "Manage Standards" item that cross-navigates to the Standards Library in the Settings stack.
 - **FR-010**: Inactive standards MUST be visually distinct from active standards (dimmed, muted, or otherwise differentiated).
 - **FR-011**: Inactive standards MUST have an action menu with "Reactivate", "Delete", and "View Logs" options.
 - **FR-012**: The "Show Time Bar" and "Show Inactive Standards" preferences MUST persist across app sessions.
