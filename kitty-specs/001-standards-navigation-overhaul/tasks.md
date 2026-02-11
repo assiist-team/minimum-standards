@@ -132,11 +132,11 @@
 **Estimated Size**: ~400 lines
 
 ### Included Subtasks
-- [ ] T018 Create `CreateStandardFlow` navigator in `apps/mobile/src/navigation/` with step indicator (1/3, 2/3, 3/3) and forward/back navigation
-- [ ] T019 Build Step 1 screen (`SelectActivityStep.tsx`) — FlatList of existing activities with search, plus "Create New Activity" option
-- [ ] T020 Display selected activity's unit and category inline below selection (e.g., "Unit: minutes" / "Category: Fitness" or "Category: None")
-- [ ] T021 Allow category assignment/change on selected activity via category picker
-- [ ] T022 Add inline methodology tip: *"Pick the activity that, if you did enough of it, would make success almost guaranteed."* and "Learn More" expandable
+- [x] T018 Create `CreateStandardFlow` navigator in `apps/mobile/src/navigation/` with step indicator (1/3, 2/3, 3/3) and forward/back navigation
+- [x] T019 Build Step 1 screen (`SelectActivityStep.tsx`) — FlatList of existing activities with search, plus "Create New Activity" option
+- [x] T020 Display selected activity's unit and category inline below selection (e.g., "Unit: minutes" / "Category: Fitness" or "Category: None")
+- [x] T021 Allow category assignment/change on selected activity via category picker
+- [x] T022 Add inline methodology tip: *"Pick the activity that, if you did enough of it, would make success almost guaranteed."* and "Learn More" expandable
 - [ ] T022a Add reset() and loadFromStandard(standard) methods to standardsBuilderStore.ts to support Create flow initialization and Edit mode pre-population
 
 ### Implementation Notes
