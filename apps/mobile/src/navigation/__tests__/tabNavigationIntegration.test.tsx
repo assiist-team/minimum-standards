@@ -5,24 +5,25 @@ import {
   SETTINGS_TAB_ROUTE_NAME,
 } from '../types';
 
-// Mock BottomTabNavigator and its dependencies before importing
+// Mock BottomTabNavigator with the new 4-tab structure
 jest.mock('../BottomTabNavigator', () => ({
   BottomTabNavigator: () => {
     const React = require('react');
     const { View, Text, TouchableOpacity } = require('react-native');
-    const [currentTab, setCurrentTab] = React.useState('Dashboard');
+    const [currentTab, setCurrentTab] = React.useState('Standards');
     const [currentScreen, setCurrentScreen] = React.useState('ActiveStandardsDashboard');
 
     const handleTabPress = (tab: string) => {
       setCurrentTab(tab);
-      if (tab === 'Dashboard') {
+      if (tab === 'Standards') {
         setCurrentScreen('ActiveStandardsDashboard');
-      } else if (tab === 'Standards') {
-        setCurrentScreen('StandardsLibrary');
-      } else if (tab === 'Activities') {
+      } else if (tab === 'Scorecard') {
         setCurrentScreen('Scorecard');
       } else if (tab === SETTINGS_TAB_ROUTE_NAME) {
         setCurrentScreen(SETTINGS_STACK_ROOT_SCREEN_NAME);
+      } else if (tab === 'Create') {
+        // "+" button navigates to StandardsBuilder without switching tab
+        setCurrentScreen('StandardsBuilder');
       }
     };
 
@@ -36,17 +37,12 @@ jest.mock('../BottomTabNavigator', () => ({
       // Tab buttons
       React.createElement(
         TouchableOpacity,
-        { testID: 'dashboard-tab', onPress: () => handleTabPress('Dashboard') },
-        React.createElement(Text, null, 'Active')
-      ),
-      React.createElement(
-        TouchableOpacity,
         { testID: 'standards-tab', onPress: () => handleTabPress('Standards') },
         React.createElement(Text, null, 'Standards')
       ),
       React.createElement(
         TouchableOpacity,
-        { testID: 'activities-tab', onPress: () => handleTabPress('Activities') },
+        { testID: 'scorecard-tab', onPress: () => handleTabPress('Scorecard') },
         React.createElement(Text, null, 'Scorecard')
       ),
       React.createElement(
@@ -54,18 +50,17 @@ jest.mock('../BottomTabNavigator', () => ({
         { testID: 'settings-tab', onPress: () => handleTabPress(SETTINGS_TAB_ROUTE_NAME) },
         React.createElement(Text, null, 'Settings')
       ),
+      React.createElement(
+        TouchableOpacity,
+        { testID: 'create-tab', onPress: () => handleTabPress('Create') },
+        React.createElement(Text, null, '+')
+      ),
       // Current screen based on tab and navigation
       currentScreen === 'ActiveStandardsDashboard' &&
         React.createElement(
           View,
           { testID: 'active-standards-dashboard-screen' },
-          React.createElement(Text, null, 'Active Standards Dashboard')
-        ),
-      currentScreen === 'StandardsLibrary' &&
-        React.createElement(
-          View,
-          { testID: 'standards-library-screen' },
-          React.createElement(Text, null, 'Standards Library'),
+          React.createElement(Text, null, 'Active Standards Dashboard'),
           React.createElement(
             TouchableOpacity,
             {
@@ -92,76 +87,60 @@ jest.mock('../BottomTabNavigator', () => ({
 }));
 
 describe('Tab Navigation Integration', () => {
-  test('navigation from Standards Library to Standards Builder works', async () => {
+  test('Standards tab shows Active Standards Dashboard as root', async () => {
     const { getByTestId } = render(
       React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
     );
 
-    // Navigate to Standards tab
-    const standardsTab = getByTestId('standards-tab');
-    fireEvent.press(standardsTab);
-
-    // Wait for Standards Library screen to render
+    // Standards tab is initial, should show ActiveStandardsDashboard
     await waitFor(() => {
-      expect(getByTestId('standards-library-screen')).toBeTruthy();
+      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
+    });
+  });
+
+  test('Create (+) button navigates to Standards Builder', async () => {
+    const { getByTestId } = render(
+      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
+    );
+
+    // Tap the "+" button
+    const createTab = getByTestId('create-tab');
+    fireEvent.press(createTab);
+
+    // Verify Standards Builder screen is shown
+    await waitFor(() => {
+      expect(getByTestId('standards-builder-screen')).toBeTruthy();
+    });
+  });
+
+  test('navigation from Dashboard to Standards Builder works', async () => {
+    const { getByTestId } = render(
+      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
+    );
+
+    // Start on Standards tab showing ActiveStandardsDashboard
+    await waitFor(() => {
+      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
     });
 
-    // Navigate to Standards Builder
+    // Navigate to Standards Builder via the dashboard button
     const navigateToBuilderButton = getByTestId('navigate-to-builder-button');
     fireEvent.press(navigateToBuilderButton);
 
     // Verify Standards Builder screen is shown
     await waitFor(() => {
       expect(getByTestId('standards-builder-screen')).toBeTruthy();
-      expect(getByTestId('standards-builder-screen')).toBeTruthy();
     });
   });
 
-  test('tab switching preserves state when switching tabs', async () => {
-    const { getByTestId } = render(
-      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
-    );
-
-    // Start on Dashboard tab
-    await waitFor(() => {
-      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
-    });
-
-    // Navigate to Standards tab
-    const standardsTab = getByTestId('standards-tab');
-    fireEvent.press(standardsTab);
-
-    // Verify Standards Library is shown
-    await waitFor(() => {
-      expect(getByTestId('standards-library-screen')).toBeTruthy();
-    });
-
-    // Switch back to Dashboard tab
-    const dashboardTab = getByTestId('dashboard-tab');
-    fireEvent.press(dashboardTab);
-
-    // Verify Dashboard screen is still accessible (state preserved)
-    await waitFor(() => {
-      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
-    });
-
-    // Switch back to Standards tab
-    fireEvent.press(standardsTab);
-
-    // Verify Standards Library is still accessible (state preserved)
-    await waitFor(() => {
-      expect(getByTestId('standards-library-screen')).toBeTruthy();
-    });
-  });
-
-  test('Activities tab shows Scorecard screen', async () => {
+  test('Scorecard tab shows Scorecard screen', async () => {
     const { getByTestId, getByText } = render(
       React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
     );
 
-    // Navigate to Activities tab
-    const activitiesTab = getByTestId('activities-tab');
-    fireEvent.press(activitiesTab);
+    // Navigate to Scorecard tab
+    const scorecardTab = getByTestId('scorecard-tab');
+    fireEvent.press(scorecardTab);
 
     // Verify Scorecard screen is shown
     await waitFor(() => {
@@ -170,7 +149,7 @@ describe('Tab Navigation Integration', () => {
     });
   });
 
-  test('Settings tab shows Settings screen', async () => {
+  test('Settings tab is accessible', async () => {
     const { getByTestId } = render(
       React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
     );
@@ -181,5 +160,32 @@ describe('Tab Navigation Integration', () => {
 
     // Verify Settings tab is accessible
     expect(settingsTab).toBeTruthy();
+  });
+
+  test('tab switching returns to Standards Dashboard', async () => {
+    const { getByTestId } = render(
+      React.createElement(require('../BottomTabNavigator').BottomTabNavigator)
+    );
+
+    // Start on Standards tab
+    await waitFor(() => {
+      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
+    });
+
+    // Switch to Scorecard tab
+    const scorecardTab = getByTestId('scorecard-tab');
+    fireEvent.press(scorecardTab);
+
+    await waitFor(() => {
+      expect(getByTestId('scorecard-screen')).toBeTruthy();
+    });
+
+    // Switch back to Standards tab
+    const standardsTab = getByTestId('standards-tab');
+    fireEvent.press(standardsTab);
+
+    await waitFor(() => {
+      expect(getByTestId('active-standards-dashboard-screen')).toBeTruthy();
+    });
   });
 });
