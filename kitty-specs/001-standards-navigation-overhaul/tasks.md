@@ -29,9 +29,9 @@
 **Estimated Size**: ~300 lines
 
 ### Included Subtasks
-- [ ] T001 [P] Create `BottomSheet` base component in `apps/mobile/src/components/BottomSheet.tsx` — port from ledger_mobile reference with project-local theme integration
-- [ ] T002 [P] Create `BottomSheetMenu` component in `apps/mobile/src/components/BottomSheetMenu.tsx` — action list with icons, Title Case labels, dividers
-- [ ] T003 [P] Create `BottomSheetConfirmation` component in `apps/mobile/src/components/BottomSheetConfirmation.tsx` — destructive action confirmation dialog with cancel/confirm buttons
+- [x] T001 [P] Create `BottomSheet` base component in `apps/mobile/src/components/BottomSheet.tsx` — port from ledger_mobile reference with project-local theme integration
+- [x] T002 [P] Create `BottomSheetMenu` component in `apps/mobile/src/components/BottomSheetMenu.tsx` — action list with icons, Title Case labels, dividers
+- [x] T003 [P] Create `BottomSheetConfirmation` component in `apps/mobile/src/components/BottomSheetConfirmation.tsx` — destructive action confirmation dialog with cancel/confirm buttons
 
 ### Implementation Notes
 - Reference implementation: `/Users/benjaminmackenzie/Dev/ledger_mobile/src/components/BottomSheet.tsx` and `BottomSheetMenuList.tsx`
