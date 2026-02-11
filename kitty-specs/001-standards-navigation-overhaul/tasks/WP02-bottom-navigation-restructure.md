@@ -1,7 +1,7 @@
 ---
 work_package_id: WP02
 title: Bottom Navigation Restructure
-lane: "for_review"
+lane: "doing"
 dependencies: []
 base_branch: main
 base_commit: 7215f69959f0bebaf19e41bccb31613748c7cc77
@@ -17,7 +17,7 @@ subtasks:
 phase: Phase 0 - Foundation
 assignee: ''
 agent: "claude-opus"
-shell_pid: "91038"
+shell_pid: "16420"
 review_status: ''
 reviewed_by: ''
 history:
@@ -236,3 +236,4 @@ history:
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:01:55Z – claude-opus – shell_pid=91038 – lane=doing – Assigned agent via workflow command
 - 2026-02-11T23:10:18Z – claude-opus – shell_pid=91038 – lane=for_review – Ready for review: Restructured bottom nav to 4 tabs (Standards, Scorecard, Settings, +). Removed Dashboard tab, StickyLogButton, and StandardsLibrary from nav. Updated all types and tests.
+- 2026-02-11T23:13:50Z – claude-opus – shell_pid=16420 – lane=doing – Started review via workflow command
