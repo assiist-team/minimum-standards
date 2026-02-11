@@ -242,7 +242,7 @@
 **Estimated Size**: ~350 lines
 
 ### Included Subtasks
-- [ ] T037 Create bottom sheet for active standard card actions with "Edit", "Deactivate", "Delete", and "Categorize" items (Title Case)
+- [x] T037 Create bottom sheet for active standard card actions with "Edit", "Deactivate", "Delete", and "Categorize" items (Title Case)
 - [ ] T038 Wire "Edit" to navigate to CreateStandardFlow pre-populated with existing standard data via `standardsBuilderStore`
 - [ ] T039 Wire "Deactivate" with confirmation bottom sheet → call `archiveStandard()` from `useStandards`
 - [ ] T040 Wire "Delete" with confirmation bottom sheet → call `deleteStandard()` from `useStandards`
