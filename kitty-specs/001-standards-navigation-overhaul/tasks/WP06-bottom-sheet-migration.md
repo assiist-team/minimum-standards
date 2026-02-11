@@ -1,7 +1,7 @@
 ---
 work_package_id: WP06
 title: Bottom Sheet Menu Migration
-lane: "doing"
+lane: "done"
 dependencies: [WP01, WP03]
 base_branch: 001-standards-navigation-overhaul-WP06-merge-base
 base_commit: ae533d45b738150b79a6ef55314c960799c5ef38
@@ -17,8 +17,8 @@ phase: Phase 3 - Polish P2
 assignee: ''
 agent: "claude-opus"
 shell_pid: "3247"
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "nine4-team"
 history:
 - timestamp: '2026-02-11T22:17:53Z'
   lane: planned
@@ -228,3 +228,4 @@ history:
 - 2026-02-11T23:39:34Z – claude-opus – shell_pid=71324 – lane=doing – Assigned agent via workflow command
 - 2026-02-11T23:52:52Z – claude-opus – shell_pid=71324 – lane=for_review – Ready for review: All interactive Alert.alert() dialogs and custom Modal overlay menus replaced with BottomSheetMenu/BottomSheetConfirmation. RangeFilterDrawer refactored to use BottomSheet base. 6 files changed, net -504 lines.
 - 2026-02-11T23:53:51Z – claude-opus – shell_pid=3247 – lane=doing – Started review via workflow command
+- 2026-02-11T23:56:51Z – claude-opus – shell_pid=3247 – lane=done – Review passed: All interactive Alert.alert() dialogs and custom overlay menus in scoped screens replaced with BottomSheet components. 6 files changed, net -504 lines. Title Case verified. Clean refactoring with proper BottomSheetMenu/BottomSheetConfirmation usage. Two minor out-of-scope Alert.alert() calls remain in ActivityModal.tsx and SnapshotDetailScreen.tsx for follow-up.
