@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { BottomTabParamList, SETTINGS_TAB_ROUTE_NAME } from './types';
@@ -32,7 +32,12 @@ export function BottomTabNavigator() {
   // This ensures it runs for the whole session and avoids duplicate timers
   useActivityHistoryEngine();
 
-  const tabBarStyle = getTabBarStyle(theme, insets);
+  const baseTabBarStyle = getTabBarStyle(theme, insets);
+  const tabBarStyle = {
+    ...baseTabBarStyle,
+    height: typeof baseTabBarStyle.height === 'number' ? baseTabBarStyle.height + 16 : baseTabBarStyle.height,
+    minHeight: typeof baseTabBarStyle.minHeight === 'number' ? baseTabBarStyle.minHeight + 16 : baseTabBarStyle.minHeight,
+  };
 
   return (
     <Tab.Navigator
@@ -52,6 +57,44 @@ export function BottomTabNavigator() {
         },
       }}
     >
+      <Tab.Screen
+        name="Create"
+        component={EmptyScreen}
+        options={({ navigation }) => ({
+          tabBarLabel: () => null,
+          tabBarIcon: () => null,
+          tabBarAccessibilityLabel: 'Create standard',
+          tabBarButton: () => (
+            <Pressable
+              onPress={() => navigation.navigate('CreateStandardFlow')}
+              accessibilityRole="button"
+              accessibilityLabel="Create standard"
+              style={({ pressed }) => ({
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingTop: 4,
+                opacity: pressed ? 0.6 : 1,
+                transform: [{ scale: pressed ? 0.9 : 1 }],
+              })}
+            >
+              <View
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  borderWidth: 2,
+                  borderColor: theme.button.primary.background,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <MaterialIcons name="add" size={30} color={theme.tabBar.inactiveTint} />
+              </View>
+            </Pressable>
+          ),
+        })}
+      />
       <Tab.Screen
         name="Standards"
         component={StandardsStack}
@@ -84,23 +127,6 @@ export function BottomTabNavigator() {
           ),
           tabBarAccessibilityLabel: 'Settings tab',
         }}
-      />
-      <Tab.Screen
-        name="Create"
-        component={EmptyScreen}
-        options={{
-          tabBarLabel: '',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="add" size={size || 24} color={color} />
-          ),
-          tabBarAccessibilityLabel: 'Create standard',
-        }}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault();
-            navigation.navigate('CreateStandardFlow');
-          },
-        })}
       />
     </Tab.Navigator>
   );
