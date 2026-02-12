@@ -37,7 +37,7 @@ export function SelectActivityStep() {
   const setSelectedActivity = useStandardsBuilderStore((s) => s.setSelectedActivity);
 
   const [showActivityModal, setShowActivityModal] = useState(false);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [learnMoreExpanded, setLearnMoreExpanded] = useState(false);
 
   const resetBuilder = useStandardsBuilderStore((s) => s.reset);
@@ -77,13 +77,19 @@ export function SelectActivityStep() {
     [setSelectedActivity],
   );
 
-  const handleCategoryChange = useCallback(
-    async (categoryId: string | null) => {
-      if (!selectedActivity) return;
-      await updateActivity(selectedActivity.id, { categoryId });
-      // Update the local selectedActivity reference to reflect the change
-      setSelectedActivity({ ...selectedActivity, categoryId });
-      setShowCategoryPicker(false);
+  const handleEditActivitySave = useCallback(
+    async (
+      activityData: Omit<Activity, 'id' | 'createdAtMs' | 'updatedAtMs' | 'deletedAtMs'>,
+    ) => {
+      if (!selectedActivity) throw new Error('No activity selected');
+      await updateActivity(selectedActivity.id, activityData);
+      // Update the builder store with the new data so the UI reflects changes immediately
+      setSelectedActivity({
+        ...selectedActivity,
+        ...activityData,
+        updatedAtMs: Date.now(),
+      });
+      return { ...selectedActivity, ...activityData, updatedAtMs: Date.now() };
     },
     [selectedActivity, updateActivity, setSelectedActivity],
   );
@@ -220,87 +226,32 @@ export function SelectActivityStep() {
         }
       />
 
-      {/* T020 & T021: Selected Activity Details */}
+      {/* Selected Activity Details */}
       {selectedActivity && (
         <View style={[styles.selectionDetails, { borderTopColor: theme.border.primary }]}>
-          <Text style={[styles.selectionLabel, { color: theme.text.primary }]}>
-            {selectedActivity.name}
-          </Text>
+          <View style={styles.selectionHeaderRow}>
+            <Text style={[styles.selectionLabel, { color: theme.text.primary }]}>
+              {selectedActivity.name}
+            </Text>
+            <TouchableOpacity
+              style={[styles.editButton, { borderColor: theme.button.primary.background }]}
+              onPress={() => setEditModalVisible(true)}
+            >
+              <MaterialIcons name="edit" size={14} color={theme.button.primary.background} />
+              <Text style={[styles.editButtonText, { color: theme.button.primary.background }]}>
+                Edit
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.detailRow}>
             <Text style={[styles.detailText, { color: theme.text.secondary }]}>
               Unit: {selectedActivity.unit || '(none)'}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.detailRow}
-            onPress={() => setShowCategoryPicker(true)}
-          >
+          <View style={styles.detailRow}>
             <Text style={[styles.detailText, { color: theme.text.secondary }]}>
               Category: {getCategoryName(selectedActivity.categoryId)}
             </Text>
-            <MaterialIcons name="edit" size={14} color={theme.text.secondary} />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* T021: Category Picker Overlay */}
-      {showCategoryPicker && selectedActivity && (
-        <View
-          style={[
-            styles.categoryPickerOverlay,
-            { backgroundColor: theme.background.overlay },
-          ]}
-        >
-          <View
-            style={[
-              styles.categoryPickerContent,
-              {
-                backgroundColor: theme.background.chrome,
-                paddingBottom: Math.max(insets.bottom, 16),
-              },
-            ]}
-          >
-            <View
-              style={[styles.categoryPickerHeader, { borderBottomColor: theme.border.primary }]}
-            >
-              <Text style={[styles.categoryPickerTitle, { color: theme.text.primary }]}>
-                Assign Category
-              </Text>
-              <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
-                <MaterialIcons name="close" size={24} color={theme.text.secondary} />
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              style={[styles.categoryOption, { borderBottomColor: theme.border.primary }]}
-              onPress={() => handleCategoryChange(null)}
-            >
-              <Text style={[styles.categoryOptionText, { color: theme.text.primary }]}>
-                None
-              </Text>
-              {!selectedActivity.categoryId && (
-                <MaterialIcons name="check" size={20} color={theme.button.primary.background} />
-              )}
-            </TouchableOpacity>
-            {orderedCategories
-              .filter((c) => !c.isSystem)
-              .map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[styles.categoryOption, { borderBottomColor: theme.border.primary }]}
-                  onPress={() => handleCategoryChange(category.id)}
-                >
-                  <Text style={[styles.categoryOptionText, { color: theme.text.primary }]}>
-                    {category.name}
-                  </Text>
-                  {selectedActivity.categoryId === category.id && (
-                    <MaterialIcons
-                      name="check"
-                      size={20}
-                      color={theme.button.primary.background}
-                    />
-                  )}
-                </TouchableOpacity>
-              ))}
           </View>
         </View>
       )}
@@ -350,6 +301,16 @@ export function SelectActivityStep() {
         onSave={handleCreateActivitySave}
         onSelect={handleCreatedActivitySelect}
       />
+
+      {/* Activity Modal for editing selected activity */}
+      {selectedActivity && (
+        <ActivityModal
+          visible={editModalVisible}
+          activity={selectedActivity}
+          onClose={() => setEditModalVisible(false)}
+          onSave={handleEditActivitySave}
+        />
+      )}
     </View>
   );
 }
@@ -450,7 +411,7 @@ const styles = StyleSheet.create({
   selectionLabel: {
     fontSize: 15,
     fontWeight: '600',
-    marginBottom: 4,
+    flex: 1,
   },
   detailRow: {
     flexDirection: 'row',
@@ -461,38 +422,25 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 13,
   },
-  // Category picker styles (T021)
-  categoryPickerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-  },
-  categoryPickerContent: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    maxHeight: '60%',
-  },
-  categoryPickerHeader: {
+  // Edit button styles
+  selectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
+    marginBottom: 4,
   },
-  categoryPickerTitle: {
-    fontSize: 17,
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  editButtonText: {
+    fontSize: 13,
     fontWeight: '600',
-  },
-  categoryOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  categoryOptionText: {
-    fontSize: 16,
   },
   // Footer styles
   footer: {
