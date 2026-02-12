@@ -44,6 +44,7 @@ export interface StandardProgressCardProps {
   periodStartMs?: number;
   periodEndMs?: number;
   nowMs?: number;
+  showTimeBar?: boolean;
 }
 
 // Helper function to format time elapsed/remaining
@@ -113,6 +114,7 @@ export function StandardProgressCard({
   periodStartMs,
   periodEndMs,
   nowMs,
+  showTimeBar: showTimeBarProp = true,
 }: StandardProgressCardProps) {
   const theme = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
@@ -383,6 +385,7 @@ export function StandardProgressCard({
             </View>
           </View>
 
+        {showTimeBarProp && (
         <View
           style={[
             styles.progressContainer,
@@ -438,6 +441,7 @@ export function StandardProgressCard({
             )}
           </View>
         </View>
+        )}
       </View>
     </Pressable>
 

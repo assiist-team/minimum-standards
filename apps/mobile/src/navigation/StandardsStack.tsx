@@ -1,7 +1,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StandardsStackParamList } from './types';
 import {
-  ActiveStandardsDashboardScreenWrapper,
+  StandardsScreenWrapper,
   StandardsBuilderScreenWrapper,
   StandardDetailScreenWrapper,
 } from './screenWrappers';
@@ -16,7 +16,7 @@ export function StandardsStack() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="ActiveStandardsDashboard" component={ActiveStandardsDashboardScreenWrapper} />
+      <Stack.Screen name="ActiveStandardsDashboard" component={StandardsScreenWrapper} />
       <Stack.Screen name="StandardsBuilder" component={StandardsBuilderScreenWrapper} />
       <Stack.Screen name="StandardDetail" component={StandardDetailScreenWrapper} />
     </Stack.Navigator>

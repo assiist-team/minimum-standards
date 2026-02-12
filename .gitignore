@@ -20,3 +20,5 @@
 .firebase/
 .firebaserc
 .kittify/
+# Excluded via sparse-checkout
+kitty-specs/
