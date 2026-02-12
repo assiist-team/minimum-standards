@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Add Category Picker to ActivityModal
-lane: "doing"
+lane: "for_review"
 dependencies: []
 base_branch: main
 base_commit: 74c51e1711556e38b3bcb0c151ffb492da159721
@@ -279,3 +279,4 @@ To change a work package's lane, either:
 
 **Valid lanes**: `planned`, `doing`, `for_review`, `done`
 - 2026-02-12T01:50:14Z – claude-opus – shell_pid=45737 – lane=doing – Assigned agent via workflow command
+- 2026-02-12T01:52:58Z – claude-opus – shell_pid=45737 – lane=for_review – Ready for review: Category picker added to ActivityModal between Unit and Notes. BottomSheetMenu shows None + user-defined categories. Save handler wired to categoryId state.
