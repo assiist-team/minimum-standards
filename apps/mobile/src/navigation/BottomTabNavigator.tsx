@@ -97,9 +97,7 @@ export function BottomTabNavigator() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            navigation.navigate('Standards', {
-              screen: 'StandardsBuilder',
-            });
+            navigation.navigate('CreateStandardFlow');
           },
         })}
       />

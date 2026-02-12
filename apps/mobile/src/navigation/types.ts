@@ -10,6 +10,13 @@ export type AuthStackParamList = {
   PasswordReset: undefined;
 };
 
+// Create Standard flow param list
+export type CreateStandardFlowParamList = {
+  SelectActivity: undefined;
+  SetVolume: undefined;
+  SetPeriod: undefined;
+};
+
 // Individual tab stack param lists
 export type StandardsStackParamList = {
   ActiveStandardsDashboard: undefined;
@@ -42,6 +49,7 @@ export type BottomTabParamList = {
 // Main stack now contains the bottom tab navigator
 export type MainStackParamList = {
   MainTabs: NavigatorScreenParams<BottomTabParamList>;
+  CreateStandardFlow: NavigatorScreenParams<CreateStandardFlowParamList>;
 };
 
 export type RootStackParamList = {
