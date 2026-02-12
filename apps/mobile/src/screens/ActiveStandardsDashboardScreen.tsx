@@ -798,6 +798,12 @@ export function StandardsScreen({
         title="Options"
         items={[
           {
+            key: 'show-time-bar',
+            label: 'Show Time Bar',
+            icon: showTimeBar ? 'check' : undefined,
+            onPress: () => setShowTimeBar(!showTimeBar),
+          },
+          {
             key: 'sort-completion',
             label: 'Sort by Completion',
             icon: sortOption === 'completion' ? 'check' : undefined,
@@ -812,14 +818,7 @@ export function StandardsScreen({
           {
             key: 'manage-categories',
             label: 'Manage Categories',
-            icon: 'folder',
             onPress: handleCategorizePress,
-          },
-          {
-            key: 'show-time-bar',
-            label: 'Show Time Bar',
-            icon: showTimeBar ? 'check' : undefined,
-            onPress: () => setShowTimeBar(!showTimeBar),
           },
           {
             key: 'show-inactive',
