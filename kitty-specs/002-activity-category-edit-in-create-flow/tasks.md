@@ -51,12 +51,12 @@
 **Estimated Prompt Size**: ~350 lines
 
 ### Included Subtasks
-- [ ] T006 Remove inline category picker state, handler, and overlay JSX
-- [ ] T007 Remove category picker styles from StyleSheet
-- [ ] T008 Convert category display from tappable to read-only
-- [ ] T009 Add `editModalVisible` state and `handleEditActivitySave` callback
-- [ ] T010 Add Edit button in selected activity details panel
-- [ ] T011 Add `ActivityModal` instance in edit mode for selected activity
+- [x] T006 Remove inline category picker state, handler, and overlay JSX
+- [x] T007 Remove category picker styles from StyleSheet
+- [x] T008 Convert category display from tappable to read-only
+- [x] T009 Add `editModalVisible` state and `handleEditActivitySave` callback
+- [x] T010 Add Edit button in selected activity details panel
+- [x] T011 Add `ActivityModal` instance in edit mode for selected activity
 
 ### Implementation Notes
 - **Remove** (dead code cleanup per FR-013): `showCategoryPicker` state (line 40), `handleCategoryChange` callback (lines 80-89), overlay JSX (lines 247-306), and 6 style entries (`categoryPickerOverlay`, `categoryPickerContent`, `categoryPickerHeader`, `categoryPickerTitle`, `categoryOption`, `categoryOptionText`).
