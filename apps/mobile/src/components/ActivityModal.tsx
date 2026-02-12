@@ -14,9 +14,12 @@ import {
   useWindowDimensions,
   Alert,
 } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { Activity, activitySchema } from '@minimum-standards/shared-model';
 import { useTheme } from '../theme/useTheme';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useCategories } from '../hooks/useCategories';
+import { BottomSheetMenu } from './BottomSheetMenu';
 
 export interface ActivityModalProps {
   visible: boolean;
@@ -52,9 +55,31 @@ export function ActivityModal({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const { orderedCategories } = useCategories();
+  const [categoryId, setCategoryId] = useState<string | null>(activity?.categoryId ?? null);
+  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
 
   const isEditMode = !!activity;
   const isBusy = saving || deleting;
+
+  const categoryDisplayName = categoryId
+    ? orderedCategories.find(c => c.id === categoryId)?.name ?? 'None'
+    : 'None';
+
+  const categoryMenuItems = [
+    {
+      key: 'none',
+      label: 'None',
+      onPress: () => setCategoryId(null),
+    },
+    ...orderedCategories
+      .filter(c => !c.isSystem)
+      .map(c => ({
+        key: c.id,
+        label: c.name,
+        onPress: () => setCategoryId(c.id),
+      })),
+  ];
 
   // Initialize form when activity changes
   useEffect(() => {
@@ -62,12 +87,15 @@ export function ActivityModal({
       setName(activity.name);
       setUnit(activity.unit ? activity.unit.toLowerCase() : '');
       setNotes(activity.notes ?? '');
+      setCategoryId(activity.categoryId ?? null);
     } else {
       // Reset form for create mode
       setName('');
       setUnit('');
       setNotes('');
+      setCategoryId(null);
     }
+    setCategoryPickerVisible(false);
     setErrors({});
     setSaveError(null);
   }, [activity, visible]);
@@ -124,7 +152,7 @@ export function ActivityModal({
         name: name.trim(),
         unit: unit.trim(),
         notes: notes.trim() || null,
-        categoryId: activity?.categoryId ?? null,
+        categoryId: categoryId,
         createdAtMs: activity?.createdAtMs || Date.now(),
         updatedAtMs: Date.now(),
         deletedAtMs: activity?.deletedAtMs || null,
@@ -317,6 +345,21 @@ export function ActivityModal({
                 )}
               </View>
 
+              {/* Category Field */}
+              <TouchableOpacity
+                style={[styles.fieldRow, { borderBottomColor: theme.border.primary }]}
+                onPress={() => setCategoryPickerVisible(true)}
+                disabled={isBusy}
+              >
+                <Text style={[styles.label, { color: theme.text.primary }]}>Category</Text>
+                <View style={styles.fieldValueRow}>
+                  <Text style={[styles.fieldValue, { color: theme.text.secondary }]}>
+                    {categoryDisplayName}
+                  </Text>
+                  <MaterialIcons name="chevron-right" size={20} color={theme.text.secondary} />
+                </View>
+              </TouchableOpacity>
+
               {/* Notes field */}
               <View style={styles.field}>
                 <Text style={[styles.label, { color: theme.text.secondary }]}>Notes (optional)</Text>
@@ -421,6 +464,13 @@ export function ActivityModal({
                 </TouchableOpacity>
               )}
             </View>
+
+            <BottomSheetMenu
+              visible={categoryPickerVisible}
+              onRequestClose={() => setCategoryPickerVisible(false)}
+              items={categoryMenuItems}
+              title="Select Category"
+            />
           </Animated.View>
         </KeyboardAvoidingView>
       </View>
@@ -487,6 +537,21 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 100,
     paddingTop: 12,
+  },
+  fieldRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  fieldValueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  fieldValue: {
+    fontSize: 16,
   },
   errorText: {
     color: '#ff4444',
