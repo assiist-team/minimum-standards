@@ -1,26 +1,29 @@
 ---
-work_package_id: "WP01"
-subtasks:
-  - "T001"
-  - "T002"
-  - "T003"
-  - "T004"
-  - "T005"
-title: "Add Category Picker to ActivityModal"
-phase: "Phase 1 - Core Modal Enhancement"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
+work_package_id: WP01
+title: Add Category Picker to ActivityModal
+lane: "doing"
 dependencies: []
+base_branch: main
+base_commit: 74c51e1711556e38b3bcb0c151ffb492da159721
+created_at: '2026-02-12T01:50:14.451502+00:00'
+subtasks:
+- T001
+- T002
+- T003
+- T004
+- T005
+phase: Phase 1 - Core Modal Enhancement
+assignee: ''
+agent: ''
+shell_pid: "45737"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-12T01:43:15Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-12T01:43:15Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP01 – Add Category Picker to ActivityModal
