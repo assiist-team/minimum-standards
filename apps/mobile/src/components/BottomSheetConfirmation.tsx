@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../theme/useTheme';
 import { typography, BUTTON_BORDER_RADIUS, SCREEN_PADDING } from '@nine4/ui-kit';
@@ -28,29 +28,19 @@ export function BottomSheetConfirmation({
   onCancel,
 }: BottomSheetConfirmationProps) {
   const theme = useTheme();
-  const pendingAction = useRef<'confirm' | null>(null);
 
   const handleConfirm = useCallback(() => {
-    pendingAction.current = 'confirm';
     onRequestClose();
-  }, [onRequestClose]);
+    setTimeout(onConfirm, 100);
+  }, [onRequestClose, onConfirm]);
 
   const handleCancel = useCallback(() => {
-    pendingAction.current = null;
     if (onCancel) {
       onCancel();
     } else {
       onRequestClose();
     }
   }, [onCancel, onRequestClose]);
-
-  const handleDismiss = useCallback(() => {
-    const action = pendingAction.current;
-    pendingAction.current = null;
-    if (action === 'confirm') {
-      requestAnimationFrame(onConfirm);
-    }
-  }, [onConfirm]);
 
   const confirmBg = destructive
     ? theme.button.destructive.background
@@ -60,7 +50,7 @@ export function BottomSheetConfirmation({
     : theme.button.primary.text;
 
   return (
-    <BottomSheet visible={visible} onRequestClose={onRequestClose} onDismiss={handleDismiss}>
+    <BottomSheet visible={visible} onRequestClose={onRequestClose}>
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.text.primary }]}>{title}</Text>
         <Text style={[styles.message, { color: theme.text.secondary }]}>{message}</Text>

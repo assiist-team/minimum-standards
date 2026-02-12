@@ -16,18 +16,13 @@ export interface BottomSheetProps {
   visible: boolean;
   onRequestClose: () => void;
   /**
-   * Called after the Modal has been dismissed.
-   * Use this to execute actions that would conflict with modal presentation.
-   */
-  onDismiss?: () => void;
-  /**
    * Optional style override for the sheet container.
    */
   containerStyle?: ViewStyle;
   children: React.ReactNode;
 }
 
-export function BottomSheet({ visible, onRequestClose, onDismiss, containerStyle, children }: BottomSheetProps) {
+export function BottomSheet({ visible, onRequestClose, containerStyle, children }: BottomSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   // Note: our lint rules disallow accessing ref `.current` during render.
@@ -63,7 +58,6 @@ export function BottomSheet({ visible, onRequestClose, onDismiss, containerStyle
       transparent
       animationType="none"
       onRequestClose={onRequestClose}
-      onDismiss={onDismiss}
       statusBarTranslucent={Platform.OS === 'android'}
     >
       <View style={styles.root} accessibilityViewIsModal>

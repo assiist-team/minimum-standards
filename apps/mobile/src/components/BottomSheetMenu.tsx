@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../theme/useTheme';
@@ -23,26 +23,22 @@ export interface BottomSheetMenuProps {
 
 export function BottomSheetMenu({ visible, onRequestClose, items, title }: BottomSheetMenuProps) {
   const theme = useTheme();
-  const pendingAction = useRef<(() => void) | null>(null);
 
   const handleItemPress = useCallback(
     (onPress: () => void) => {
-      pendingAction.current = onPress;
       onRequestClose();
+      // Execute the action after the sheet has closed. The previous implementation
+      // deferred via Modal.onDismiss, but that callback never fires because
+      // BottomSheet unmounts the Modal when visible becomes false (and onDismiss
+      // is iOS-only regardless). A short timeout lets the state update flush
+      // before the action runs.
+      setTimeout(onPress, 100);
     },
     [onRequestClose],
   );
 
-  const handleDismiss = useCallback(() => {
-    const action = pendingAction.current;
-    pendingAction.current = null;
-    if (action) {
-      requestAnimationFrame(action);
-    }
-  }, []);
-
   return (
-    <BottomSheet visible={visible} onRequestClose={onRequestClose} onDismiss={handleDismiss}>
+    <BottomSheet visible={visible} onRequestClose={onRequestClose}>
       {title != null && (
         <View
           style={[

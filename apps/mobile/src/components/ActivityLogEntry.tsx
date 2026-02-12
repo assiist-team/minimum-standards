@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
-  InteractionManager,
 } from 'react-native';
 import { formatUnitWithCount } from '@minimum-standards/shared-model';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -57,37 +56,19 @@ export function ActivityLogEntry({
     }
   };
 
-  const pendingActionRef = useRef<(() => void) | null>(null);
-
-  const closeMenuAndQueueAction = (action?: () => void) => {
-    if (!action) {
-      setMenuVisible(false);
-      return;
-    }
-
-    if (!menuVisible) {
-      InteractionManager.runAfterInteractions(action);
-      return;
-    }
-
-    pendingActionRef.current = action;
+  const closeMenuAndRun = (action?: () => void) => {
     setMenuVisible(false);
+    if (action) {
+      setTimeout(action, 100);
+    }
   };
 
   const handleEditPress = () => {
-    closeMenuAndQueueAction(onEdit);
+    closeMenuAndRun(onEdit);
   };
 
   const handleDeletePress = () => {
-    closeMenuAndQueueAction(onDelete);
-  };
-
-  const handleMenuDismiss = () => {
-    if (pendingActionRef.current) {
-      const action = pendingActionRef.current;
-      pendingActionRef.current = null;
-      InteractionManager.runAfterInteractions(action);
-    }
+    closeMenuAndRun(onDelete);
   };
 
   const formattedValue = `${value} ${formatUnitWithCount(unit, value)}`;
@@ -145,13 +126,12 @@ export function ActivityLogEntry({
       visible={menuVisible}
       transparent={true}
       animationType="fade"
-      onRequestClose={() => closeMenuAndQueueAction()}
-      onDismiss={handleMenuDismiss}
+      onRequestClose={() => closeMenuAndRun()}
     >
       <TouchableOpacity
         style={styles.menuOverlay}
         activeOpacity={1}
-        onPress={() => closeMenuAndQueueAction()}
+        onPress={() => closeMenuAndRun()}
       >
         {menuButtonLayout && (() => {
           const screenWidth = Dimensions.get('window').width;
