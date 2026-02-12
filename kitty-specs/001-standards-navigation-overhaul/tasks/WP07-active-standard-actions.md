@@ -1,7 +1,7 @@
 ---
 work_package_id: WP07
 title: Active Standard Card Actions
-lane: "for_review"
+lane: "doing"
 dependencies: [WP01, WP03, WP04]
 base_branch: 001-standards-navigation-overhaul-WP07-merge-base
 base_commit: 06b2b73f16c31c485371bfcd6d1bfd02267f8e14
@@ -15,7 +15,7 @@ subtasks:
 phase: Phase 3 - Polish P2
 assignee: ''
 agent: "claude-opus"
-shell_pid: "5892"
+shell_pid: "30161"
 review_status: ''
 reviewed_by: ''
 history:
@@ -258,3 +258,4 @@ history:
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:54:52Z – claude-opus – shell_pid=5892 – lane=doing – Assigned agent via workflow command
 - 2026-02-12T00:05:32Z – claude-opus – shell_pid=5892 – lane=for_review – Ready for review: Active standard card bottom sheet actions (Edit, Deactivate, Delete, Categorize) with confirmations and category picker
+- 2026-02-12T00:05:44Z – claude-opus – shell_pid=30161 – lane=doing – Started review via workflow command
