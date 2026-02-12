@@ -3,6 +3,7 @@
 /node_modules/
 /apps/**/node_modules/
 /packages/**/node_modules/
+/functions/node_modules/
 /firebase-debug.log
 /coverage/
 /dist/
