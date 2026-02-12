@@ -20,6 +20,8 @@ import { useActivities } from '../hooks/useActivities';
 import { useCategories } from '../hooks/useCategories';
 import { useTheme } from '../theme/useTheme';
 import { UNCATEGORIZED_CATEGORY_ID, Activity, activitySchema } from '@minimum-standards/shared-model';
+import { BottomSheetConfirmation } from '../components/BottomSheetConfirmation';
+import { BottomSheetMenu } from '../components/BottomSheetMenu';
 
 export function ActivitySettingsScreen() {
   const theme = useTheme();
@@ -42,6 +44,9 @@ export function ActivitySettingsScreen() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Activity | null>(null);
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
   // Create category name map
   const categoryNameMap = useMemo(() => {
@@ -153,51 +158,28 @@ export function ActivitySettingsScreen() {
   }, [editingActivityId, editingName, editingUnit, editingNotes, editingCategoryId, updateActivity, handleCancelEdit]);
 
   const handleDeleteActivity = useCallback(
-    async (activity: Activity) => {
-      Alert.alert(
-        'Delete Activity',
-        `Delete "${activity.name}"?\n\nThis will also remove any standards for this activity from your Standards Library.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await deleteActivity(activity.id);
-              } catch (error) {
-                Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete activity');
-              }
-            },
-          },
-        ]
-      );
+    (activity: Activity) => {
+      setDeleteTarget(activity);
+      setDeleteConfirmVisible(true);
     },
-    [deleteActivity]
+    []
   );
+
+  const confirmDeleteActivity = useCallback(async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteActivity(deleteTarget.id);
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete activity');
+    }
+    setDeleteConfirmVisible(false);
+    setDeleteTarget(null);
+  }, [deleteTarget, deleteActivity]);
 
   const handleChangeCategory = useCallback(() => {
     if (!editingCategoryId) return;
-
-    Alert.alert(
-      'Change Category',
-      'Select a category:',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        ...orderedCategories
-          .filter((c) => c.id !== editingCategoryId)
-          .map((c) => ({
-            text: c.name,
-            onPress: () => setEditingCategoryId(c.id),
-          })),
-        {
-          text: 'Uncategorized',
-          onPress: () => setEditingCategoryId(UNCATEGORIZED_CATEGORY_ID),
-          style: editingCategoryId === UNCATEGORIZED_CATEGORY_ID ? 'cancel' : undefined,
-        },
-      ]
-    );
-  }, [editingCategoryId, orderedCategories]);
+    setCategoryMenuVisible(true);
+  }, [editingCategoryId]);
 
   if (activitiesLoading) {
     return (
@@ -428,6 +410,39 @@ export function ActivitySettingsScreen() {
           </ScrollView>
         </View>
       </Modal>
+
+      <BottomSheetConfirmation
+        visible={deleteConfirmVisible}
+        onRequestClose={() => {
+          setDeleteConfirmVisible(false);
+          setDeleteTarget(null);
+        }}
+        title="Delete Activity"
+        message={deleteTarget ? `Delete "${deleteTarget.name}"?\n\nThis will also remove any standards for this activity from your Standards Library.` : ''}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={confirmDeleteActivity}
+      />
+
+      <BottomSheetMenu
+        visible={categoryMenuVisible}
+        onRequestClose={() => setCategoryMenuVisible(false)}
+        title="Change Category"
+        items={[
+          ...orderedCategories
+            .filter((c) => c.id !== editingCategoryId)
+            .map((c) => ({
+              key: c.id,
+              label: c.name,
+              onPress: () => setEditingCategoryId(c.id),
+            })),
+          {
+            key: UNCATEGORIZED_CATEGORY_ID,
+            label: 'Uncategorized',
+            onPress: () => setEditingCategoryId(UNCATEGORIZED_CATEGORY_ID),
+          },
+        ]}
+      />
     </View>
   );
 }

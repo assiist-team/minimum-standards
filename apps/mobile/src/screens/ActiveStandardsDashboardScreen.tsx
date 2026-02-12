@@ -59,7 +59,6 @@ export function StandardsScreen({
   const [logModalVisible, setLogModalVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('completion');
   const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
-  const [sortMenuExpanded, setSortMenuExpanded] = useState(false);
   const filterTabsScrollRef = useRef<ScrollView>(null);
   const filterTabLayouts = useRef<Record<string, { x: number; width: number }>>({});
   
@@ -83,6 +82,8 @@ export function StandardsScreen({
   const [inactiveMenuStandard, setInactiveMenuStandard] = useState<Standard | null>(null);
   const [inactiveMenuVisible, setInactiveMenuVisible] = useState(false);
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [categorizeMenuEntry, setCategorizeMenuEntry] = useState<DashboardStandard | null>(null);
+  const [categorizeMenuVisible, setCategorizeMenuVisible] = useState(false);
   
   // Create activity lookup map for category resolution
   const activityMap = useMemo(() => {
@@ -302,13 +303,6 @@ export function StandardsScreen({
 
   const selectedFilterTabKey = focusedCategoryId ?? '__all__';
 
-  const sortLabel = sortOption === 'completion' ? 'Completion' : 'Alpha';
-
-  const closeHeaderMenu = useCallback(() => {
-    setHeaderMenuVisible(false);
-    setSortMenuExpanded(false);
-  }, []);
-
   // Keep the selected tab in view (same behavior as chart tabs).
   useEffect(() => {
     const layout = filterTabLayouts.current[selectedFilterTabKey];
@@ -329,8 +323,6 @@ export function StandardsScreen({
 
   const handleCardCategorize = useCallback(
     (entry: DashboardStandard) => {
-      const activityName = activityNameMap.get(entry.standard.activityId) ?? entry.standard.activityId;
-
       if (!hasCustomCategories) {
         trackStandardEvent('dashboard_categorize_missing_categories', {
           standardId: entry.standard.id,
@@ -340,45 +332,10 @@ export function StandardsScreen({
         return;
       }
 
-      const options = [
-        { text: 'Cancel', style: 'cancel' as const },
-        ...customCategories.map((category) => ({
-          text: category.name,
-          onPress: async () => {
-            try {
-              trackStandardEvent('dashboard_categorize_assign', {
-                standardId: entry.standard.id,
-                activityId: entry.standard.activityId,
-                categoryId: category.id,
-              });
-              await updateActivity(entry.standard.activityId, { categoryId: category.id });
-            } catch (err) {
-              Alert.alert('Error', 'Failed to assign category');
-              console.error('Failed to assign category:', err);
-            }
-          },
-        })),
-        {
-          text: 'Uncategorized',
-          onPress: async () => {
-            try {
-              trackStandardEvent('dashboard_categorize_assign', {
-                standardId: entry.standard.id,
-                activityId: entry.standard.activityId,
-                categoryId: UNCATEGORIZED_CATEGORY_ID,
-              });
-              await updateActivity(entry.standard.activityId, { categoryId: null });
-            } catch (err) {
-              Alert.alert('Error', 'Failed to assign category');
-              console.error('Failed to assign category:', err);
-            }
-          },
-        },
-      ];
-
-      Alert.alert('Categorize', `Assign "${activityName}" to a category:`, options);
+      setCategorizeMenuEntry(entry);
+      setCategorizeMenuVisible(true);
     },
-    [activityNameMap, customCategories, handleCategorizePress, hasCustomCategories, updateActivity]
+    [hasCustomCategories, handleCategorizePress]
   );
 
   const handleAssignCategory = useCallback(
@@ -668,127 +625,6 @@ export function StandardsScreen({
         </View>
       )}
 
-      {/* Header Kebab Menu */}
-      {headerMenuVisible && (
-        <TouchableOpacity
-          style={[
-            styles.menuOverlay,
-            { paddingTop: Math.max(insets.top, 12) + 44 },
-          ]}
-          activeOpacity={1}
-          onPress={closeHeaderMenu}
-          accessibilityRole="button"
-          accessibilityLabel="Close menu"
-        >
-          <View style={[styles.menuContainer, { backgroundColor: theme.background.modal, borderColor: theme.border.secondary }]}>
-            <TouchableOpacity
-              onPress={() => setSortMenuExpanded((prev) => !prev)}
-              style={styles.menuSectionHeader}
-              accessibilityRole="button"
-              accessibilityLabel="Sort"
-            >
-              <Text style={[styles.menuSectionTitle, { color: theme.text.primary }]}>Sort</Text>
-              <View style={styles.menuSectionRight}>
-                <Text style={[styles.menuSectionValue, { color: theme.text.secondary }]}>{sortLabel}</Text>
-                <MaterialIcons
-                  name={sortMenuExpanded ? 'expand-more' : 'chevron-right'}
-                  size={22}
-                  color={theme.text.secondary}
-                />
-              </View>
-            </TouchableOpacity>
-
-            {sortMenuExpanded && (
-              <View
-                style={[
-                  styles.menuSectionBody,
-                  {
-                    backgroundColor: theme.background.surface,
-                    borderTopColor: theme.border.secondary,
-                    borderBottomColor: theme.border.secondary,
-                  },
-                ]}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    setSortOption('completion');
-                    closeHeaderMenu();
-                  }}
-                  style={styles.submenuItem}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sort by completion percentage"
-                >
-                  <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Completion</Text>
-                  {sortOption === 'completion' && (
-                    <MaterialIcons name="check" size={20} color={theme.text.primary} />
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setSortOption('alpha');
-                    closeHeaderMenu();
-                  }}
-                  style={styles.submenuItem}
-                  accessibilityRole="button"
-                  accessibilityLabel="Sort alphabetically"
-                >
-                  <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Alpha</Text>
-                  {sortOption === 'alpha' && (
-                    <MaterialIcons name="check" size={20} color={theme.text.primary} />
-                  )}
-                </TouchableOpacity>
-              </View>
-            )}
-
-            <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
-
-            <TouchableOpacity
-              onPress={() => {
-                closeHeaderMenu();
-                handleCategorizePress();
-              }}
-              style={styles.menuActionItem}
-              accessibilityRole="button"
-              accessibilityLabel="Manage Categories"
-            >
-              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Manage Categories</Text>
-            </TouchableOpacity>
-
-            <View style={[styles.menuDivider, { backgroundColor: theme.border.secondary }]} />
-
-            <TouchableOpacity
-              onPress={() => {
-                setShowTimeBar(!showTimeBar);
-                closeHeaderMenu();
-              }}
-              style={styles.menuItem}
-              accessibilityRole="button"
-              accessibilityLabel="Show Time Bar"
-            >
-              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Show Time Bar</Text>
-              {showTimeBar && (
-                <MaterialIcons name="check" size={20} color={theme.text.primary} />
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                setShowInactiveStandards(!showInactiveStandards);
-                closeHeaderMenu();
-              }}
-              style={styles.menuItem}
-              accessibilityRole="button"
-              accessibilityLabel="Show Inactive Standards"
-            >
-              <Text style={[styles.menuItemText, { color: theme.text.primary }]}>Show Inactive Standards</Text>
-              {showInactiveStandards && (
-                <MaterialIcons name="check" size={20} color={theme.text.primary} />
-              )}
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      )}
-
       <ErrorBanner error={error} onRetry={handleRetry} />
 
       {content}
@@ -849,6 +685,91 @@ export function StandardsScreen({
         onCancel={() => {
           setDeleteConfirmVisible(false);
         }}
+      />
+
+      <BottomSheetMenu
+        visible={headerMenuVisible}
+        onRequestClose={() => setHeaderMenuVisible(false)}
+        title="Options"
+        items={[
+          {
+            key: 'sort-completion',
+            label: 'Sort by Completion',
+            icon: sortOption === 'completion' ? 'check' : undefined,
+            onPress: () => setSortOption('completion'),
+          },
+          {
+            key: 'sort-alpha',
+            label: 'Sort Alphabetically',
+            icon: sortOption === 'alpha' ? 'check' : undefined,
+            onPress: () => setSortOption('alpha'),
+          },
+          {
+            key: 'manage-categories',
+            label: 'Manage Categories',
+            icon: 'folder',
+            onPress: handleCategorizePress,
+          },
+          {
+            key: 'show-time-bar',
+            label: 'Show Time Bar',
+            icon: showTimeBar ? 'check' : undefined,
+            onPress: () => setShowTimeBar(!showTimeBar),
+          },
+          {
+            key: 'show-inactive',
+            label: 'Show Inactive Standards',
+            icon: showInactiveStandards ? 'check' : undefined,
+            onPress: () => setShowInactiveStandards(!showInactiveStandards),
+          },
+        ]}
+      />
+
+      <BottomSheetMenu
+        visible={categorizeMenuVisible}
+        onRequestClose={() => {
+          setCategorizeMenuVisible(false);
+          setCategorizeMenuEntry(null);
+        }}
+        title="Categorize"
+        items={categorizeMenuEntry ? [
+          ...customCategories.map((category) => ({
+            key: category.id,
+            label: category.name,
+            icon: getEffectiveCategoryId(categorizeMenuEntry) === category.id ? 'check' : undefined,
+            onPress: async () => {
+              try {
+                trackStandardEvent('dashboard_categorize_assign', {
+                  standardId: categorizeMenuEntry.standard.id,
+                  activityId: categorizeMenuEntry.standard.activityId,
+                  categoryId: category.id,
+                });
+                await updateActivity(categorizeMenuEntry.standard.activityId, { categoryId: category.id });
+              } catch (err) {
+                Alert.alert('Error', 'Failed to assign category');
+                console.error('Failed to assign category:', err);
+              }
+            },
+          })),
+          {
+            key: UNCATEGORIZED_CATEGORY_ID,
+            label: 'Uncategorized',
+            icon: getEffectiveCategoryId(categorizeMenuEntry) === UNCATEGORIZED_CATEGORY_ID ? 'check' : undefined,
+            onPress: async () => {
+              try {
+                trackStandardEvent('dashboard_categorize_assign', {
+                  standardId: categorizeMenuEntry.standard.id,
+                  activityId: categorizeMenuEntry.standard.activityId,
+                  categoryId: UNCATEGORIZED_CATEGORY_ID,
+                });
+                await updateActivity(categorizeMenuEntry.standard.activityId, { categoryId: null });
+              } catch (err) {
+                Alert.alert('Error', 'Failed to assign category');
+                console.error('Failed to assign category:', err);
+              }
+            },
+          },
+        ] : []}
       />
     </View>
   );
@@ -973,91 +894,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     paddingVertical: 4,
-  },
-  menuOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingRight: 16,
-    zIndex: 1000,
-    elevation: 1000,
-  },
-  menuContainer: {
-    borderRadius: 8,
-    borderWidth: 1,
-    minWidth: 220,
-    maxWidth: 280,
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
-  },
-  menuSectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  menuSectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  menuSectionRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginLeft: 12,
-  },
-  menuSectionValue: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  menuSectionBody: {
-    paddingBottom: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  submenuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    paddingLeft: 28,
-  },
-  menuActionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  menuItemText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  menuDivider: {
-    height: 1,
-    opacity: 0.6,
   },
   skeletonContainer: {
     padding: SCREEN_PADDING,

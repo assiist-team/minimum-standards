@@ -1,17 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Modal,
-  TouchableWithoutFeedback,
-  Animated,
-  useWindowDimensions,
 } from 'react-native';
 import { useTheme } from '../theme/useTheme';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import { BottomSheet } from './BottomSheet';
 
 export type TimeRange = '7d' | '30d' | '90d' | 'All';
 
@@ -36,26 +32,6 @@ export function RangeFilterDrawer({
   onSelectRange,
 }: RangeFilterDrawerProps) {
   const theme = useTheme();
-  const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
-  const slideAnim = React.useRef(new Animated.Value(windowHeight)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        useNativeDriver: true,
-        tension: 50,
-        friction: 8,
-      }).start();
-    } else {
-      Animated.timing(slideAnim, {
-        toValue: windowHeight,
-        duration: 250,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [visible, slideAnim, windowHeight]);
 
   const handleSelect = (range: TimeRange) => {
     onSelectRange(range);
@@ -63,97 +39,61 @@ export function RangeFilterDrawer({
   };
 
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="none"
       onRequestClose={onClose}
+      containerStyle={styles.container}
     >
-      <TouchableWithoutFeedback onPress={onClose}>
-        <View style={[styles.overlay, { backgroundColor: theme.background.overlay }]}>
-          <TouchableWithoutFeedback>
-            <Animated.View
+      <Text style={[styles.title, { color: theme.text.primary }]}>Select Time Range</Text>
+
+      <View style={styles.content}>
+        {RANGES.map((range) => {
+          const isSelected = selectedRange === range.value;
+          return (
+            <TouchableOpacity
+              key={range.value}
               style={[
-                styles.drawer,
-                {
-                  backgroundColor: theme.background.chrome,
-                  paddingBottom: Math.max(insets.bottom, 24),
-                  transform: [{ translateY: slideAnim }],
-                },
+                styles.rangeItem,
+                isSelected && { backgroundColor: theme.background.surface, borderColor: theme.primary.main },
+                !isSelected && { borderColor: 'transparent' }
               ]}
+              onPress={() => handleSelect(range.value)}
             >
-              <View style={styles.header}>
-                <View style={[styles.handle, { backgroundColor: theme.border.secondary }]} />
-                <Text style={[styles.title, { color: theme.text.primary }]}>Select Time Range</Text>
+              <View style={styles.rangeTextContainer}>
+                <Text style={[styles.rangeLabel, { color: theme.text.primary }, isSelected && { color: theme.primary.main, fontWeight: '700' }]}>
+                  {range.label}
+                </Text>
+                <Text style={[styles.rangeDescription, { color: theme.text.secondary }]}>
+                  {range.description}
+                </Text>
               </View>
+              {isSelected && (
+                <MaterialIcon name="check-circle" size={24} color={theme.primary.main} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-              <View style={styles.content}>
-                {RANGES.map((range) => {
-                  const isSelected = selectedRange === range.value;
-                  return (
-                    <TouchableOpacity
-                      key={range.value}
-                      style={[
-                        styles.rangeItem,
-                        isSelected && { backgroundColor: theme.background.surface, borderColor: theme.primary.main },
-                        !isSelected && { borderColor: 'transparent' }
-                      ]}
-                      onPress={() => handleSelect(range.value)}
-                    >
-                      <View style={styles.rangeTextContainer}>
-                        <Text style={[styles.rangeLabel, { color: theme.text.primary }, isSelected && { color: theme.primary.main, fontWeight: '700' }]}>
-                          {range.label}
-                        </Text>
-                        <Text style={[styles.rangeDescription, { color: theme.text.secondary }]}>
-                          {range.description}
-                        </Text>
-                      </View>
-                      {isSelected && (
-                        <MaterialIcon name="check-circle" size={24} color={theme.primary.main} />
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <TouchableOpacity
-                style={[styles.cancelButton, { backgroundColor: theme.background.surface }]}
-                onPress={onClose}
-              >
-                <Text style={[styles.cancelButtonText, { color: theme.text.primary }]}>Cancel</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        </View>
-      </TouchableWithoutFeedback>
-    </Modal>
+      <TouchableOpacity
+        style={[styles.cancelButton, { backgroundColor: theme.background.surface }]}
+        onPress={onClose}
+      >
+        <Text style={[styles.cancelButtonText, { color: theme.text.primary }]}>Cancel</Text>
+      </TouchableOpacity>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  drawer: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  container: {
     paddingHorizontal: 24,
-    paddingTop: 12,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    marginBottom: 16,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   content: {
     gap: 12,
