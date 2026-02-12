@@ -243,10 +243,10 @@
 
 ### Included Subtasks
 - [x] T037 Create bottom sheet for active standard card actions with "Edit", "Deactivate", "Delete", and "Categorize" items (Title Case)
-- [ ] T038 Wire "Edit" to navigate to CreateStandardFlow pre-populated with existing standard data via `standardsBuilderStore`
-- [ ] T039 Wire "Deactivate" with confirmation bottom sheet → call `archiveStandard()` from `useStandards`
-- [ ] T040 Wire "Delete" with confirmation bottom sheet → call `deleteStandard()` from `useStandards`
-- [ ] T041 Wire "Categorize" to open a category picker bottom sheet → update standard's activity category
+- [x] T038 Wire "Edit" to navigate to CreateStandardFlow pre-populated with existing standard data via `standardsBuilderStore`
+- [x] T039 Wire "Deactivate" with confirmation bottom sheet → call `archiveStandard()` from `useStandards`
+- [x] T040 Wire "Delete" with confirmation bottom sheet → call `deleteStandard()` from `useStandards`
+- [x] T041 Wire "Categorize" to open a category picker bottom sheet → update standard's activity category
 
 ### Implementation Notes
 - Edit action: load standard data into `standardsBuilderStore`, navigate to CreateStandardFlow with `standardId` param
