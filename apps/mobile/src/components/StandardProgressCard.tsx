@@ -388,7 +388,6 @@ export function StandardProgressCard({
             </View>
           </View>
 
-        {showTimeBarProp && (
         <View
           style={[
             styles.progressContainer,
@@ -397,7 +396,7 @@ export function StandardProgressCard({
           ]}
         >
           {/* Time progress bar */}
-          {shouldShowTimeBar && timeLabels && (
+          {showTimeBarProp && shouldShowTimeBar && timeLabels && (
             <>
               <View style={styles.progressSummaries}>
                 <Text style={[styles.progressSummaryText, { color: theme.text.secondary }]}>
@@ -444,7 +443,6 @@ export function StandardProgressCard({
             )}
           </View>
         </View>
-        )}
       </View>
     </Pressable>
 
