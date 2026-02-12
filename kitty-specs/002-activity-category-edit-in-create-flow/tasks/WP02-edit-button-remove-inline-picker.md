@@ -1,27 +1,30 @@
 ---
-work_package_id: "WP02"
+work_package_id: WP02
+title: Edit Button + Remove Inline Category Picker
+lane: "doing"
+dependencies: [WP01]
+base_branch: 002-activity-category-edit-in-create-flow-WP01
+base_commit: baca165e2b2c3b470b9c98f91a249b328198ab04
+created_at: '2026-02-12T02:12:06.696702+00:00'
 subtasks:
-  - "T006"
-  - "T007"
-  - "T008"
-  - "T009"
-  - "T010"
-  - "T011"
-title: "Edit Button + Remove Inline Category Picker"
-phase: "Phase 1 - SelectActivityStep Rework"
-lane: "planned"
-assignee: ""
-agent: ""
-shell_pid: ""
-review_status: ""
-reviewed_by: ""
-dependencies: ["WP01"]
+- T006
+- T007
+- T008
+- T009
+- T010
+- T011
+phase: Phase 1 - SelectActivityStep Rework
+assignee: ''
+agent: ''
+shell_pid: "86643"
+review_status: ''
+reviewed_by: ''
 history:
-  - timestamp: "2026-02-12T01:43:15Z"
-    lane: "planned"
-    agent: "system"
-    shell_pid: ""
-    action: "Prompt generated via /spec-kitty.tasks"
+- timestamp: '2026-02-12T01:43:15Z'
+  lane: planned
+  agent: system
+  shell_pid: ''
+  action: Prompt generated via /spec-kitty.tasks
 ---
 
 # Work Package Prompt: WP02 – Edit Button + Remove Inline Category Picker
