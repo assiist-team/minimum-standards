@@ -24,10 +24,11 @@ import type { Standard } from '@minimum-standards/shared-model';
 import { calculatePeriodWindow } from '@minimum-standards/shared-model';
 import { useStandards } from '../hooks/useStandards';
 import { useTheme } from '../theme/useTheme';
-import { BUTTON_BORDER_RADIUS } from '@nine4/ui-kit';
+import { BUTTON_BORDER_RADIUS, CARD_LIST_GAP } from '@nine4/ui-kit';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StandardCard } from './StandardCard';
-import { normalizeUnitToPlural } from '@minimum-standards/shared-model';
+import { normalizeUnitToPlural, formatUnitWithCount } from '@minimum-standards/shared-model';
+import { useStandardPeriodActivityLogs, ActivityLog } from '../hooks/useStandardPeriodActivityLogs';
 
 export interface EditLogEntry {
   id: string;
@@ -46,6 +47,7 @@ export interface LogEntryModalProps {
   resolveActivityName?: (activityId: string) => string | undefined;
   currentPeriodStartMs?: number;
   currentPeriodEndMs?: number;
+  onDeleteLogEntry?: (logEntryId: string, standardId: string, occurredAtMs: number) => Promise<void>;
 }
 
 export function LogEntryModal({
@@ -58,6 +60,7 @@ export function LogEntryModal({
   resolveActivityName,
   currentPeriodStartMs,
   currentPeriodEndMs,
+  onDeleteLogEntry,
 }: LogEntryModalProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -86,7 +89,18 @@ export function LogEntryModal({
 
   const { activeStandards, loading: standardsLoading } = useStandards();
 
-  const isEditMode = !!logEntry;
+  // Internal edit state for tapping a period entry card
+  const [internalEditEntry, setInternalEditEntry] = useState<EditLogEntry | null>(null);
+  const effectiveLogEntry = logEntry ?? internalEditEntry;
+  const isEditMode = !!effectiveLogEntry;
+
+  // Fetch period entries when standard is selected and not in external edit mode
+  const periodLogs = useStandardPeriodActivityLogs(
+    !logEntry && selectedStandard ? selectedStandard.id : null,
+    currentPeriodStartMs,
+    currentPeriodEndMs,
+    selectedStandard
+  );
   const affirmationMessages = useMemo(
     () => ['Nice work.', 'Logged.', 'Done.', 'Solid.', '+1 logged.', 'Keep it up.'],
     []
@@ -273,6 +287,7 @@ export function LogEntryModal({
     if (!visible) {
       // Reset state when modal closes so a new session always starts fresh
       setSelectedStandard(null);
+      setInternalEditEntry(null);
       setValue('');
       setNote('');
       setShowNote(false);
@@ -349,10 +364,10 @@ export function LogEntryModal({
         numValue,
         occurredAtMs,
         note.trim() || null,
-        logEntry?.id // Pass logEntryId in edit mode
+        effectiveLogEntry?.id // Pass logEntryId in edit mode
       );
 
-      let successMessage = getAffirmationMessage();
+      let successMessage = internalEditEntry ? 'Updated.' : getAffirmationMessage();
       
       // Determine the period window to check against
       let checkStartMs = currentPeriodStartMs;
@@ -388,14 +403,20 @@ export function LogEntryModal({
         setAffirmationMessage(null);
       }
 
-      // Reset form and close
+      // Reset form
       setValue('');
       setNote('');
       setShowNote(false);
       setShowWhen(false);
       setAndroidPickerMode(null);
       setSelectedDate(new Date());
-      onClose();
+
+      if (internalEditEntry) {
+        // Return to create mode after editing a period entry — stay in modal
+        setInternalEditEntry(null);
+      } else {
+        onClose();
+      }
     } catch (error) {
       if (error instanceof Error) {
         setSaveError(error.message);
@@ -420,6 +441,7 @@ export function LogEntryModal({
     setSaveError(null);
     setAffirmationMessage(null);
     setSelectedStandard(null);
+    setInternalEditEntry(null);
     // Reset stopwatch
     setStopwatchRunning(false);
     setStopwatchStartedAtMs(null);
@@ -890,6 +912,136 @@ export function LogEntryModal({
     );
   };
 
+  const handlePeriodEntryEdit = useCallback((log: ActivityLog) => {
+    setInternalEditEntry({
+      id: log.id,
+      value: log.value,
+      occurredAtMs: log.occurredAtMs,
+      note: log.note,
+    });
+    // Pre-fill form with entry data
+    setValue(String(log.value));
+    setNote(log.note || '');
+    setShowNote(!!log.note);
+    setShowWhen(false);
+    setSelectedDate(new Date(log.occurredAtMs));
+    setSaveError(null);
+  }, []);
+
+  const handlePeriodEntryDelete = useCallback((log: ActivityLog) => {
+    if (!onDeleteLogEntry) return;
+    Alert.alert(
+      'Delete Entry',
+      'Are you sure you want to delete this log entry?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => onDeleteLogEntry(log.id, log.standardId, log.occurredAtMs),
+        },
+      ]
+    );
+  }, [onDeleteLogEntry]);
+
+  const handleCancelInternalEdit = useCallback(() => {
+    setInternalEditEntry(null);
+    setValue('');
+    setNote('');
+    setShowNote(false);
+    setShowWhen(false);
+    setSelectedDate(new Date());
+    setSaveError(null);
+  }, []);
+
+  const renderPeriodEntries = () => {
+    // Don't show period entries when in external edit mode or when picking a standard
+    if (logEntry || showPicker || !selectedStandard) {
+      return null;
+    }
+
+    const { logs: entries, loading: entriesLoading } = periodLogs;
+
+    if (entriesLoading && entries.length === 0) {
+      return null; // Don't show loading state — entries appear when ready
+    }
+
+    if (entries.length === 0) {
+      return null;
+    }
+
+    return (
+      <View style={styles.periodEntriesSection}>
+        <Text style={[styles.periodEntriesSectionTitle, { color: theme.text.secondary }]}>
+          This Period
+        </Text>
+        <View style={styles.periodEntriesList}>
+          {entries.map((entry) => {
+            const isBeingEdited = internalEditEntry?.id === entry.id;
+            return (
+              <View
+                key={entry.id}
+                style={[
+                  styles.periodEntryCard,
+                  {
+                    backgroundColor: theme.background.card,
+                    borderWidth: isBeingEdited ? 2 : 1,
+                    borderColor: isBeingEdited ? theme.primary.main : theme.border.secondary,
+                    borderRadius: 12,
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.periodEntryContent}
+                  onPress={() => handlePeriodEntryEdit(entry)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit log entry"
+                >
+                  <View style={styles.periodEntryRow}>
+                    <Text style={[styles.periodEntryValue, { color: theme.text.primary }]}>
+                      {entry.value} {formatUnitWithCount(selectedStandard.unit, entry.value)}
+                    </Text>
+                    <Text style={[styles.periodEntryTimestamp, { color: theme.text.tertiary }]}>
+                      {new Date(entry.occurredAtMs).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'numeric',
+                        day: 'numeric',
+                      })}{' '}
+                      {new Date(entry.occurredAtMs).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      })}
+                    </Text>
+                  </View>
+                  {entry.note && (
+                    <Text
+                      style={[styles.periodEntryNote, { color: theme.text.secondary }]}
+                      numberOfLines={1}
+                    >
+                      {entry.note}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+                {onDeleteLogEntry && (
+                  <TouchableOpacity
+                    style={styles.periodEntryDeleteButton}
+                    onPress={() => handlePeriodEntryDelete(entry)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Delete log entry"
+                  >
+                    <Text style={[styles.periodEntryDeleteText, { color: theme.text.tertiary }]}>✕</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    );
+  };
+
   const handleFooterLayout = (event: LayoutChangeEvent) => {
     const { height } = event.nativeEvent.layout;
     if (Math.abs(height - footerHeight) > 1) {
@@ -961,6 +1113,16 @@ export function LogEntryModal({
         >
             <View style={[styles.modalHeader, { backgroundColor: theme.background.chrome }]}>
               <View style={styles.headerContent}>
+                {internalEditEntry && (
+                  <TouchableOpacity
+                    onPress={handleCancelInternalEdit}
+                    style={styles.cancelEditButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel edit"
+                  >
+                    <Text style={[styles.cancelEditText, { color: theme.primary.main }]}>← Back</Text>
+                  </TouchableOpacity>
+                )}
                 <Text style={[styles.modalTitle, { color: theme.text.primary }]}>
                   {showPicker
                     ? 'Select Standard'
@@ -1005,6 +1167,7 @@ export function LogEntryModal({
                 nestedScrollEnabled={true}
               >
                 {renderLoggingForm()}
+                {renderPeriodEntries()}
               </ScrollView>
             )}
 
@@ -1373,5 +1536,62 @@ const styles = StyleSheet.create({
   },
   timePicker: {
     flex: 1,
+  },
+  cancelEditButton: {
+    marginBottom: 4,
+  },
+  cancelEditText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  periodEntriesSection: {
+    marginTop: 8,
+  },
+  periodEntriesSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  periodEntriesList: {
+    gap: CARD_LIST_GAP,
+  },
+  periodEntryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  periodEntryContent: {
+    flex: 1,
+    padding: 14,
+    gap: 6,
+  },
+  periodEntryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  periodEntryValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+  },
+  periodEntryTimestamp: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  periodEntryNote: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontStyle: 'italic',
+  },
+  periodEntryDeleteButton: {
+    padding: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  periodEntryDeleteText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

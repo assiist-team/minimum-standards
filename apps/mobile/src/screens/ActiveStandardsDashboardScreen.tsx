@@ -77,7 +77,7 @@ export function StandardsScreen({
 
   const { activities, updateActivity } = useActivities();
   const { orderedCategories } = useCategories();
-  const { archivedStandards, unarchiveStandard, deleteStandard } = useStandards();
+  const { archivedStandards, unarchiveStandard, deleteStandard, deleteLogEntry } = useStandards();
 
   // State for inactive standard action menu
   const [inactiveMenuStandard, setInactiveMenuStandard] = useState<Standard | null>(null);
@@ -737,6 +737,9 @@ export function StandardsScreen({
         onClose={handleLogModalClose}
         onSave={handleLogSave}
         resolveActivityName={(activityId) => activityNameMap.get(activityId)}
+        onDeleteLogEntry={async (logEntryId, standardId, occurredAtMs) => {
+          await deleteLogEntry({ logEntryId, standardId, occurredAtMs });
+        }}
       />
 
       <BottomSheetMenu
