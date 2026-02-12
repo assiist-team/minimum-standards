@@ -1,7 +1,7 @@
 ---
 work_package_id: WP02
 title: Edit Button + Remove Inline Category Picker
-lane: "doing"
+lane: "for_review"
 dependencies: [WP01]
 base_branch: 002-activity-category-edit-in-create-flow-WP01
 base_commit: baca165e2b2c3b470b9c98f91a249b328198ab04
@@ -344,3 +344,4 @@ To change a work package's lane, either:
 
 **Valid lanes**: `planned`, `doing`, `for_review`, `done`
 - 2026-02-12T02:12:06Z – claude-opus – shell_pid=86643 – lane=doing – Assigned agent via workflow command
+- 2026-02-12T02:16:27Z – claude-opus – shell_pid=86643 – lane=for_review – Ready for review: Replaced inline category picker with Edit button + ActivityModal edit mode
