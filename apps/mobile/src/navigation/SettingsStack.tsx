@@ -10,15 +10,19 @@ import { SnapshotsScreen } from '../screens/SnapshotsScreen';
 import { SnapshotCreateScreen } from '../screens/SnapshotCreateScreen';
 import { SnapshotDetailScreen } from '../screens/SnapshotDetailScreen';
 import { SnapshotEditScreen } from '../screens/SnapshotEditScreen';
+import { useTheme } from '../theme/useTheme';
 
 const Stack = createNativeStackNavigator<SettingsStackParamList>();
 
 export function SettingsStack() {
+  const theme = useTheme();
+
   return (
     <Stack.Navigator
       initialRouteName={SETTINGS_STACK_ROOT_SCREEN_NAME}
       screenOptions={{
         headerShown: false,
+        contentStyle: { backgroundColor: theme.background.screen },
       }}
     >
       <Stack.Screen name={SETTINGS_STACK_ROOT_SCREEN_NAME} component={SettingsScreen} />

@@ -2,15 +2,19 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MainStackParamList } from './types';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { CreateStandardFlow } from './CreateStandardFlow';
+import { useTheme } from '../theme/useTheme';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 
 export function MainStack() {
+  const theme = useTheme();
+
   return (
     <Stack.Navigator
       initialRouteName="MainTabs"
       screenOptions={{
         headerShown: false,
+        contentStyle: { backgroundColor: theme.background.screen },
       }}
     >
       <Stack.Screen name="MainTabs" component={BottomTabNavigator} />

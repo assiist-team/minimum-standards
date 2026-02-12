@@ -52,7 +52,8 @@ function getTabBarStyle(theme, insets) {
     const androidMinHeight = baseTabBarHeight + bottomPadding;
     return {
         backgroundColor: 'transparent',
-        borderTopWidth: 0,
+        borderTopWidth: 1,
+        borderTopColor: theme.tabBar.border,
         elevation: 0,
         shadowColor: 'transparent',
         shadowOpacity: 0,

@@ -3,12 +3,15 @@ import { AuthStackParamList } from './types';
 import { SignInScreen } from '../screens/SignInScreen';
 import { SignUpScreen } from '../screens/SignUpScreen';
 import { PasswordResetScreen } from '../screens/PasswordResetScreen';
+import { useTheme } from '../theme/useTheme';
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export function AuthStack() {
+  const theme = useTheme();
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, contentStyle: { backgroundColor: theme.background.screen } }}>
       <Stack.Screen 
         name="SignIn" 
         component={SignInScreen}

@@ -4,12 +4,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Switch,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import Toggle from 'react-native-toggle-element';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -260,12 +260,22 @@ export function SetVolumeStep() {
             <Text style={[styles.switchLabel, { color: theme.text.primary }]}>
               Break Volume into Sessions
             </Text>
-            <Switch
+            <Toggle
               value={breakdownEnabled}
-              onValueChange={handleBreakdownToggle}
-              trackColor={{
-                false: theme.border.primary,
-                true: theme.button.primary.background,
+              onPress={(val) => handleBreakdownToggle(val ?? !breakdownEnabled)}
+              trackBar={{
+                width: 50,
+                height: 30,
+                radius: 15,
+                activeBackgroundColor: theme.button.primary.background,
+                inActiveBackgroundColor: theme.border.primary,
+              }}
+              thumbButton={{
+                width: 26,
+                height: 26,
+                radius: 13,
+                activeBackgroundColor: '#FFFFFF',
+                inActiveBackgroundColor: '#FFFFFF',
               }}
             />
           </View>

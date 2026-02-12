@@ -37,6 +37,7 @@ export function BottomTabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="Standards"
+      sceneContainerStyle={{ backgroundColor: theme.background.screen }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.tabBar.activeTint,
