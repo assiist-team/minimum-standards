@@ -5,10 +5,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Switch,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import Toggle from 'react-native-toggle-element';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -372,14 +372,24 @@ export function SetPeriodStep() {
           <View style={styles.weekdaySection}>
             <View style={styles.toggleRow}>
               <Text style={[styles.toggleLabel, { color: theme.text.primary }]}>
-                Select Specific Days
+                Set Custom Start Day
               </Text>
-              <Switch
+              <Toggle
                 value={showSpecificDays}
-                onValueChange={handleToggleSpecificDays}
-                trackColor={{
-                  false: theme.border.primary,
-                  true: theme.button.primary.background,
+                onPress={(val) => handleToggleSpecificDays(val ?? !showSpecificDays)}
+                trackBar={{
+                  width: 50,
+                  height: 30,
+                  radius: 15,
+                  activeBackgroundColor: theme.button.primary.background,
+                  inActiveBackgroundColor: theme.border.primary,
+                }}
+                thumbButton={{
+                  width: 26,
+                  height: 26,
+                  radius: 13,
+                  activeBackgroundColor: '#FFFFFF',
+                  inActiveBackgroundColor: '#FFFFFF',
                 }}
               />
             </View>
@@ -393,10 +403,8 @@ export function SetPeriodStep() {
                       style={[
                         styles.weekdayButton,
                         {
-                          borderColor: isActive ? theme.link : theme.border.primary,
-                          backgroundColor: isActive
-                            ? theme.background.tertiary
-                            : 'transparent',
+                          borderColor: isActive ? theme.button.primary.background : theme.border.primary,
+                          backgroundColor: 'transparent',
                         },
                       ]}
                       onPress={() => handleWeekdaySelect(option.value)}
@@ -405,7 +413,10 @@ export function SetPeriodStep() {
                       <Text
                         style={[
                           styles.weekdayButtonText,
-                          { color: isActive ? theme.link : theme.text.secondary },
+                          {
+                            color: isActive ? theme.text.primary : theme.text.secondary,
+                            fontWeight: isActive ? '600' : '400',
+                          },
                         ]}
                       >
                         {option.label}

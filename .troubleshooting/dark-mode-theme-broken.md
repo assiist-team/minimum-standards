@@ -1,8 +1,8 @@
 # Issue: Dark mode theme not respected after standards-navigation-overhaul merge
 
-**Status:** Active
+**Status:** Resolved
 **Opened:** 2026-02-11
-**Resolved:** _pending_
+**Resolved:** 2026-02-11
 
 ## Info
 - **Symptom:** In dark mode, UI elements appear in light mode. Bottom nav container specifically noted. Feature merged via WP01-WP08 from 001-standards-navigation-overhaul.
@@ -55,5 +55,9 @@
 - `apps/mobile/src/navigation/AuthStack.tsx` — Added `contentStyle` + `useTheme`
 
 ## Resolution
-_Do not fill this section until the fix is verified — either by a passing
-test/build or by explicit user confirmation. Applying a fix is not verification._
+
+- **Root cause:** `NavigationContainer` in AppNavigator.tsx had no `theme` prop, so React Navigation used its default light theme (white background). The transparent tab bar exposed this white scene container in dark mode. Additionally, the tab bar border was explicitly removed (`borderTopWidth: 0`), and no stack navigators set `contentStyle`.
+- **Fix:** Wired app theme through to React Navigation's `NavigationContainer` theme prop, added `sceneContainerStyle` to Tab.Navigator, added `contentStyle` to all stack navigators, and restored tab bar top border using `theme.tabBar.border`.
+- **Files changed:** AppNavigator.tsx, BottomTabNavigator.tsx, MainStack.tsx, StandardsStack.tsx, ActivitiesStack.tsx, SettingsStack.tsx, AuthStack.tsx, packages/ui-kit/src/helpers.ts + dist rebuild
+- **Verified:** User confirmed visually on 2026-02-11
+- **Lessons:** When using a transparent tab bar in React Navigation, you must pass a custom theme to `NavigationContainer` — otherwise the default white scene container shows through. Always rebuild `@nine4/ui-kit` after editing source files (it compiles to `dist/`).
