@@ -276,11 +276,11 @@
 **Estimated Size**: ~300 lines
 
 ### Included Subtasks
-- [ ] T042 Implement empty state for zero standards (active + inactive) — show illustration/prompt to create first standard via "+" button
-- [ ] T043 Handle navigate-away during Create Standard flow — discard form state, user starts fresh next time
-- [ ] T044 Handle day-of-week toggle reset when period changes from Weekly to Daily/Monthly/Custom
-- [ ] T045 [P] Handle activity without unit — display "Unit: (none)" on Step 2 volume screen
-- [ ] T046 [P] Clean up dead code: remove `ActiveStandardsDashboardScreen.tsx`, `StandardsBuilderScreen.tsx`, unused imports in `screenWrappers.tsx`, old `DashboardStack` references, `StickyLogButton.tsx` if fully unreferenced
+- [x] T042 Implement empty state for zero standards (active + inactive) — show illustration/prompt to create first standard via "+" button
+- [x] T043 Handle navigate-away during Create Standard flow — discard form state, user starts fresh next time
+- [x] T044 Handle day-of-week toggle reset when period changes from Weekly to Daily/Monthly/Custom
+- [x] T045 [P] Handle activity without unit — display "Unit: (none)" on Step 2 volume screen
+- [x] T046 [P] Clean up dead code: remove `ActiveStandardsDashboardScreen.tsx`, `StandardsBuilderScreen.tsx`, unused imports in `screenWrappers.tsx`, old `DashboardStack` references, `StickyLogButton.tsx` if fully unreferenced
 
 ### Implementation Notes
 - Empty state: centered illustration or icon + text "No standards yet" + CTA button "Create Your First Standard" that triggers "+" action
