@@ -114,11 +114,14 @@ const headerStyles = StyleSheet.create({
 
 export function CreateStandardFlow() {
   const reset = useStandardsBuilderStore((s) => s.reset);
+  const editingStandardId = useStandardsBuilderStore((s) => s.editingStandardId);
 
-  // Reset the builder store when the flow mounts
+  // Reset the builder store when the flow mounts (skip if editing an existing standard)
   React.useEffect(() => {
-    reset();
-  }, [reset]);
+    if (!editingStandardId) {
+      reset();
+    }
+  }, [editingStandardId, reset]);
 
   return (
     <Stack.Navigator

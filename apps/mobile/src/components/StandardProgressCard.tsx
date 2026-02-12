@@ -41,6 +41,7 @@ export interface StandardProgressCardProps {
   onDelete?: () => void;
   onDeactivate?: () => void;
   onViewLogs?: () => void;
+  onMenuPress?: () => void;
   periodStartMs?: number;
   periodEndMs?: number;
   nowMs?: number;
@@ -111,6 +112,7 @@ export function StandardProgressCard({
   onDelete,
   onDeactivate,
   onViewLogs,
+  onMenuPress,
   periodStartMs,
   periodEndMs,
   nowMs,
@@ -181,12 +183,16 @@ export function StandardProgressCard({
 
   const handleMenuPress = useCallback((e: any) => {
     e.stopPropagation();
+    if (onMenuPress) {
+      onMenuPress();
+      return;
+    }
     setMenuVisible(true);
-  }, []);
+  }, [onMenuPress]);
 
   const showCategorizeSubmenu = Boolean(onAssignCategoryId) && (categoryOptions?.length ?? 0) > 0;
   const showCategorizeAction = Boolean(onCategorize) && !showCategorizeSubmenu;
-  const showMenu = Boolean(showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
+  const showMenu = Boolean(onMenuPress || showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
 
   const menuItems: BottomSheetMenuItem[] = (() => {
     const items: BottomSheetMenuItem[] = [];

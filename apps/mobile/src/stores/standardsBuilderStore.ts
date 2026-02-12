@@ -37,6 +37,9 @@ export interface StandardsBuilderState {
   periodStartPreference: PeriodStartPreference | null;
   setPeriodStartPreference: (preference: PeriodStartPreference | null) => void;
 
+  // Editing mode (non-null when editing an existing standard)
+  editingStandardId: string | null;
+
   // Reset store
   reset: () => void;
 
@@ -76,6 +79,7 @@ const initialState = {
   sessionsPerCadence: null,
   volumePerSession: null,
   periodStartPreference: null,
+  editingStandardId: null,
 };
 
 type SessionGoalInputs = Pick<
@@ -284,6 +288,7 @@ export const useStandardsBuilderStore = create<StandardsBuilderState>((set, get)
         sessionsPerCadence: standard.sessionConfig.sessionsPerCadence,
         volumePerSession: standard.sessionConfig.volumePerSession,
         periodStartPreference: standard.periodStartPreference ?? null,
+        editingStandardId: standard.id,
       });
     },
   };

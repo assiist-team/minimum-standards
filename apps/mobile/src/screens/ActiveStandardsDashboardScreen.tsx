@@ -23,6 +23,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useStandards } from '../hooks/useStandards';
 import type { Activity } from '@minimum-standards/shared-model';
 import { useUIPreferencesStore } from '../stores/uiPreferencesStore';
+import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
 import { trackStandardEvent } from '../utils/analytics';
 import { LogEntryModal } from '../components/LogEntryModal';
 import { ErrorBanner } from '../components/ErrorBanner';
@@ -84,7 +85,14 @@ export function StandardsScreen({
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
   const [categorizeMenuEntry, setCategorizeMenuEntry] = useState<DashboardStandard | null>(null);
   const [categorizeMenuVisible, setCategorizeMenuVisible] = useState(false);
-  
+
+  // State for active standard action bottom sheet (T037–T041)
+  const [activeMenuStandard, setActiveMenuStandard] = useState<Standard | null>(null);
+  const [activeMenuVisible, setActiveMenuVisible] = useState(false);
+  const [activeDeactivateConfirmVisible, setActiveDeactivateConfirmVisible] = useState(false);
+  const [activeDeleteConfirmVisible, setActiveDeleteConfirmVisible] = useState(false);
+  const [categoryPickerVisible, setCategoryPickerVisible] = useState(false);
+
   // Create activity lookup map for category resolution
   const activityMap = useMemo(() => {
     const map = new Map<string, Activity>();
@@ -242,6 +250,86 @@ export function StandardsScreen({
     }
   }, [deleteStandard]);
 
+  // --- Active standard bottom sheet handlers (T037–T041) ---
+
+  const handleActiveMenuOpen = useCallback((standard: Standard) => {
+    setActiveMenuStandard(standard);
+    setActiveMenuVisible(true);
+  }, []);
+
+  const handleActiveEdit = useCallback(() => {
+    if (!activeMenuStandard) return;
+    const activity = activityMap.get(activeMenuStandard.activityId);
+    if (!activity) {
+      Alert.alert('Error', 'Could not find the activity for this standard');
+      setActiveMenuStandard(null);
+      return;
+    }
+    useStandardsBuilderStore.getState().loadFromStandard(activeMenuStandard, activity);
+    setActiveMenuStandard(null);
+    onLaunchBuilder();
+  }, [activeMenuStandard, activityMap, onLaunchBuilder]);
+
+  const handleActiveDeactivateConfirm = useCallback(async () => {
+    if (!activeMenuStandard) return;
+    try {
+      await archiveStandard(activeMenuStandard.id);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to deactivate standard');
+      console.error('Failed to deactivate standard:', err);
+    }
+    setActiveDeactivateConfirmVisible(false);
+    setActiveMenuStandard(null);
+  }, [activeMenuStandard, archiveStandard]);
+
+  const handleActiveDeleteConfirm = useCallback(async () => {
+    if (!activeMenuStandard) return;
+    try {
+      await deleteStandard(activeMenuStandard.id);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to delete standard');
+      console.error('Failed to delete standard:', err);
+    }
+    setActiveDeleteConfirmVisible(false);
+    setActiveMenuStandard(null);
+  }, [activeMenuStandard, deleteStandard]);
+
+  const activeMenuCategoryId = useMemo(() => {
+    if (!activeMenuStandard) return null;
+    const activity = activityMap.get(activeMenuStandard.activityId);
+    return activity?.categoryId ?? null;
+  }, [activeMenuStandard, activityMap]);
+
+  const handleActiveAssignCategory = useCallback(async (categoryId: string | null) => {
+    if (!activeMenuStandard) return;
+    try {
+      await updateActivity(activeMenuStandard.activityId, { categoryId });
+    } catch (err) {
+      Alert.alert('Error', 'Failed to assign category');
+      console.error('Failed to assign category:', err);
+    }
+    setCategoryPickerVisible(false);
+    setActiveMenuStandard(null);
+  }, [activeMenuStandard, updateActivity]);
+
+  const categoryPickerItems = useMemo(() => {
+    if (!activeMenuStandard) return [];
+    return [
+      {
+        key: 'none',
+        label: 'None',
+        icon: activeMenuCategoryId === null ? 'check' : undefined,
+        onPress: () => handleActiveAssignCategory(null),
+      },
+      ...customCategories.map((cat) => ({
+        key: cat.id,
+        label: cat.name,
+        icon: activeMenuCategoryId === cat.id ? 'check' : undefined,
+        onPress: () => handleActiveAssignCategory(cat.id),
+      })),
+    ];
+  }, [activeMenuStandard, activeMenuCategoryId, customCategories, handleActiveAssignCategory]);
+
   const handleViewInactiveLogs = useCallback((standardId: string) => {
     navigation.navigate('StandardPeriodActivityLogs', {
       standardId,
@@ -365,14 +453,7 @@ export function StandardsScreen({
           entry={item}
           onLogPress={() => handleLogPress(item)}
           onCardPress={() => handleLogPress(item)}
-          onViewLogs={() => handleCardPress(item.standard.id)}
-          onCategorize={() => handleCardCategorize(item)}
-          categorizeLabel={cardCategorizeLabel}
-          categoryOptions={customCategories.map((c) => ({ id: c.id, name: c.name }))}
-          selectedCategoryId={getEffectiveCategoryId(item)}
-          onAssignCategoryId={(categoryId) => handleAssignCategory(item, categoryId)}
-          onEdit={() => handleEdit(item.standard.id)}
-          onDeactivate={() => handleDeactivate(item.standard.id)}
+          onMenuPress={() => handleActiveMenuOpen(item.standard)}
           activityNameMap={activityNameMap}
           nowMs={nowMs}
           showTimeBar={showTimeBar}
@@ -380,14 +461,7 @@ export function StandardsScreen({
       );
     },
     [
-      cardCategorizeLabel,
-      customCategories,
-      getEffectiveCategoryId,
-      handleAssignCategory,
-      handleCardCategorize,
-      handleCardPress,
-      handleDeactivate,
-      handleEdit,
+      handleActiveMenuOpen,
       handleLogPress,
       activityNameMap,
       nowMs,
@@ -771,6 +845,89 @@ export function StandardsScreen({
           },
         ] : []}
       />
+
+      {/* Active standard action bottom sheet (T037) */}
+      <BottomSheetMenu
+        visible={activeMenuVisible}
+        onRequestClose={() => setActiveMenuVisible(false)}
+        title={activeMenuStandard ? (activityNameMap.get(activeMenuStandard.activityId) ?? activeMenuStandard.activityId) : ''}
+        items={activeMenuStandard ? [
+          {
+            key: 'edit',
+            label: 'Edit',
+            icon: 'edit',
+            onPress: handleActiveEdit,
+          },
+          {
+            key: 'deactivate',
+            label: 'Deactivate',
+            icon: 'archive',
+            onPress: () => setActiveDeactivateConfirmVisible(true),
+          },
+          {
+            key: 'delete',
+            label: 'Delete',
+            icon: 'delete',
+            destructive: true,
+            onPress: () => setActiveDeleteConfirmVisible(true),
+          },
+          {
+            key: 'categorize',
+            label: 'Categorize',
+            icon: 'category',
+            onPress: () => setCategoryPickerVisible(true),
+          },
+        ] : []}
+      />
+
+      {/* Active standard deactivate confirmation (T039) */}
+      <BottomSheetConfirmation
+        visible={activeDeactivateConfirmVisible}
+        onRequestClose={() => {
+          setActiveDeactivateConfirmVisible(false);
+          setActiveMenuStandard(null);
+        }}
+        title="Deactivate Standard"
+        message="This standard will be moved to inactive. You can reactivate it later from the inactive standards list."
+        confirmLabel="Deactivate"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleActiveDeactivateConfirm}
+        onCancel={() => {
+          setActiveDeactivateConfirmVisible(false);
+          setActiveMenuStandard(null);
+        }}
+      />
+
+      {/* Active standard delete confirmation (T040) */}
+      <BottomSheetConfirmation
+        visible={activeDeleteConfirmVisible}
+        onRequestClose={() => {
+          setActiveDeleteConfirmVisible(false);
+          setActiveMenuStandard(null);
+        }}
+        title="Delete Standard"
+        message="Are you sure you want to delete this standard? This action cannot be undone. All associated logs will be preserved."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleActiveDeleteConfirm}
+        onCancel={() => {
+          setActiveDeleteConfirmVisible(false);
+          setActiveMenuStandard(null);
+        }}
+      />
+
+      {/* Active standard category picker (T041) */}
+      <BottomSheetMenu
+        visible={categoryPickerVisible}
+        onRequestClose={() => {
+          setCategoryPickerVisible(false);
+          setActiveMenuStandard(null);
+        }}
+        title="Categorize"
+        items={categoryPickerItems}
+      />
     </View>
   );
 }
@@ -779,14 +936,7 @@ function StandardCard({
   entry,
   onLogPress,
   onCardPress,
-  onViewLogs,
-  categorizeLabel,
-  onCategorize,
-  categoryOptions,
-  selectedCategoryId,
-  onAssignCategoryId,
-  onEdit,
-  onDeactivate,
+  onMenuPress,
   activityNameMap,
   nowMs,
   showTimeBar,
@@ -794,14 +944,7 @@ function StandardCard({
   entry: DashboardStandard;
   onLogPress: () => void;
   onCardPress?: () => void;
-  onViewLogs?: () => void;
-  categorizeLabel?: string;
-  onCategorize?: () => void;
-  categoryOptions?: Array<{ id: string; name: string }>;
-  selectedCategoryId?: string;
-  onAssignCategoryId?: (categoryId: string) => void | Promise<void>;
-  onEdit?: () => void;
-  onDeactivate?: () => void;
+  onMenuPress?: () => void;
   activityNameMap: Map<string, string>;
   nowMs: number;
   showTimeBar?: boolean;
@@ -848,14 +991,7 @@ function StandardCard({
       variant="compact"
       onLogPress={onLogPress}
       onCardPress={onCardPress}
-      onViewLogs={onViewLogs}
-      categorizeLabel={categorizeLabel}
-      onCategorize={onCategorize}
-      categoryOptions={categoryOptions}
-      selectedCategoryId={selectedCategoryId}
-      onAssignCategoryId={onAssignCategoryId}
-      onEdit={onEdit}
-      onDeactivate={onDeactivate}
+      onMenuPress={onMenuPress}
       periodStartMs={periodStartMs}
       periodEndMs={periodEndMs}
       nowMs={nowMs}
