@@ -40,9 +40,12 @@ export function SelectActivityStep() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [learnMoreExpanded, setLearnMoreExpanded] = useState(false);
 
+  const resetBuilder = useStandardsBuilderStore((s) => s.reset);
+
   const handleClose = useCallback(() => {
+    resetBuilder();
     mainNavigation.goBack();
-  }, [mainNavigation]);
+  }, [resetBuilder, mainNavigation]);
 
   const handleNext = useCallback(() => {
     if (selectedActivity) {

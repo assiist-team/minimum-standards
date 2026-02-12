@@ -117,10 +117,14 @@ export function CreateStandardFlow() {
   const editingStandardId = useStandardsBuilderStore((s) => s.editingStandardId);
 
   // Reset the builder store when the flow mounts (skip if editing an existing standard)
+  // and when it unmounts (user navigated away mid-flow — discard state so they start fresh next time)
   React.useEffect(() => {
     if (!editingStandardId) {
       reset();
     }
+    return () => {
+      reset();
+    };
   }, [editingStandardId, reset]);
 
   return (

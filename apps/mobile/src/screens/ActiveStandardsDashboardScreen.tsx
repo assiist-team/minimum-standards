@@ -504,7 +504,35 @@ export function StandardsScreen({
       );
     }
 
+    if (dashboardStandards.length === 0 && archivedStandards.length === 0) {
+      // Truly empty: no active or inactive standards at all
+      return (
+        <View style={styles.emptyContainer} testID="dashboard-empty-state">
+          <MaterialIcons name="flag" size={64} color={theme.text.secondary} />
+          <Text style={[styles.emptyTitle, { color: theme.text.primary }]}>
+            No Standards Yet
+          </Text>
+          <Text style={[styles.emptyMessage, { color: theme.text.secondary }]}>
+            Create your first Minimum Standard to start tracking your commitments.
+          </Text>
+          <TouchableOpacity
+            onPress={onLaunchBuilder}
+            style={[styles.emptyButton, { backgroundColor: theme.button.primary.background }]}
+            accessibilityRole="button"
+          >
+            <View style={styles.emptyButtonContent}>
+              <MaterialIcons name="add" size={20} color={theme.button.primary.text} />
+              <Text style={[styles.emptyButtonText, { color: theme.button.primary.text }]}>
+                Create Your First Standard
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     if (dashboardStandards.length === 0) {
+      // No active standards, but has archived/inactive
       return (
         <View style={styles.emptyContainer} testID="dashboard-empty-state">
           <Text style={[styles.emptyText, { color: theme.text.secondary }]}>
@@ -1059,6 +1087,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 32,
     gap: 12,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  emptyMessage: {
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  emptyButton: {
+    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: BUTTON_BORDER_RADIUS,
+  },
+  emptyButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   emptyText: {
     fontSize: 16,
