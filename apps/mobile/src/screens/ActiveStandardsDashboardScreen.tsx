@@ -816,6 +816,16 @@ export function StandardsScreen({
             onPress: () => setSortOption('alpha'),
           },
           {
+            key: 'manage-standards',
+            label: 'Manage Standards',
+            onPress: () => {
+              navigation.navigate(
+                SETTINGS_TAB_ROUTE_NAME as any,
+                { screen: 'StandardsLibrary' } as any
+              );
+            },
+          },
+          {
             key: 'manage-categories',
             label: 'Manage Categories',
             onPress: handleCategorizePress,

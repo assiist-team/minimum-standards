@@ -5,12 +5,16 @@ import type { Standard } from '@minimum-standards/shared-model';
 import {
   StandardsStackParamList,
   ScorecardStackParamList,
+  SettingsStackParamList,
 } from './types';
 import { ActivityHistoryScreen } from '../screens/ActivityHistoryScreen';
 import { StandardsBuilderScreen } from '../screens/StandardsBuilderScreen';
 import { StandardsScreen } from '../screens/ActiveStandardsDashboardScreen';
 import { StandardDetailScreen } from '../screens/StandardDetailScreen';
+import { StandardsLibraryScreen } from '../screens/StandardsLibraryScreen';
 import { useStandards } from '../hooks/useStandards';
+import { useActivities } from '../hooks/useActivities';
+import { useStandardsBuilderStore } from '../stores/standardsBuilderStore';
 
 type StandardsNavigationProp = NativeStackNavigationProp<StandardsStackParamList>;
 type ScorecardNavigationProp = NativeStackNavigationProp<ScorecardStackParamList>;
@@ -56,6 +60,30 @@ export function StandardsScreenWrapper() {
         navigation.navigate('StandardsBuilder', { standardId });
       }}
       backButtonLabel={undefined}
+    />
+  );
+}
+
+export function StandardsLibraryScreenSettingsWrapper() {
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsStackParamList>>();
+  const { standards } = useStandards();
+  const { activities } = useActivities();
+
+  return (
+    <StandardsLibraryScreen
+      onBack={() => navigation.goBack()}
+      onNavigateToBuilder={() => {
+        useStandardsBuilderStore.getState().reset();
+        (navigation as any).navigate('CreateStandardFlow');
+      }}
+      onEditStandard={(standardId) => {
+        const standard = standards.find((s) => s.id === standardId);
+        if (!standard) return;
+        const activity = activities.find((a) => a.id === standard.activityId);
+        if (!activity) return;
+        useStandardsBuilderStore.getState().loadFromStandard(standard, activity);
+        (navigation as any).navigate('CreateStandardFlow');
+      }}
     />
   );
 }

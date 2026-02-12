@@ -206,7 +206,13 @@ export function StandardsLibraryScreen({
   return (
     <View style={[styles.screen, getScreenContainerStyle(theme)]}>
       <View style={[styles.header, { backgroundColor: theme.background.chrome, borderBottomColor: theme.border.secondary, paddingTop: Math.max(insets.top, 12) }]}>
-        <View style={styles.headerSpacer} />
+        {onBack ? (
+          <TouchableOpacity onPress={onBack} style={styles.headerBackButton} accessibilityRole="button" accessibilityLabel="Go back">
+            <MaterialIcons name="arrow-back" size={24} color={theme.text.primary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerSpacer} />
+        )}
         <Text style={[styles.headerTitle, { color: theme.text.primary }]}>Standards Library</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -284,6 +290,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  headerBackButton: {
+    width: 64,
+    paddingVertical: 4,
   },
   headerSpacer: {
     width: 64,
