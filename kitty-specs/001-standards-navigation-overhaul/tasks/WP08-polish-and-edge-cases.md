@@ -1,7 +1,7 @@
 ---
 work_package_id: WP08
 title: Polish & Edge Cases
-lane: "doing"
+lane: "for_review"
 dependencies:
 - WP01
 - WP02
@@ -255,3 +255,4 @@ history:
 
 - 2026-02-11T22:17:53Z – system – lane=planned – Prompt created.
 - 2026-02-11T23:57:43Z – claude-opus – shell_pid=11863 – lane=doing – Assigned agent via workflow command
+- 2026-02-12T00:03:19Z – claude-opus – shell_pid=11863 – lane=for_review – Ready for review: Empty state for zero standards, Create flow cleanup on navigate-away, dead code removal (DashboardStack, StickyLogButton, ArchivedStandardsScreen). T044 blocked — SetPeriodStep is placeholder (WP05 not in merge base). T045 already handled in SelectActivityStep.
