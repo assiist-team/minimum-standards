@@ -19,11 +19,11 @@
 **Estimated Prompt Size**: ~300 lines
 
 ### Included Subtasks
-- [ ] T001 Import `useCategories` hook and `BottomSheetMenu` component into ActivityModal
-- [ ] T002 Add `categoryId` and `categoryPickerVisible` state variables
-- [ ] T003 Add Category picker row JSX between Unit and Notes fields
-- [ ] T004 Render `BottomSheetMenu` with "None" + user-defined categories
-- [ ] T005 Update save handler to use `categoryId` state instead of `activity?.categoryId`
+- [x] T001 Import `useCategories` hook and `BottomSheetMenu` component into ActivityModal
+- [x] T002 Add `categoryId` and `categoryPickerVisible` state variables
+- [x] T003 Add Category picker row JSX between Unit and Notes fields
+- [x] T004 Render `BottomSheetMenu` with "None" + user-defined categories
+- [x] T005 Update save handler to use `categoryId` state instead of `activity?.categoryId`
 
 ### Implementation Notes
 - The `categoryId` state must initialize from `activity?.categoryId ?? null` (edit mode) and reset when `activity` prop changes via the existing `useEffect`.
