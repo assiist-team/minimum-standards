@@ -15,7 +15,7 @@ subtasks:
 - T011
 phase: Phase 1 - SelectActivityStep Rework
 assignee: ''
-agent: ''
+agent: "claude-opus"
 shell_pid: "86643"
 review_status: ''
 reviewed_by: ''
@@ -343,3 +343,4 @@ To change a work package's lane, either:
 2. **Use CLI**: `spec-kitty agent tasks move-task WP02 --to <lane> --note "message"` (recommended)
 
 **Valid lanes**: `planned`, `doing`, `for_review`, `done`
+- 2026-02-12T02:12:06Z – claude-opus – shell_pid=86643 – lane=doing – Assigned agent via workflow command
