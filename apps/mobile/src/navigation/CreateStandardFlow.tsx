@@ -157,9 +157,13 @@ function SetPeriodStepPlaceholder() {
 export function CreateStandardFlow() {
   const reset = useStandardsBuilderStore((s) => s.reset);
 
-  // Reset the builder store when the flow mounts
+  // Reset the builder store when the flow mounts and when it unmounts
+  // (user navigated away mid-flow — discard state so they start fresh next time)
   React.useEffect(() => {
     reset();
+    return () => {
+      reset();
+    };
   }, [reset]);
 
   return (

@@ -358,7 +358,7 @@ export function LogEntryModal({
       let checkStartMs = currentPeriodStartMs;
       let checkEndMs = currentPeriodEndMs;
 
-      // If no explicit window provided (e.g. from StickyLogButton), calculate current period for the standard
+      // If no explicit window provided, calculate current period for the standard
       if (checkStartMs === undefined && targetStandard) {
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC';
         const window = calculatePeriodWindow(
