@@ -14,3 +14,8 @@
 /.cursor/
 .vscode/
 .idea/
+.claude/
+.claudeignore
+.firebase/
+.firebaserc
+.kittify/
