@@ -1,8 +1,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivitiesStackParamList } from './types';
+import { ScorecardStackParamList } from './types';
 import { ScorecardScreenWrapper } from './screenWrappers';
 
-const Stack = createNativeStackNavigator<ActivitiesStackParamList>();
+const Stack = createNativeStackNavigator<ScorecardStackParamList>();
 
 export function ActivitiesStack() {
   return (
