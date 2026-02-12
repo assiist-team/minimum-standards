@@ -259,9 +259,12 @@ export function StandardsScreen({
   const handleActiveEdit = useCallback(() => {
     if (!activeMenuStandard) return;
     const activity = activityMap.get(activeMenuStandard.activityId);
-    if (activity) {
-      useStandardsBuilderStore.getState().loadFromStandard(activeMenuStandard, activity);
+    if (!activity) {
+      Alert.alert('Error', 'Could not find the activity for this standard');
+      setActiveMenuStandard(null);
+      return;
     }
+    useStandardsBuilderStore.getState().loadFromStandard(activeMenuStandard, activity);
     setActiveMenuStandard(null);
     onLaunchBuilder();
   }, [activeMenuStandard, activityMap, onLaunchBuilder]);
