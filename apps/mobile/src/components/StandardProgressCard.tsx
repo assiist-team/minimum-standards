@@ -41,6 +41,7 @@ export interface StandardProgressCardProps {
   onDelete?: () => void;
   onDeactivate?: () => void;
   onViewLogs?: () => void;
+  onMenuPress?: () => void;
   periodStartMs?: number;
   periodEndMs?: number;
   nowMs?: number;
@@ -111,6 +112,7 @@ export function StandardProgressCard({
   onDelete,
   onDeactivate,
   onViewLogs,
+  onMenuPress,
   periodStartMs,
   periodEndMs,
   nowMs,
@@ -190,12 +192,16 @@ export function StandardProgressCard({
 
   const handleMenuPress = useCallback((e: any) => {
     e.stopPropagation();
+    if (onMenuPress) {
+      onMenuPress();
+      return;
+    }
     // Measure button position when opening menu
     menuButtonRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
       setMenuButtonLayout({ x, y, width, height });
       setMenuVisible(true);
     });
-  }, []);
+  }, [onMenuPress]);
 
   const handleViewLogsPress = useCallback(() => {
     setPendingAction(() => onViewLogs);
@@ -229,7 +235,7 @@ export function StandardProgressCard({
 
   const showCategorizeSubmenu = Boolean(onAssignCategoryId) && (categoryOptions?.length ?? 0) > 0;
   const showCategorizeAction = Boolean(onCategorize) && !showCategorizeSubmenu;
-  const showMenu = Boolean(showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
+  const showMenu = Boolean(onMenuPress || showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
   const showLogMenuItem = Boolean(onLogPress) && showMenu;
   const showLogDivider = showLogMenuItem && (showCategorizeSubmenu || showCategorizeAction || onEdit || onDeactivate || onDelete || onViewLogs);
 
