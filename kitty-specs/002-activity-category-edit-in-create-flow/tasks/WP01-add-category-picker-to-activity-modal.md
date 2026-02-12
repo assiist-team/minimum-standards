@@ -1,7 +1,7 @@
 ---
 work_package_id: WP01
 title: Add Category Picker to ActivityModal
-lane: "doing"
+lane: "done"
 dependencies: []
 base_branch: main
 base_commit: 74c51e1711556e38b3bcb0c151ffb492da159721
@@ -16,8 +16,8 @@ phase: Phase 1 - Core Modal Enhancement
 assignee: ''
 agent: "claude-opus"
 shell_pid: "66638"
-review_status: ''
-reviewed_by: ''
+review_status: "approved"
+reviewed_by: "nine4-team"
 history:
 - timestamp: '2026-02-12T01:43:15Z'
   lane: planned
@@ -281,3 +281,4 @@ To change a work package's lane, either:
 - 2026-02-12T01:50:14Z – claude-opus – shell_pid=45737 – lane=doing – Assigned agent via workflow command
 - 2026-02-12T01:52:58Z – claude-opus – shell_pid=45737 – lane=for_review – Ready for review: Category picker added to ActivityModal between Unit and Notes. BottomSheetMenu shows None + user-defined categories. Save handler wired to categoryId state.
 - 2026-02-12T02:00:37Z – claude-opus – shell_pid=66638 – lane=doing – Started review via workflow command
+- 2026-02-12T02:07:00Z – claude-opus – shell_pid=66638 – lane=done – Review passed: All FR-001 through FR-006 requirements met. BottomSheetMenu API correctly integrated, state management solid, edge cases handled. Minor note: Category label uses theme.text.primary (line 354) while other labels use theme.text.secondary — recommend fixing in follow-up.
